@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="バンドマン持ち物">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1c1b19">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<title>バンドマン持ち物リスト</title>
+<style>
+  :root{
+    --bg:#1c1b19;
+    --panel:#242220;
+    --panel-raised:#2c2925;
+    --seam:#3a352e;
+    --cream:#eee6d6;
+    --cream-dim:#a89f8d;
+    --amber:#e8a23c;
+    --amber-dim:#8a6226;
+    --teal:#4f8c85;
+    --teal-dim:#2f524d;
+    --red:#c1543c;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--cream);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:84px;
+  }
+  h1,h2,h3{
+    font-family:'Oswald',-apple-system,sans-serif;
+    font-weight:600;
+    letter-spacing:.02em;
+    margin:0;
+  }
+  .header{
+    padding:calc(22px + env(safe-area-inset-top, 0px)) 18px 16px;
+    background:linear-gradient(180deg,#231f1c,#1c1b19);
+    border-bottom:1px solid var(--seam);
+    position:relative;
+  }
+  .header .led{
+    position:absolute;
+    top:24px; right:20px;
+    width:9px;height:9px;border-radius:50%;
+    background:var(--amber);
+    box-shadow:0 0 6px 1px rgba(232,162,60,.7);
+  }
+  .header h1{font-size:19px;color:var(--cream);}
+  .header p{margin:4px 0 0;font-size:12.5px;color:var(--cream-dim);}
+
+  .container{max-width:480px;margin:0 auto;padding:16px;}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--seam);
+    border-radius:var(--radius);
+    padding:14px 14px 16px;
+    margin-bottom:14px;
+  }
+  .panel-label{
+    font-family:'Oswald',sans-serif;
+    font-size:11px;
+    letter-spacing:.08em;
+    color:var(--amber);
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .panel-label::before{
+    content:'';
+    width:5px;height:5px;border-radius:50%;
+    background:var(--amber);
+  }
+
+  /* nav footswitches */
+  .nav{
+    position:fixed;bottom:0;left:0;right:0;
+    display:flex;
+    background:#161513;
+    border-top:1px solid var(--seam);
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+    gap:8px;
+    z-index:10;
+  }
+  .nav button{
+    flex:1;
+    background:var(--panel-raised);
+    border:1px solid var(--seam);
+    border-radius:8px;
+    color:var(--cream-dim);
+    font-family:'Oswald',sans-serif;
+    font-size:11.5px;
+    letter-spacing:.02em;
+    padding:10px 2px;
+    cursor:pointer;
+  }
+  .nav button.active{
+    color:#1c1b19;
+    background:var(--amber);
+    border-color:var(--amber);
+  }
+
+  /* form controls */
+  input[type=text],input[type=date],select,textarea{
+    width:100%;
+    background:#1a1917;
+    border:1px solid var(--seam);
+    color:var(--cream);
+    border-radius:7px;
+    padding:9px 10px;
+    font-size:14.5px;
+    margin-bottom:8px;
+  }
+  input[type=date]{color-scheme:dark;}
+  input[type=text]::placeholder{color:#6d6558;}
+  label.small{font-size:12px;color:var(--cream-dim);display:block;margin-bottom:4px;}
+
+  .scope-row{display:flex;gap:6px;margin-bottom:8px;}
+  .scope-row button{
+    flex:1;
+    padding:8px 4px;
+    border-radius:7px;
+    border:1px solid var(--seam);
+    background:#1a1917;
+    color:var(--cream-dim);
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  .scope-row button.sel{
+    background:var(--teal-dim);
+    border-color:var(--teal);
+    color:var(--cream);
+  }
+
+  .chip-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+  .chip{
+    font-size:11.5px;
+    padding:6px 12px;
+    border-radius:99px;
+    border:1px solid var(--seam);
+    color:var(--cream-dim);
+    background:#1a1917;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .chip.on{
+    background:var(--teal-dim);
+    border-color:var(--teal);
+    color:var(--cream);
+  }
+  .chip .x{margin-left:6px;color:var(--red);}
+
+  .btn{
+    background:var(--amber-dim);
+    border:1px solid var(--amber);
+    color:var(--cream);
+    border-radius:7px;
+    padding:9px 14px;
+    font-size:13.5px;
+    font-family:'Oswald',sans-serif;
+    letter-spacing:.02em;
+    cursor:pointer;
+  }
+  .btn.ghost{
+    background:transparent;
+    border:1px solid var(--seam);
+    color:var(--cream-dim);
+  }
+  .btn.danger{
+    background:transparent;
+    border:1px solid var(--red);
+    color:var(--red);
+  }
+  .btn.block{width:100%;}
+  .btn:active{transform:scale(.98);}
+  .btn:disabled{opacity:.3;cursor:default;}
+  .btn:disabled:active{transform:none;}
+
+  /* item rows */
+  .item-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:9px 0;
+    border-bottom:1px solid var(--seam);
+  }
+  .item-row:last-child{border-bottom:none;}
+  .item-name{font-size:14px;}
+  .item-meta{font-size:11px;color:var(--cream-dim);margin-top:2px;}
+  .del-x{
+    color:var(--red);
+    font-size:16px;
+    padding:2px 8px;
+    cursor:pointer;
+    background:none;border:none;
+  }
+
+  /* entry cards (studio/live list) */
+  .entry-card{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--panel-raised);
+    border:1px solid var(--seam);
+    border-radius:8px;
+    padding:12px 12px;
+    margin-bottom:8px;
+    cursor:pointer;
+  }
+  .entry-card .name{font-size:15px;font-weight:600;font-family:'Oswald',sans-serif;}
+  .entry-card .progress{font-size:12px;color:var(--amber);white-space:nowrap;margin-left:10px;}
+
+  .empty{
+    text-align:center;
+    color:var(--cream-dim);
+    font-size:13px;
+    padding:24px 8px;
+  }
+
+  /* checklist */
+  .check-row{
+    display:flex;align-items:center;gap:12px;
+    padding:11px 2px;
+    border-bottom:1px solid var(--seam);
+  }
+  .check-row:last-child{border-bottom:none;}
+  .toggle{
+    width:38px;height:22px;
+    border-radius:99px;
+    background:#1a1917;
+    border:1px solid var(--seam);
+    position:relative;
+    flex-shrink:0;
+    cursor:pointer;
+  }
+  .toggle .knob{
+    position:absolute;top:2px;left:2px;
+    width:16px;height:16px;border-radius:50%;
+    background:var(--cream-dim);
+    transition:left .15s ease, background .15s ease;
+  }
+  .toggle.on{background:var(--teal-dim);border-color:var(--teal);}
+  .toggle.on .knob{left:18px;background:var(--amber);}
+  .check-label{font-size:14.5px;flex:1;}
+  .check-label.done{color:var(--cream-dim);text-decoration:line-through;}
+
+  .progress-bar-wrap{
+    background:#1a1917;
+    border:1px solid var(--seam);
+    border-radius:99px;
+    height:8px;
+    overflow:hidden;
+    margin-bottom:12px;
+  }
+  .progress-bar{height:100%;background:var(--amber);}
+
+  .backrow{
+    display:flex;align-items:center;gap:8px;
+    margin-bottom:12px;
+  }
+  .backbtn{
+    background:none;border:none;color:var(--cream-dim);
+    font-size:20px;cursor:pointer;padding:0 6px 0 0;
+  }
+  .detail-title{font-size:17px;font-family:'Oswald',sans-serif;flex:1;}
+
+  .row-between{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .hint{font-size:11.5px;color:var(--cream-dim);margin:0 0 10px;}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="header">
+  <div class="led"></div>
+  <h1>バンドマン持ち物リスト</h1>
+  <p>パート・スタジオ・ライブ・レコーディングごとに、忘れ物ゼロへ</p>
+</div>
+
+<div class="container" id="app"></div>
+
+<div style="text-align:center;color:var(--cream-dim);font-size:10.5px;letter-spacing:.05em;padding:6px 0 4px;">Powered by SunaTrux</div>
+
+<div class="nav">
+  <button data-mode="studio">スタジオ</button>
+  <button data-mode="live">ライブ</button>
+  <button data-mode="recording">録音</button>
+  <button data-mode="items">持ち物</button>
+</div>
+
+<script>
+(function(){
+  var STORAGE_KEY = 'gp-list-v1';
+
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+  function defaultRoles(){
+    return ['ギター','ドラム','ベース','ボーカル','キーボード'];
+  }
+
+  function defaultState(){
+    var items = [
+        {id:uid(), name:'ギター本体', scope:['studio','live','recording'], roles:['ギター']},
+        {id:uid(), name:'ベース本体', scope:['studio','live','recording'], roles:['ベース']},
+        {id:uid(), name:'ギターケース', scope:['studio','live','recording'], roles:['ギター']},
+        {id:uid(), name:'ベースケース', scope:['studio','live','recording'], roles:['ベース']},
+        {id:uid(), name:'チューナー', scope:['studio','live','recording'], roles:['ギター','ベース']},
+        {id:uid(), name:'ピック(予備含む)', scope:['studio','live','recording'], roles:['ギター','ベース']},
+        {id:uid(), name:'シールドケーブル', scope:['studio','live','recording'], roles:['ギター','ベース','キーボード']},
+        {id:uid(), name:'予備弦', scope:['studio','live','recording'], roles:['ギター','ベース']},
+        {id:uid(), name:'カポ', scope:['studio','live','recording'], roles:['ギター']},
+        {id:uid(), name:'譜面 / タブレット', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'ギターアンプ', scope:['studio'], roles:['ギター']},
+        {id:uid(), name:'エフェクターセット', scope:['studio'], roles:['ギター','ベース','ボーカル']},
+        {id:uid(), name:'キーボード本体', scope:['studio','live','recording'], roles:['キーボード']},
+        {id:uid(), name:'キーボードスタンド', scope:['studio','live','recording'], roles:['キーボード']},
+        {id:uid(), name:'サスティンペダル', scope:['studio','live','recording'], roles:['キーボード']},
+        {id:uid(), name:'マイマイク', scope:['studio','live','recording'], roles:['ボーカル']},
+        {id:uid(), name:'マイクケーブル', scope:['studio','live','recording'], roles:['ボーカル']},
+        {id:uid(), name:'スティック(予備含む)', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'チューニングキー', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'絆創膏', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'ドラムグローブ', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'カウベル', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'ペダル', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'スネア', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'スプラッシュ', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'各種ホルダー', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'ミュート', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'スティックケース', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'耳栓', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'セットリスト', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'Macbook / 電源', scope:['recording'], roles:[]},
+        {id:uid(), name:'ノートパソコン', scope:['recording'], roles:[]},
+        {id:uid(), name:'ヘッドフォン', scope:['recording'], roles:[]},
+        {id:uid(), name:'ステージ衣装', scope:['live'], roles:[]},
+        {id:uid(), name:'譜面台', scope:['live'], roles:[]},
+        {id:uid(), name:'ストラップ', scope:['live'], roles:['ギター','ベース']},
+        {id:uid(), name:'楽器スタンド', scope:['live'], roles:['ギター','ベース']},
+        {id:uid(), name:'物販 / 名刺', scope:['live'], roles:[]}
+    ];
+    return {
+      roles: defaultRoles(),
+      items: items,
+      studios: [
+        {id:uid(), name:'サンプルスタジオ', roles:['ギター'], itemIds: computeAutoItemIds('studio', ['ギター'], items)}
+      ],
+      lives: [
+        {id:uid(), name:'サンプルライブ', roles:['ドラム'], itemIds: computeAutoItemIds('live', ['ドラム'], items)}
+      ],
+      recordings: [
+        {id:uid(), name:'サンプルレコーディング', roles:['ボーカル'], itemIds: computeAutoItemIds('recording', ['ボーカル'], items)}
+      ],
+      checks: {}
+    };
+  }
+
+  var MODES = ['studio','live','recording'];
+  var MODE_LABELS = {studio:'スタジオ', live:'ライブ', recording:'レコーディング'};
+
+  function modeLabel(m){ return MODE_LABELS[m] || m; }
+
+  function listForMode(mode){
+    if(mode==='studio') return state.studios;
+    if(mode==='live') return state.lives;
+    return state.recordings;
+  }
+
+  // 新規スタジオ/ライブ/レコーディングを作った瞬間の「初期の持ち物リスト」。
+  // 用途(該当モードを含むか)が合う持ち物のうち、
+  // ・パートを何も選ばなかった場合 → とりあえず全部入れる
+  // ・パートを選んだ場合 → 共通アイテム + そのパートに該当するアイテムだけを自動採用
+  // あとは詳細画面の「持ち物を編集」で自由に増減できる。
+  function computeAutoItemIds(mode, entryRoles, itemsList){
+    var src = itemsList || state.items;
+    return src.filter(function(it){
+      var scopeOk = it.scope && it.scope.indexOf(mode)!==-1;
+      if(!scopeOk) return false;
+      if(!entryRoles || entryRoles.length===0) return true;
+      if(!it.roles || it.roles.length===0) return true;
+      return it.roles.some(function(r){ return entryRoles.indexOf(r)!==-1; });
+    }).map(function(it){ return it.id; });
+  }
+
+  function migrateScope(scope){
+    if(Array.isArray(scope)) return scope;
+    if(scope==='both') return ['studio','live','recording'];
+    if(scope==='studio') return ['studio'];
+    if(scope==='live') return ['live'];
+    return ['studio','live','recording'];
+  }
+
+  function migrateEntry(mode, e){
+    if(!e.itemIds){
+      e.itemIds = computeAutoItemIds(mode);
+    }
+    delete e.tags;
+    delete e.roles;
+    return e;
+  }
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return defaultState();
+      var parsed = JSON.parse(raw);
+      if(!parsed.items) return defaultState();
+      if(!parsed.studios) parsed.studios = [];
+      if(!parsed.lives) parsed.lives = [];
+      if(!parsed.recordings) parsed.recordings = [];
+      if(!parsed.roles) parsed.roles = defaultRoles();
+      parsed.items.forEach(function(it){ delete it.tags; if(!it.roles) it.roles = []; it.scope = migrateScope(it.scope); });
+      state = parsed;
+      parsed.studios.forEach(function(e){ migrateEntry('studio', e); });
+      parsed.lives.forEach(function(e){ migrateEntry('live', e); });
+      parsed.recordings.forEach(function(e){ migrateEntry('recording', e); });
+      return parsed;
+    }catch(e){ return defaultState(); }
+  }
+
+  function saveState(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  var state = loadState();
+
+  var view = {
+    mode: 'studio',
+    selectedId: null,
+    newItemScope: ['studio','live','recording'],
+    newItemRoles: [],
+    newEntryRoles: [],
+    editMode: false,
+    confirmReset: false
+  };
+
+  function scopeArrayLabel(scope){
+    if(!scope || scope.length===0) return '(用途未設定)';
+    if(scope.length===MODES.length) return '全シーン共通';
+    return scope.map(modeLabel).join('・');
+  }
+
+  function itemsForEntry(mode, entry){
+    var ids = entry.itemIds || [];
+    return state.items.filter(function(it){ return ids.indexOf(it.id)!==-1; });
+  }
+
+  function candidateItemsForEntry(mode, entry){
+    var ids = entry.itemIds || [];
+    return state.items.filter(function(it){
+      var scopeOk = it.scope && it.scope.indexOf(mode)!==-1;
+      return scopeOk && ids.indexOf(it.id)===-1;
+    });
+  }
+
+  function checkKey(mode, entryId){ return mode+':'+entryId; }
+
+  function progressFor(mode, entry){
+    var items = itemsForEntry(mode, entry);
+    var ck = state.checks[checkKey(mode, entry.id)] || {};
+    var done = items.filter(function(it){ return ck[it.id]; }).length;
+    return {done:done, total:items.length};
+  }
+
+  function esc(s){
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // ---------- render ----------
+  function render(){
+    document.querySelectorAll('.nav button').forEach(function(b){
+      b.classList.toggle('active', b.dataset.mode===view.mode);
+    });
+    var app = document.getElementById('app');
+    if(view.mode==='items'){
+      app.innerHTML = renderItemsView();
+    } else {
+      if(view.selectedId){
+        app.innerHTML = renderDetailView(view.mode, view.selectedId);
+      } else {
+        app.innerHTML = renderEntryListView(view.mode);
+      }
+    }
+    bindEvents();
+  }
+
+  function renderEntryListView(mode){
+    var list = listForMode(mode);
+    var label = modeLabel(mode);
+    var placeholders = {
+      studio: '例: いつものスタジオ',
+      live: '例: 対バンライブ',
+      recording: '例: 新曲レコーディング'
+    };
+
+    var html = '';
+    html += '<div class="panel">';
+    html += '<div class="panel-label">'+label+'を登録</div>';
+    if(state.roles.length>0){
+      html += '<label class="small">担当パート(任意・複数選択可)</label>';
+      html += '<div class="chip-wrap">';
+      state.roles.forEach(function(r){
+        var on = view.newEntryRoles.indexOf(r)!==-1;
+        html += '<span class="chip'+(on?' on':'')+'" data-role-entry="'+esc(r)+'">'+esc(r)+'</span>';
+      });
+      html += '</div>';
+      html += '<p class="hint">選ぶと、そのパート＋共通の持ち物だけで自動リストを作ります。未選択なら一旦全部入れます。</p>';
+    }
+    html += '<label class="small">'+label+'名</label>';
+    html += '<input type="text" id="entry-name" placeholder="'+placeholders[mode]+'">';
+    html += '<label class="small">対象日(任意)</label>';
+    html += '<input type="date" id="entry-date">';
+    html += '<button class="btn block" id="add-entry-btn">+ '+label+'を追加</button>';
+    html += '</div>';
+
+    html += '<div class="panel">';
+    html += '<div class="panel-label">登録済み '+label+'（'+list.length+'）</div>';
+    if(list.length===0){
+      html += '<div class="empty">まだ登録がありません</div>';
+    } else {
+      list.forEach(function(e){
+        var p = progressFor(mode, e);
+        html += '<div class="entry-card" data-entry="'+e.id+'">';
+        html += '<div><div class="name">'+esc(e.name)+'</div>';
+        if(e.date){ html += '<div class="progress" style="color:var(--cream-dim);margin-left:0;">'+esc(e.date)+'</div>'; }
+        if(e.roles && e.roles.length){ html += '<div class="progress" style="color:var(--cream-dim);margin-left:0;">'+e.roles.map(esc).join(' / ')+'</div>'; }
+        html += '</div>';
+        html += '<div class="progress">'+p.done+' / '+p.total+'</div>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderDetailView(mode, entryId){
+    var list = listForMode(mode);
+    var entry = list.filter(function(e){return e.id===entryId;})[0];
+    if(!entry){ view.selectedId = null; return renderEntryListView(mode); }
+
+    var items = itemsForEntry(mode, entry);
+    var ck = state.checks[checkKey(mode, entry.id)] || {};
+    var done = items.filter(function(it){return ck[it.id];}).length;
+    var pct = items.length? Math.round(done/items.length*100) : 0;
+
+    var html = '';
+    html += '<div class="backrow">';
+    html += '<button class="backbtn" id="back-btn">←</button>';
+    html += '<div class="detail-title">'+esc(entry.name)+'</div>';
+    html += '</div>';
+
+    html += '<div class="progress-bar-wrap"><div class="progress-bar" style="width:'+pct+'%"></div></div>';
+
+    html += '<div class="row-between">';
+    html += '<div class="panel-label" style="margin-bottom:0;">'+(view.editMode?'含める持ち物を選ぶ':'持ち物チェックリスト')+'</div>';
+    html += '<button class="btn ghost" id="toggle-edit-btn">'+(view.editMode?'完了':'持ち物を編集')+'</button>';
+    html += '</div>';
+
+    if(view.editMode){
+      html += renderEditItemsPanel(mode, entry);
+    } else {
+      html += '<div class="panel">';
+      if(items.length===0){
+        html += '<div class="empty">まだ持ち物がありません。「持ち物を編集」から追加してください。</div>';
+      } else {
+        items.forEach(function(it){
+          var on = !!ck[it.id];
+          html += '<div class="check-row">';
+          html += '<div class="toggle'+(on?' on':'')+'" data-item="'+it.id+'"><div class="knob"></div></div>';
+          html += '<div class="check-label'+(on?' done':'')+'">'+esc(it.name)+'</div>';
+          html += '</div>';
+        });
+      }
+      html += '</div>';
+    }
+
+    html += '<div class="row-between">';
+    html += '<button class="btn ghost" id="reset-check-btn">チェックをリセット</button>';
+    html += '<button class="btn danger" id="delete-entry-btn">この'+modeLabel(mode)+'を削除</button>';
+    html += '</div>';
+
+    return html;
+  }
+
+  function renderEditItemsPanel(mode, entry){
+    var included = itemsForEntry(mode, entry);
+    var candidates = candidateItemsForEntry(mode, entry);
+    var html = '';
+
+    html += '<div class="panel">';
+    html += '<div class="panel-label">このリストに含まれている</div>';
+    if(included.length===0){
+      html += '<div class="empty">まだありません</div>';
+    } else {
+      included.forEach(function(it){
+        html += '<div class="item-row">';
+        html += '<div class="item-name">'+esc(it.name)+'</div>';
+        html += '<button class="del-x" data-remove-item="'+it.id+'">×</button>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+
+    html += '<div class="panel">';
+    html += '<div class="panel-label">追加できる持ち物</div>';
+    if(candidates.length===0){
+      html += '<div class="empty">追加できる持ち物がありません。「持ち物」タブで新しく登録してください。</div>';
+    } else {
+      candidates.forEach(function(it){
+        html += '<div class="item-row">';
+        html += '<div><div class="item-name">'+esc(it.name)+'</div>';
+        if(it.roles && it.roles.length){
+          html += '<div class="item-meta">'+it.roles.map(esc).join(' / ')+'</div>';
+        }
+        html += '</div>';
+        html += '<button class="btn ghost" data-add-item="'+it.id+'" style="padding:5px 10px;">+ 追加</button>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+
+    return html;
+  }
+
+  function renderItemsView(){
+    var html = '';
+    html += '<div class="panel">';
+    html += '<div class="panel-label">持ち物を追加</div>';
+    html += '<input type="text" id="item-name" placeholder="例: エフェクターボード">';
+    html += '<label class="small">用途(複数選択可)</label>';
+    html += '<div class="chip-wrap" id="scope-chips">';
+    MODES.forEach(function(m){
+      var on = view.newItemScope.indexOf(m)!==-1;
+      html += '<span class="chip'+(on?' on':'')+'" data-scope-item="'+m+'">'+modeLabel(m)+'</span>';
+    });
+    html += '</div>';
+    html += '<label class="small">パート(任意・複数選択可、未選択＝全員共通)</label>';
+    html += '<div class="chip-wrap">';
+    state.roles.forEach(function(r){
+      var on = view.newItemRoles.indexOf(r)!==-1;
+      html += '<span class="chip'+(on?' on':'')+'" data-role-item="'+esc(r)+'">'+esc(r)+'</span>';
+    });
+    html += '</div>';
+    html += '<p class="hint">選んだ用途のシーンで新規リストに自動で入ります。パート指定ありの持ち物は、既存のスタジオ/ライブ/レコーディングには自動追加されないので「持ち物を編集」から個別に追加してください。</p>';
+    html += '<button class="btn block" id="add-item-btn">+ 持ち物を追加</button>';
+    html += '</div>';
+
+    html += '<div class="panel">';
+    html += '<div class="panel-label">登録済みの持ち物（'+state.items.length+'）</div>';
+    if(state.items.length===0){
+      html += '<div class="empty">持ち物が登録されていません</div>';
+    } else {
+      state.items.forEach(function(it){
+        html += '<div class="item-row">';
+        html += '<div><div class="item-name">'+esc(it.name)+'</div>';
+        html += '<div class="item-meta">'+scopeArrayLabel(it.scope)+(it.roles&&it.roles.length? ' ・ '+it.roles.map(esc).join(' / ') : ' ・ 全パート共通')+'</div></div>';
+        html += '<button class="del-x" data-item-del="'+it.id+'">×</button>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+
+    html += '<div class="panel">';
+    html += '<div class="panel-label">パートを管理</div>';
+    html += '<input type="text" id="role-name" placeholder="例: サポートキーボード">';
+    html += '<button class="btn block" id="add-role-btn">+ パートを追加</button>';
+    if(state.roles.length>0){
+      html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更できます。</p>';
+      state.roles.forEach(function(r, i){
+        html += '<div class="item-row">';
+        html += '<div class="item-name">'+esc(r)+'</div>';
+        html += '<div style="display:flex;gap:4px;align-items:center;">';
+        html += '<button class="btn ghost" data-role-up="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===0?' disabled':'')+'>▲</button>';
+        html += '<button class="btn ghost" data-role-down="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===state.roles.length-1?' disabled':'')+'>▼</button>';
+        html += '<button class="del-x" data-role-del="'+esc(r)+'">×</button>';
+        html += '</div>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+
+    html += '<div class="panel">';
+    html += '<div class="panel-label">データ管理</div>';
+    html += '<p class="hint">この端末のブラウザ内にのみ保存されます（他の端末とは同期されません）。</p>';
+    if(view.confirmReset){
+      html += '<p class="hint" style="color:var(--red);">本当に全ての持ち物・スタジオ・ライブ・レコーディング・チェック状態を削除しますか？この操作は取り消せません。</p>';
+      html += '<div class="row-between" style="margin-bottom:0;">';
+      html += '<button class="btn ghost" id="reset-cancel-btn" style="flex:1;margin-right:8px;">キャンセル</button>';
+      html += '<button class="btn danger" id="reset-confirm-btn" style="flex:1;">削除する</button>';
+      html += '</div>';
+    } else {
+      html += '<button class="btn danger block" id="reset-all-btn">全データを初期化</button>';
+    }
+    html += '</div>';
+
+    return html;
+  }
+
+  // ---------- events ----------
+  function bindEvents(){
+    document.querySelectorAll('.nav button').forEach(function(b){
+      b.onclick = function(){
+        view.mode = b.dataset.mode;
+        view.selectedId = null;
+        view.editMode = false;
+        view.newEntryRoles = [];
+        view.confirmReset = false;
+        render();
+      };
+    });
+
+    var addEntryBtn = document.getElementById('add-entry-btn');
+    if(addEntryBtn){
+      addEntryBtn.onclick = function(){
+        var nameEl = document.getElementById('entry-name');
+        var dateEl = document.getElementById('entry-date');
+        var name = nameEl.value.trim();
+        if(!name){ nameEl.focus(); return; }
+        var entry = {id:uid(), name:name, date:(dateEl?dateEl.value:''), roles:view.newEntryRoles.slice(), itemIds:computeAutoItemIds(view.mode, view.newEntryRoles)};
+        listForMode(view.mode).push(entry);
+        view.newEntryRoles = [];
+        saveState();
+        render();
+      };
+    }
+
+    document.querySelectorAll('[data-role-entry]').forEach(function(c){
+      c.onclick = function(){
+        var r = c.dataset.roleEntry;
+        var idx = view.newEntryRoles.indexOf(r);
+        if(idx===-1) view.newEntryRoles.push(r); else view.newEntryRoles.splice(idx,1);
+        render();
+      };
+    });
+
+    document.querySelectorAll('.entry-card').forEach(function(c){
+      c.onclick = function(){
+        view.selectedId = c.dataset.entry;
+        view.editMode = false;
+        render();
+      };
+    });
+
+    var backBtn = document.getElementById('back-btn');
+    if(backBtn){ backBtn.onclick = function(){ view.selectedId = null; view.editMode = false; render(); }; }
+
+    var toggleEditBtn = document.getElementById('toggle-edit-btn');
+    if(toggleEditBtn){
+      toggleEditBtn.onclick = function(){
+        view.editMode = !view.editMode;
+        render();
+      };
+    }
+
+    document.querySelectorAll('[data-add-item]').forEach(function(b){
+      b.onclick = function(){
+        var list = listForMode(view.mode);
+        var entry = list.filter(function(e){return e.id===view.selectedId;})[0];
+        if(!entry) return;
+        if(entry.itemIds.indexOf(b.dataset.addItem)===-1) entry.itemIds.push(b.dataset.addItem);
+        saveState();
+        render();
+      };
+    });
+
+    document.querySelectorAll('[data-remove-item]').forEach(function(b){
+      b.onclick = function(){
+        var list = listForMode(view.mode);
+        var entry = list.filter(function(e){return e.id===view.selectedId;})[0];
+        if(!entry) return;
+        var idx = entry.itemIds.indexOf(b.dataset.removeItem);
+        if(idx!==-1) entry.itemIds.splice(idx,1);
+        var key = checkKey(view.mode, entry.id);
+        if(state.checks[key]) delete state.checks[key][b.dataset.removeItem];
+        saveState();
+        render();
+      };
+    });
+
+    document.querySelectorAll('.toggle[data-item]').forEach(function(t){
+      t.onclick = function(){
+        var key = checkKey(view.mode, view.selectedId);
+        if(!state.checks[key]) state.checks[key] = {};
+        state.checks[key][t.dataset.item] = !state.checks[key][t.dataset.item];
+        saveState();
+        render();
+      };
+    });
+
+    var resetCheckBtn = document.getElementById('reset-check-btn');
+    if(resetCheckBtn){
+      resetCheckBtn.onclick = function(){
+        var key = checkKey(view.mode, view.selectedId);
+        state.checks[key] = {};
+        saveState();
+        render();
+      };
+    }
+
+    var deleteEntryBtn = document.getElementById('delete-entry-btn');
+    if(deleteEntryBtn){
+      deleteEntryBtn.onclick = function(){
+        var list = listForMode(view.mode);
+        var idx = list.findIndex(function(e){return e.id===view.selectedId;});
+        if(idx!==-1) list.splice(idx,1);
+        delete state.checks[checkKey(view.mode, view.selectedId)];
+        view.selectedId = null;
+        saveState();
+        render();
+      };
+    }
+
+    document.querySelectorAll('[data-scope-item]').forEach(function(c){
+      c.onclick = function(){
+        var m = c.dataset.scopeItem;
+        var idx = view.newItemScope.indexOf(m);
+        if(idx===-1) view.newItemScope.push(m); else view.newItemScope.splice(idx,1);
+        render();
+        var nameEl = document.getElementById('item-name');
+        if(nameEl) nameEl.focus();
+      };
+    });
+
+    document.querySelectorAll('[data-role-item]').forEach(function(c){
+      c.onclick = function(){
+        var r = c.dataset.roleItem;
+        var idx = view.newItemRoles.indexOf(r);
+        if(idx===-1) view.newItemRoles.push(r); else view.newItemRoles.splice(idx,1);
+        render();
+      };
+    });
+
+    var addItemBtn = document.getElementById('add-item-btn');
+    if(addItemBtn){
+      addItemBtn.onclick = function(){
+        var nameEl = document.getElementById('item-name');
+        var name = nameEl.value.trim();
+        if(!name){ nameEl.focus(); return; }
+        var newItem = {id:uid(), name:name, scope:view.newItemScope.slice(), roles:view.newItemRoles.slice()};
+        state.items.push(newItem);
+        if(newItem.roles.length===0){
+          MODES.forEach(function(mode){
+            if(newItem.scope.indexOf(mode)===-1) return;
+            listForMode(mode).forEach(function(e){ e.itemIds.push(newItem.id); });
+          });
+        }
+        view.newItemScope = ['studio','live','recording'];
+        view.newItemRoles = [];
+        saveState();
+        render();
+      };
+    }
+
+    var addRoleBtn = document.getElementById('add-role-btn');
+    if(addRoleBtn){
+      addRoleBtn.onclick = function(){
+        var nameEl = document.getElementById('role-name');
+        var name = nameEl.value.trim();
+        if(!name){ nameEl.focus(); return; }
+        if(state.roles.indexOf(name)===-1) state.roles.push(name);
+        saveState();
+        render();
+      };
+    }
+
+    document.querySelectorAll('[data-role-up]').forEach(function(b){
+      b.onclick = function(){
+        var r = b.dataset.roleUp;
+        var idx = state.roles.indexOf(r);
+        if(idx>0){
+          var tmp = state.roles[idx-1];
+          state.roles[idx-1] = state.roles[idx];
+          state.roles[idx] = tmp;
+          saveState();
+          render();
+        }
+      };
+    });
+
+    document.querySelectorAll('[data-role-down]').forEach(function(b){
+      b.onclick = function(){
+        var r = b.dataset.roleDown;
+        var idx = state.roles.indexOf(r);
+        if(idx!==-1 && idx<state.roles.length-1){
+          var tmp = state.roles[idx+1];
+          state.roles[idx+1] = state.roles[idx];
+          state.roles[idx] = tmp;
+          saveState();
+          render();
+        }
+      };
+    });
+
+    document.querySelectorAll('[data-role-del]').forEach(function(b){
+      b.onclick = function(){
+        var r = b.dataset.roleDel;
+        var idx = state.roles.indexOf(r);
+        if(idx!==-1) state.roles.splice(idx,1);
+        state.items.forEach(function(it){
+          var i = (it.roles||[]).indexOf(r);
+          if(i!==-1) it.roles.splice(i,1);
+        });
+        var ri = view.newItemRoles.indexOf(r);
+        if(ri!==-1) view.newItemRoles.splice(ri,1);
+        saveState();
+        render();
+      };
+    });
+
+    document.querySelectorAll('[data-item-del]').forEach(function(b){
+      b.onclick = function(){
+        var id = b.dataset.itemDel;
+        var idx = state.items.findIndex(function(it){return it.id===id;});
+        if(idx!==-1) state.items.splice(idx,1);
+        state.studios.concat(state.lives, state.recordings).forEach(function(e){
+          var i = e.itemIds.indexOf(id);
+          if(i!==-1) e.itemIds.splice(i,1);
+        });
+        saveState();
+        render();
+      };
+    });
+
+    var resetAllBtn = document.getElementById('reset-all-btn');
+    if(resetAllBtn){
+      resetAllBtn.onclick = function(){
+        view.confirmReset = true;
+        render();
+      };
+    }
+
+    var resetCancelBtn = document.getElementById('reset-cancel-btn');
+    if(resetCancelBtn){
+      resetCancelBtn.onclick = function(){
+        view.confirmReset = false;
+        render();
+      };
+    }
+
+    var resetConfirmBtn = document.getElementById('reset-confirm-btn');
+    if(resetConfirmBtn){
+      resetConfirmBtn.onclick = function(){
+        state = defaultState();
+        view.selectedId = null;
+        view.confirmReset = false;
+        saveState();
+        render();
+      };
+    }
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
