@@ -159,6 +159,7 @@
     font-family:'Oswald',sans-serif;
     letter-spacing:.02em;
     cursor:pointer;
+    display:inline-block;
   }
   .btn.ghost{
     background:transparent;
@@ -281,8 +282,6 @@
 </div>
 
 <div class="container" id="app"></div>
-
-<div style="text-align:center;color:var(--cream-dim);font-size:10.5px;letter-spacing:.05em;padding:6px 0 18px;">Powered by SunaTrux</div>
 
 <script>
 (function(){
@@ -900,6 +899,15 @@
     } else {
       html += '<button class="btn danger block" id="reset-all-btn">全データを初期化</button>';
     }
+    html += '</div>';
+
+    html += '<div class="panel">';
+    html += '<div class="panel-label">このアプリについて</div>';
+    html += '<div class="row-between" style="margin-bottom:0;">';
+    html += '<a class="btn ghost" href="https://github.com/SunaTrux/band-mochimono/blob/main/README.md" target="_blank" rel="noopener" style="flex:1;margin-right:8px;text-align:center;text-decoration:none;">README</a>';
+    html += '<a class="btn ghost" href="https://github.com/SunaTrux/band-mochimono/blob/main/LICENSE" target="_blank" rel="noopener" style="flex:1;text-align:center;text-decoration:none;">ライセンス</a>';
+    html += '</div>';
+    html += '<div style="text-align:center;color:var(--cream-dim);font-size:10.5px;letter-spacing:.05em;padding-top:14px;">Powered by SunaTrux</div>';
     html += '</div>';
 
     return html;
