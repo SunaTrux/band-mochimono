@@ -148,6 +148,7 @@
     color:var(--cream);
   }
   .chip .x{margin-left:6px;color:var(--red);}
+  .chip.static{cursor:default;}
 
   .btn{
     background:var(--amber-dim);
@@ -259,6 +260,37 @@
     font-size:20px;cursor:pointer;padding:0 6px 0 0;
   }
   .detail-title{font-size:17px;font-family:'Oswald',sans-serif;flex:1;}
+  .detail-title-input{
+    font-size:17px;
+    font-family:'Oswald',sans-serif;
+    flex:1;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid transparent;
+    color:var(--cream);
+    padding:2px 0;
+    margin:0;
+    width:auto;
+  }
+  .detail-title-input:focus{
+    outline:none;
+    border-bottom:1px solid var(--amber);
+  }
+  .item-name-input{
+    font-size:14px;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid transparent;
+    color:var(--cream);
+    padding:2px 4px 2px 0;
+    margin:0;
+    flex:1;
+    min-width:0;
+  }
+  .item-name-input:focus{
+    outline:none;
+    border-bottom:1px solid var(--amber);
+  }
 
   .row-between{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
   .hint{font-size:11.5px;color:var(--cream-dim);margin:0 0 10px;}
@@ -443,13 +475,14 @@
 
   var view = {
     mode: 'studio',
-    selectedId: null,
+    selectedByMode: {studio:null, live:null, recording:null},
     newItemScope: ['studio','live','recording'],
     newItemRoles: [],
     newItemBring: true,
     newEntryRoles: [],
     editMode: false,
     confirmReset: false,
+    confirmDeleteEntry: false,
     csvFallbackOpen: false,
     csvFallbackText: ''
   };
@@ -482,6 +515,13 @@
     return isBring(it);
   }
 
+  function effectiveItemName(it, entry){
+    if(entry && entry.nameOverride && entry.nameOverride.hasOwnProperty(it.id)){
+      return entry.nameOverride[it.id];
+    }
+    return it.name;
+  }
+
   function checkKey(mode, entryId){ return mode+':'+entryId; }
 
   function progressFor(mode, entry){
@@ -510,7 +550,7 @@
     var rows = [['name','roles','scope','bring','checked']];
     items.forEach(function(it){
       rows.push([
-        it.name,
+        effectiveItemName(it, entry),
         (it.roles||[]).join(';'),
         (it.scope||[]).join(';'),
         (isBringForEntry(it, entry)?'yes':'no'),
@@ -636,8 +676,8 @@
     if(view.mode==='items'){
       app.innerHTML = renderItemsView();
     } else {
-      if(view.selectedId){
-        app.innerHTML = renderDetailView(view.mode, view.selectedId);
+      if(view.selectedByMode[view.mode]){
+        app.innerHTML = renderDetailView(view.mode, view.selectedByMode[view.mode]);
       } else {
         app.innerHTML = renderEntryListView(view.mode);
       }
@@ -703,7 +743,7 @@
   function renderDetailView(mode, entryId){
     var list = listForMode(mode);
     var entry = list.filter(function(e){return e.id===entryId;})[0];
-    if(!entry){ view.selectedId = null; return renderEntryListView(mode); }
+    if(!entry){ view.selectedByMode[mode] = null; return renderEntryListView(mode); }
 
     var items = itemsForEntry(mode, entry);
     var bringItems = items.filter(function(it){ return isBringForEntry(it, entry); });
@@ -714,8 +754,17 @@
     var html = '';
     html += '<div class="backrow">';
     html += '<button class="backbtn" id="back-btn">←</button>';
-    html += '<div class="detail-title">'+esc(entry.name)+'</div>';
+    html += '<input type="text" id="detail-title-input" class="detail-title-input" value="'+esc(entry.name)+'">';
     html += '</div>';
+
+    if(entry.roles && entry.roles.length){
+      html += '<label class="small">パート</label>';
+      html += '<div class="chip-wrap">';
+      entry.roles.forEach(function(r){ html += '<span class="chip static on">'+esc(r)+'</span>'; });
+      html += '</div>';
+    }
+    html += '<label class="small">対象日</label>';
+    html += '<input type="date" id="detail-date-input" value="'+(entry.date?esc(entry.date):'')+'">';
 
     html += '<div class="progress-bar-wrap"><div class="progress-bar" style="width:'+pct+'%"></div></div>';
 
@@ -738,18 +787,23 @@
           if(!isBringForEntry(it, entry)){
             html += '<div class="check-row" style="opacity:.5;">';
             html += '<div style="width:38px;flex-shrink:0;text-align:center;font-size:9.5px;color:var(--cream-dim);">レンタル</div>';
-            html += '<div class="check-label">'+esc(it.name)+'</div>';
+            html += '<div class="check-label">'+esc(effectiveItemName(it, entry))+'</div>';
             html += '</div>';
             return;
           }
           var on = !!ck[it.id];
           html += '<div class="check-row">';
           html += '<div class="toggle'+(on?' on':'')+'" data-item="'+it.id+'"><div class="knob"></div></div>';
-          html += '<div class="check-label'+(on?' done':'')+'">'+esc(it.name)+'</div>';
+          html += '<div class="check-label'+(on?' done':'')+'">'+esc(effectiveItemName(it, entry))+'</div>';
           html += '</div>';
         });
       }
       html += '</div>';
+    }
+
+    if(view.editMode){
+      html += '<button class="btn block" id="confirm-items-btn">持ち物を確定</button>';
+      return html;
     }
 
     if(view.csvFallbackOpen && view.csvFallbackText){
@@ -769,10 +823,22 @@
     html += '</div>';
     html += '<input type="file" id="csv-import-input" accept=".csv,text/csv" style="display:none;">';
 
-    html += '<div class="row-between">';
-    html += '<button class="btn ghost" id="reset-check-btn">チェックをリセット</button>';
-    html += '<button class="btn danger" id="delete-entry-btn">この'+modeLabel(mode)+'を削除</button>';
-    html += '</div>';
+    if(view.confirmDeleteEntry){
+      html += '<div class="panel">';
+      html += '<p class="hint" style="color:var(--red);">本当にこの'+modeLabel(mode)+'を削除しますか？この操作は取り消せません。</p>';
+      html += '<div class="row-between" style="margin-bottom:0;">';
+      html += '<button class="btn ghost" id="delete-cancel-btn" style="flex:1;margin-right:8px;">キャンセル</button>';
+      html += '<button class="btn danger" id="delete-confirm-btn" style="flex:1;">削除する</button>';
+      html += '</div>';
+      html += '</div>';
+    } else {
+      html += '<div class="row-between">';
+      html += '<button class="btn ghost" id="reset-check-btn">チェックをリセット</button>';
+      html += '<button class="btn danger" id="delete-entry-btn">この'+modeLabel(mode)+'を削除</button>';
+      html += '</div>';
+    }
+
+    html += '<button class="btn ghost block" id="copy-entry-btn" style="margin-top:2px;">このイベントをコピー</button>';
 
     return html;
   }
@@ -784,14 +850,14 @@
 
     html += '<div class="panel">';
     html += '<div class="panel-label">このリストに含まれている</div>';
-    html += '<p class="hint">「持ってく／レンタル」は、この'+modeLabel(mode)+'だけの設定です（他のイベントには影響しません）。持ってく↔︎レンタルはトグルになってます。</p>';
+    html += '<p class="hint">持ち物名の変更・「持ってく／レンタル」は、この'+modeLabel(mode)+'だけの設定です（他のイベントや「設定」タブの持ち物一覧には影響しません）。持ってく↔︎レンタルはトグルになってます。</p>';
     if(included.length===0){
       html += '<div class="empty">まだありません</div>';
     } else {
       included.forEach(function(it){
         html += '<div class="item-row">';
-        html += '<div class="item-name">'+esc(it.name)+'</div>';
-        html += '<div style="display:flex;gap:4px;align-items:center;">';
+        html += '<input type="text" class="item-name-input" data-item-rename="'+it.id+'" value="'+esc(effectiveItemName(it, entry))+'">';
+        html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">';
         html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;">'+(isBringForEntry(it,entry)?'持ってく':'レンタル')+'</button>';
         html += '<button class="del-x" data-remove-item="'+it.id+'">×</button>';
         html += '</div>';
@@ -852,14 +918,16 @@
 
     html += '<div class="panel">';
     html += '<div class="panel-label">登録済みの持ち物（'+state.items.length+'）</div>';
+    html += '<p class="hint">ここでの変更はマスターデータです。次回以降、新しいスタジオ/ライブ/レコーディングを登録した時の初期値になります（既存のイベントには影響しません）。イベントごとの名前変更は、各イベントの「持ち物を編集」から行えます。</p>';
     if(state.items.length===0){
       html += '<div class="empty">持ち物が登録されていません</div>';
     } else {
       state.items.forEach(function(it){
         html += '<div class="item-row">';
-        html += '<div><div class="item-name">'+esc(it.name)+'</div>';
+        html += '<div style="flex:1;min-width:0;">';
+        html += '<input type="text" class="item-name-input" data-item-master-rename="'+it.id+'" value="'+esc(it.name)+'">';
         html += '<div class="item-meta">'+scopeArrayLabel(it.scope)+(it.roles&&it.roles.length? ' ・ '+it.roles.map(esc).join(' / ') : ' ・ 全パート共通')+'</div></div>';
-        html += '<div style="display:flex;gap:4px;align-items:center;">';
+        html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">';
         html += '<button class="btn ghost" data-toggle-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;">'+(isBring(it)?'持ってく':'レンタル')+'</button>';
         html += '<button class="del-x" data-item-del="'+it.id+'">×</button>';
         html += '</div>';
@@ -901,14 +969,7 @@
     }
     html += '</div>';
 
-    html += '<div class="panel">';
-    html += '<div class="panel-label">このアプリについて</div>';
-    html += '<div class="row-between" style="margin-bottom:0;">';
-    html += '<a class="btn ghost" href="https://github.com/SunaTrux/band-mochimono/blob/main/README.md" target="_blank" rel="noopener" style="flex:1;margin-right:8px;text-align:center;text-decoration:none;">README</a>';
-    html += '<a class="btn ghost" href="https://github.com/SunaTrux/band-mochimono/blob/main/LICENSE" target="_blank" rel="noopener" style="flex:1;text-align:center;text-decoration:none;">ライセンス</a>';
-    html += '</div>';
-    html += '<div style="text-align:center;color:var(--cream-dim);font-size:10.5px;letter-spacing:.05em;padding-top:14px;">Powered by SunaTrux</div>';
-    html += '</div>';
+    html += '<div style="text-align:center;color:var(--cream-dim);font-size:10.5px;letter-spacing:.05em;padding:6px 0 18px;">Powered by SunaTrux</div>';
 
     return html;
   }
@@ -918,10 +979,10 @@
     document.querySelectorAll('.nav button').forEach(function(b){
       b.onclick = function(){
         view.mode = b.dataset.mode;
-        view.selectedId = null;
         view.editMode = false;
         view.newEntryRoles = [];
         view.confirmReset = false;
+        view.confirmDeleteEntry = false;
         view.csvFallbackOpen = false;
         view.csvFallbackText = '';
         render();
@@ -954,8 +1015,9 @@
 
     document.querySelectorAll('.entry-card').forEach(function(c){
       c.onclick = function(){
-        view.selectedId = c.dataset.entry;
+        view.selectedByMode[view.mode] = c.dataset.entry;
         view.editMode = false;
+        view.confirmDeleteEntry = false;
         view.csvFallbackOpen = false;
         view.csvFallbackText = '';
         render();
@@ -963,7 +1025,7 @@
     });
 
     var backBtn = document.getElementById('back-btn');
-    if(backBtn){ backBtn.onclick = function(){ view.selectedId = null; view.editMode = false; view.csvFallbackOpen = false; view.csvFallbackText = ''; render(); }; }
+    if(backBtn){ backBtn.onclick = function(){ view.selectedByMode[view.mode] = null; view.editMode = false; view.confirmDeleteEntry = false; view.csvFallbackOpen = false; view.csvFallbackText = ''; render(); }; }
 
     var toggleEditBtn = document.getElementById('toggle-edit-btn');
     if(toggleEditBtn){
@@ -973,10 +1035,18 @@
       };
     }
 
+    var confirmItemsBtn = document.getElementById('confirm-items-btn');
+    if(confirmItemsBtn){
+      confirmItemsBtn.onclick = function(){
+        view.editMode = false;
+        render();
+      };
+    }
+
     document.querySelectorAll('[data-add-item]').forEach(function(b){
       b.onclick = function(){
         var list = listForMode(view.mode);
-        var entry = list.filter(function(e){return e.id===view.selectedId;})[0];
+        var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
         if(!entry) return;
         if(entry.itemIds.indexOf(b.dataset.addItem)===-1) entry.itemIds.push(b.dataset.addItem);
         entry.updatedAt = Date.now();
@@ -988,13 +1058,14 @@
     document.querySelectorAll('[data-remove-item]').forEach(function(b){
       b.onclick = function(){
         var list = listForMode(view.mode);
-        var entry = list.filter(function(e){return e.id===view.selectedId;})[0];
+        var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
         if(!entry) return;
         var idx = entry.itemIds.indexOf(b.dataset.removeItem);
         if(idx!==-1) entry.itemIds.splice(idx,1);
         var key = checkKey(view.mode, entry.id);
         if(state.checks[key]) delete state.checks[key][b.dataset.removeItem];
         if(entry.bringOverride) delete entry.bringOverride[b.dataset.removeItem];
+        if(entry.nameOverride) delete entry.nameOverride[b.dataset.removeItem];
         entry.updatedAt = Date.now();
         saveState();
         render();
@@ -1004,7 +1075,7 @@
     document.querySelectorAll('[data-toggle-entry-bring]').forEach(function(b){
       b.onclick = function(){
         var list = listForMode(view.mode);
-        var entry = list.filter(function(e){return e.id===view.selectedId;})[0];
+        var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
         if(!entry) return;
         var item = state.items.filter(function(it){return it.id===b.dataset.toggleEntryBring;})[0];
         if(!item) return;
@@ -1018,10 +1089,10 @@
 
     document.querySelectorAll('.toggle[data-item]').forEach(function(t){
       t.onclick = function(){
-        var key = checkKey(view.mode, view.selectedId);
+        var key = checkKey(view.mode, view.selectedByMode[view.mode]);
         if(!state.checks[key]) state.checks[key] = {};
         state.checks[key][t.dataset.item] = !state.checks[key][t.dataset.item];
-        var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedId;})[0];
+        var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
         if(entry) entry.updatedAt = Date.now();
         saveState();
         render();
@@ -1031,9 +1102,9 @@
     var resetCheckBtn = document.getElementById('reset-check-btn');
     if(resetCheckBtn){
       resetCheckBtn.onclick = function(){
-        var key = checkKey(view.mode, view.selectedId);
+        var key = checkKey(view.mode, view.selectedByMode[view.mode]);
         state.checks[key] = {};
-        var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedId;})[0];
+        var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
         if(entry) entry.updatedAt = Date.now();
         saveState();
         render();
@@ -1043,7 +1114,7 @@
     var csvExportBtn = document.getElementById('csv-export-btn');
     if(csvExportBtn){
       csvExportBtn.onclick = function(){
-        var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedId;})[0];
+        var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
         if(!entry) return;
         var csv = entryToCSV(view.mode, entry);
         downloadCSV(entry.name.replace(/[\\/:*?"<>|]/g,'_') + '.csv', csv);
@@ -1059,7 +1130,7 @@
         if(!file) return;
         var reader = new FileReader();
         reader.onload = function(){
-          var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedId;})[0];
+          var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
           if(entry){
             importCSVIntoEntry(view.mode, entry, String(reader.result));
             saveState();
@@ -1095,11 +1166,116 @@
     var deleteEntryBtn = document.getElementById('delete-entry-btn');
     if(deleteEntryBtn){
       deleteEntryBtn.onclick = function(){
+        view.confirmDeleteEntry = true;
+        render();
+      };
+    }
+
+    var deleteCancelBtn = document.getElementById('delete-cancel-btn');
+    if(deleteCancelBtn){
+      deleteCancelBtn.onclick = function(){
+        view.confirmDeleteEntry = false;
+        render();
+      };
+    }
+
+    var deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+    if(deleteConfirmBtn){
+      deleteConfirmBtn.onclick = function(){
         var list = listForMode(view.mode);
-        var idx = list.findIndex(function(e){return e.id===view.selectedId;});
+        var idx = list.findIndex(function(e){return e.id===view.selectedByMode[view.mode];});
         if(idx!==-1) list.splice(idx,1);
-        delete state.checks[checkKey(view.mode, view.selectedId)];
-        view.selectedId = null;
+        delete state.checks[checkKey(view.mode, view.selectedByMode[view.mode])];
+        view.selectedByMode[view.mode] = null;
+        view.confirmDeleteEntry = false;
+        saveState();
+        render();
+      };
+    }
+
+    var copyEntryBtn = document.getElementById('copy-entry-btn');
+    if(copyEntryBtn){
+      copyEntryBtn.onclick = function(){
+        var list = listForMode(view.mode);
+        var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
+        if(!entry) return;
+        var copyEntry = {
+          id: uid(),
+          name: entry.name + 'のコピー',
+          date: entry.date || '',
+          roles: (entry.roles||[]).slice(),
+          itemIds: (entry.itemIds||[]).slice(),
+          updatedAt: Date.now()
+        };
+        if(entry.bringOverride){
+          copyEntry.bringOverride = {};
+          for(var k in entry.bringOverride){ copyEntry.bringOverride[k] = entry.bringOverride[k]; }
+        }
+        list.push(copyEntry);
+        view.selectedByMode[view.mode] = copyEntry.id;
+        view.editMode = false;
+        view.confirmDeleteEntry = false;
+        saveState();
+        render();
+        window.scrollTo(0, 0);
+      };
+    }
+
+    document.querySelectorAll('[data-item-rename]').forEach(function(inp){
+      inp.onchange = function(){
+        var list = listForMode(view.mode);
+        var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
+        var item = state.items.filter(function(it){return it.id===inp.dataset.itemRename;})[0];
+        if(!entry || !item) return;
+        var name = inp.value.trim();
+        if(!name){ inp.value = effectiveItemName(item, entry); return; }
+        if(!entry.nameOverride) entry.nameOverride = {};
+        if(name === item.name){
+          delete entry.nameOverride[item.id];
+        } else {
+          entry.nameOverride[item.id] = name;
+        }
+        entry.updatedAt = Date.now();
+        saveState();
+        render();
+      };
+    });
+
+    document.querySelectorAll('[data-item-master-rename]').forEach(function(inp){
+      inp.onchange = function(){
+        var item = state.items.filter(function(it){return it.id===inp.dataset.itemMasterRename;})[0];
+        if(!item) return;
+        var name = inp.value.trim();
+        if(!name){ inp.value = item.name; return; }
+        item.name = name;
+        saveState();
+        render();
+      };
+    });
+
+    var detailTitleInput = document.getElementById('detail-title-input');
+    if(detailTitleInput){
+      detailTitleInput.onchange = function(){
+        var list = listForMode(view.mode);
+        var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
+        if(!entry) return;
+        var name = detailTitleInput.value.trim();
+        if(!name){ detailTitleInput.value = entry.name; return; }
+        entry.name = name;
+        entry.updatedAt = Date.now();
+        saveState();
+        render();
+      };
+    }
+
+    var detailDateInput = document.getElementById('detail-date-input');
+    if(detailDateInput){
+      detailDateInput.onchange = function(){
+        var list = listForMode(view.mode);
+        var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
+        if(!entry) return;
+        entry.date = detailDateInput.value;
+        entry.updatedAt = Date.now();
         saveState();
         render();
       };
@@ -1254,7 +1430,7 @@
     if(resetConfirmBtn){
       resetConfirmBtn.onclick = function(){
         state = defaultState();
-        view.selectedId = null;
+        view.selectedByMode = {studio:null, live:null, recording:null};
         view.confirmReset = false;
         saveState();
         render();
