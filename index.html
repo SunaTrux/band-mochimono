@@ -24,6 +24,29 @@
     --teal-dim:#2f524d;
     --red:#c1543c;
     --radius:10px;
+    --field-bg:#1a1917;
+    --nav-bg:#161513;
+    --placeholder:#6d6558;
+    --header-g1:#231f1c;
+    --header-g2:#1c1b19;
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f1e7;
+    --panel:#ffffff;
+    --panel-raised:#f1ead9;
+    --seam:#ddd2ba;
+    --cream:#2a2520;
+    --cream-dim:#8a8070;
+    --amber:#c97f1e;
+    --amber-dim:#f1dba8;
+    --teal:#3f726c;
+    --teal-dim:#dcebe8;
+    --red:#b23b26;
+    --field-bg:#ffffff;
+    --nav-bg:#efe6d2;
+    --placeholder:#b4a98e;
+    --header-g1:#efe6d2;
+    --header-g2:#f6f1e7;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -42,7 +65,7 @@
   }
   .header{
     padding:calc(22px + env(safe-area-inset-top, 0px)) 18px 16px;
-    background:linear-gradient(180deg,#231f1c,#1c1b19);
+    background:linear-gradient(180deg,var(--header-g1),var(--header-g2));
     border-bottom:1px solid var(--seam);
     position:relative;
   }
@@ -85,7 +108,7 @@
   /* nav footswitches (under the header now) */
   .nav{
     display:flex;
-    background:#161513;
+    background:var(--nav-bg);
     border-bottom:1px solid var(--seam);
     padding:10px 10px;
     gap:8px;
@@ -111,7 +134,7 @@
   /* form controls */
   input[type=text],input[type=date],select,textarea{
     width:100%;
-    background:#1a1917;
+    background:var(--field-bg);
     border:1px solid var(--seam);
     color:var(--cream);
     border-radius:7px;
@@ -128,7 +151,8 @@
     height:38px;
     line-height:1.2;
   }
-  input[type=text]::placeholder{color:#6d6558;}
+  :root[data-theme="light"] input[type=date]{color-scheme:light;}
+  input[type=text]::placeholder{color:var(--placeholder);}
   label.small{font-size:12px;color:var(--cream-dim);display:block;margin-bottom:4px;}
 
   .chip-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
@@ -138,7 +162,7 @@
     border-radius:99px;
     border:1px solid var(--seam);
     color:var(--cream-dim);
-    background:#1a1917;
+    background:var(--field-bg);
     cursor:pointer;
     white-space:nowrap;
   }
@@ -180,6 +204,7 @@
   /* item rows */
   .item-row{
     display:flex;justify-content:space-between;align-items:center;
+    gap:10px;
     padding:9px 0;
     border-bottom:1px solid var(--seam);
   }
@@ -224,7 +249,7 @@
   .toggle{
     width:38px;height:22px;
     border-radius:99px;
-    background:#1a1917;
+    background:var(--field-bg);
     border:1px solid var(--seam);
     position:relative;
     flex-shrink:0;
@@ -242,7 +267,7 @@
   .check-label.done{color:var(--cream-dim);text-decoration:line-through;}
 
   .progress-bar-wrap{
-    background:#1a1917;
+    background:var(--field-bg);
     border:1px solid var(--seam);
     border-radius:99px;
     height:8px;
@@ -318,6 +343,20 @@
 <script>
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
+  var THEME_KEY = 'gp-theme-v1';
+
+  function loadTheme(){
+    try{ return localStorage.getItem(THEME_KEY) || 'dark'; }catch(e){ return 'dark'; }
+  }
+
+  function applyTheme(theme){
+    document.documentElement.setAttribute('data-theme', theme);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if(meta) meta.setAttribute('content', theme==='light' ? '#f6f1e7' : '#1c1b19');
+    try{ localStorage.setItem(THEME_KEY, theme); }catch(e){}
+  }
+
+  applyTheme(loadTheme());
 
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
@@ -328,65 +367,63 @@
   function defaultState(){
     var items = [
         {id:uid(), name:'ギター本体', scope:['studio','live','recording'], roles:['ギター']},
-        {id:uid(), name:'ベース本体', scope:['studio','live','recording'], roles:['ベース']},
         {id:uid(), name:'ギターケース', scope:['studio','live','recording'], roles:['ギター']},
+        {id:uid(), name:'ベース本体', scope:['studio','live','recording'], roles:['ベース']},
         {id:uid(), name:'ベースケース', scope:['studio','live','recording'], roles:['ベース']},
-        {id:uid(), name:'チューナー', scope:['studio','live','recording'], roles:['ギター','ベース']},
         {id:uid(), name:'ピック(予備含む)', scope:['studio','live','recording'], roles:['ギター','ベース']},
-        {id:uid(), name:'シールドケーブル', scope:['studio','live','recording'], roles:['ギター','ベース','キーボード']},
-        {id:uid(), name:'予備弦', scope:['studio','live','recording'], roles:['ギター','ベース']},
-        {id:uid(), name:'カポ', scope:['studio','live','recording'], roles:['ギター']},
-        {id:uid(), name:'譜面 / タブレット', scope:['studio','live','recording'], roles:[]},
-        {id:uid(), name:'ギターアンプ', scope:['studio'], roles:['ギター']},
+        {id:uid(), name:'チューナー', scope:['studio','live','recording'], roles:['ギター','ベース']},
+        {id:uid(), name:'シールド', scope:['studio','live','recording'], roles:['ギター','ベース','キーボード']},
+        {id:uid(), name:'予備弦、弦交換セット', scope:['studio','live','recording'], roles:['ギター','ベース']},
+        {id:uid(), name:'ストラップ', scope:['studio','live','recording'], roles:['ギター','ベース']},
         {id:uid(), name:'エフェクターセット', scope:['studio'], roles:['ギター','ベース','ボーカル']},
+        {id:uid(), name:'電池、電源アダプター類', scope:['studio','live','recording'], roles:['ギター','ベース']},
+        {id:uid(), name:'楽器スタンド', scope:['live'], roles:['ギター','ベース']},
+        {id:uid(), name:'ギターアンプ', scope:['studio'], roles:['ギター'], bring:false},
+        {id:uid(), name:'ベースアンプ', scope:['studio'], roles:['ベース'], bring:false},
+        {id:uid(), name:'カポ', scope:['studio','live','recording'], roles:['ギター']},
         {id:uid(), name:'キーボード本体', scope:['studio','live','recording'], roles:['キーボード']},
         {id:uid(), name:'キーボードスタンド', scope:['studio','live','recording'], roles:['キーボード']},
         {id:uid(), name:'サスティンペダル', scope:['studio','live','recording'], roles:['キーボード']},
-        {id:uid(), name:'マイマイク', scope:['studio','live','recording'], roles:['ボーカル']},
-        {id:uid(), name:'マイクケーブル', scope:['studio','live','recording'], roles:['ボーカル','ハープ','サックス']},
+        {id:uid(), name:'マイク', scope:['studio','live','recording'], roles:['ボーカル'], bring:false},
+        {id:uid(), name:'マイクケーブル', scope:['studio','live','recording'], roles:['ボーカル'], bring:false},
+        {id:uid(), name:'のど飴', scope:['studio','live','recording'], roles:['ボーカル']},
         {id:uid(), name:'スティック(予備含む)', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'スティックケース', scope:['studio','live','recording'], roles:['ドラム']},
         {id:uid(), name:'ブラシ', scope:['studio','live','recording'], roles:['ドラム']},
         {id:uid(), name:'チューニングキー', scope:['studio','live','recording'], roles:['ドラム']},
-        {id:uid(), name:'絆創膏', scope:['studio','live','recording'], roles:['ドラム']},
         {id:uid(), name:'ドラムグローブ', scope:['studio','live','recording'], roles:['ドラム']},
-        {id:uid(), name:'カウベル', scope:['studio','live','recording'], roles:['ドラム']},
-        {id:uid(), name:'ペダル', scope:['studio','live','recording'], roles:['ドラム']},
         {id:uid(), name:'スネア', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'ペダル', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'カウベル', scope:['studio','live','recording'], roles:['ドラム']},
         {id:uid(), name:'スプラッシュ', scope:['studio','live','recording'], roles:['ドラム']},
         {id:uid(), name:'各種ホルダー', scope:['studio','live','recording'], roles:['ドラム']},
         {id:uid(), name:'ミュート', scope:['studio','live','recording'], roles:['ドラム']},
-        {id:uid(), name:'スティックケース', scope:['studio','live','recording'], roles:['ドラム']},
-        {id:uid(), name:'耳栓', scope:['studio','live','recording'], roles:[]},
-        {id:uid(), name:'セットリスト', scope:['studio','live','recording'], roles:[]},
-        {id:uid(), name:'Macbook / 電源', scope:['recording'], roles:[]},
-        {id:uid(), name:'ノートパソコン', scope:['recording'], roles:[]},
-        {id:uid(), name:'ヘッドフォン', scope:['recording'], roles:[]},
-        {id:uid(), name:'ステージ衣装', scope:['live'], roles:[]},
-        {id:uid(), name:'譜面台', scope:['live'], roles:[]},
-        {id:uid(), name:'ストラップ', scope:['studio','live','recording'], roles:['ギター','ベース']},
-        {id:uid(), name:'各種電池、電源アダプター類', scope:['studio','live','recording'], roles:['ギター','ベース']},
-        {id:uid(), name:'イヤモニ', scope:['studio','live','recording'], roles:[]},
-        {id:uid(), name:'ドリンク', scope:['studio','live','recording'], roles:[]},
-        {id:uid(), name:'メトロノーム / ドンカマ', scope:['studio','live','recording'], roles:[]},
-        {id:uid(), name:'録音、録画機材', scope:['studio','live','recording'], roles:[]},
-        {id:uid(), name:'筆記用具', scope:['studio','live','recording'], roles:[]},
-        {id:uid(), name:'楽器スタンド', scope:['live'], roles:['ギター','ベース']},
-        {id:uid(), name:'物販', scope:['live'], roles:[]},
-        {id:uid(), name:'名刺', scope:['live'], roles:[]},
-        {id:uid(), name:'のど飴', scope:['studio','live','recording'], roles:['ボーカル']},
+        {id:uid(), name:'絆創膏', scope:['studio','live','recording'], roles:['ドラム']},
+        {id:uid(), name:'カホン本体', scope:['studio','live','recording'], roles:['カホン']},
+        {id:uid(), name:'カホンケース', scope:['studio','live','recording'], roles:['カホン']},
+        {id:uid(), name:'カホン用マレット/ブラシ', scope:['studio','live','recording'], roles:['カホン']},
         {id:uid(), name:'ブルースハープ(複数キー)', scope:['studio','live','recording'], roles:['ハープ']},
         {id:uid(), name:'ハーモニカケース', scope:['studio','live','recording'], roles:['ハープ']},
-        {id:uid(), name:'ブレットマイク', scope:['studio','live','recording'], roles:['ハープ']},
-        {id:uid(), name:'カホン本体', scope:['studio','live','recording'], roles:['カホン']},
-        {id:uid(), name:'カホン用クッション', scope:['studio','live','recording'], roles:['カホン']},
-        {id:uid(), name:'カホン用マレット/ブラシ', scope:['studio','live','recording'], roles:['カホン']},
-        {id:uid(), name:'カホンケース', scope:['studio','live','recording'], roles:['カホン']},
         {id:uid(), name:'サックス本体', scope:['studio','live','recording'], roles:['サックス']},
+        {id:uid(), name:'サックスケース', scope:['studio','live','recording'], roles:['サックス']},
         {id:uid(), name:'リード(予備含む)', scope:['studio','live','recording'], roles:['サックス']},
         {id:uid(), name:'マウスピース', scope:['studio','live','recording'], roles:['サックス']},
         {id:uid(), name:'ネックストラップ', scope:['studio','live','recording'], roles:['サックス']},
         {id:uid(), name:'お手入れ用スワブ', scope:['studio','live','recording'], roles:['サックス']},
-        {id:uid(), name:'サックスケース', scope:['studio','live','recording'], roles:['サックス']}
+        {id:uid(), name:'耳栓', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'イヤモニ', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'譜面 / タブレット', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'譜面台', scope:['live'], roles:[]},
+        {id:uid(), name:'セットリスト', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'録音、録画機材', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'ノートパソコン / 電源', scope:['recording'], roles:[]},
+        {id:uid(), name:'ヘッドフォン', scope:['recording'], roles:[]},
+        {id:uid(), name:'メトロノーム / ドンカマ', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'筆記用具', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'ドリンク', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'ステージ衣装', scope:['live'], roles:[]},
+        {id:uid(), name:'物販', scope:['live'], roles:[]},
+        {id:uid(), name:'名刺', scope:['live'], roles:[]}
     ];
     return {
       roles: defaultRoles(),
@@ -475,6 +512,7 @@
 
   var view = {
     mode: 'studio',
+    theme: loadTheme(),
     selectedByMode: {studio:null, live:null, recording:null},
     newItemScope: ['studio','live','recording'],
     newItemRoles: [],
@@ -484,7 +522,8 @@
     confirmReset: false,
     confirmDeleteEntry: false,
     csvFallbackOpen: false,
-    csvFallbackText: ''
+    csvFallbackText: '',
+    itemsImportPlan: null
   };
 
   function scopeArrayLabel(scope){
@@ -558,6 +597,97 @@
       ]);
     });
     return rows.map(function(r){ return r.map(csvEscape).join(','); }).join('\r\n');
+  }
+
+  function itemsFullCSV(){
+    var rows = [['name','scope','roles','bring']];
+    state.items.forEach(function(it){
+      rows.push([
+        it.name,
+        (it.scope||[]).join(';'),
+        (it.roles||[]).join(';'),
+        (isBring(it)?'yes':'no')
+      ]);
+    });
+    return rows.map(function(r){ return r.map(csvEscape).join(','); }).join('\r\n');
+  }
+
+  // CSVから「全持ち物の取り込み計画」を作る(この時点ではまだ何も変更しない)。
+  // 名前が一致する持ち物は更新、新しい名前は新規作成、CSVに無い名前は削除対象になる。
+  function planItemsImport(csvText){
+    var rows = parseCSV(csvText);
+    var header = rows.length ? rows[0].map(function(h){ return h.trim().toLowerCase(); }) : [];
+    var isFull = rows.length>0 && rows[0].length>1 && header.indexOf('name')!==-1;
+    var nameIdx = isFull ? header.indexOf('name') : 0;
+    var scopeIdx = isFull ? header.indexOf('scope') : -1;
+    var rolesIdx = isFull ? header.indexOf('roles') : -1;
+    var bringIdx = isFull ? header.indexOf('bring') : -1;
+    var dataRows = isFull ? rows.slice(1) : rows;
+
+    var parsed = [];
+    var seenNames = {};
+    dataRows.forEach(function(row){
+      var name = (row[nameIdx]||'').trim();
+      if(!name || seenNames[name]) return;
+      seenNames[name] = true;
+      var scopeField = scopeIdx!==-1 && row[scopeIdx] ? row[scopeIdx].split(';').map(function(s){return s.trim();}).filter(function(s){ return MODES.indexOf(s)!==-1; }) : ['studio','live','recording'];
+      if(scopeField.length===0) scopeField = ['studio','live','recording'];
+      var rolesField = rolesIdx!==-1 && row[rolesIdx] ? row[rolesIdx].split(';').map(function(s){return s.trim();}).filter(Boolean) : [];
+      var bringVal = bringIdx!==-1 ? (row[bringIdx]||'').trim().toLowerCase() : 'yes';
+      var bringBool = !(bringVal==='no' || bringVal==='rental' || bringVal==='false');
+      parsed.push({name:name, scope:scopeField, roles:rolesField, bring:bringBool});
+    });
+
+    var updated = 0, created = 0;
+    parsed.forEach(function(p){
+      if(state.items.some(function(it){ return it.name===p.name; })) updated++; else created++;
+    });
+    var removedItems = state.items.filter(function(it){ return !seenNames[it.name]; });
+
+    var newRoles = [];
+    parsed.forEach(function(p){
+      p.roles.forEach(function(r){
+        if(state.roles.indexOf(r)===-1 && newRoles.indexOf(r)===-1) newRoles.push(r);
+      });
+    });
+
+    return {parsed:parsed, updated:updated, created:created, removedItems:removedItems, newRoles:newRoles};
+  }
+
+  function applyItemsImportPlan(plan){
+    if(plan.newRoles && plan.newRoles.length){
+      plan.newRoles.forEach(function(r){
+        if(state.roles.indexOf(r)===-1) state.roles.push(r);
+      });
+    }
+    plan.parsed.forEach(function(p){
+      var existing = state.items.filter(function(it){ return it.name===p.name; })[0];
+      if(existing){
+        existing.scope = p.scope;
+        existing.roles = p.roles;
+        existing.bring = p.bring;
+      } else {
+        state.items.push({id:uid(), name:p.name, scope:p.scope, roles:p.roles, bring:p.bring});
+      }
+    });
+    var toRemoveIds = plan.removedItems.map(function(it){ return it.id; });
+    if(toRemoveIds.length){
+      state.items = state.items.filter(function(it){ return toRemoveIds.indexOf(it.id)===-1; });
+      var allEntries = state.studios.concat(state.lives, state.recordings);
+      allEntries.forEach(function(e){
+        e.itemIds = e.itemIds.filter(function(id){ return toRemoveIds.indexOf(id)===-1; });
+        if(e.bringOverride){ toRemoveIds.forEach(function(id){ delete e.bringOverride[id]; }); }
+        if(e.nameOverride){ toRemoveIds.forEach(function(id){ delete e.nameOverride[id]; }); }
+      });
+      MODES.forEach(function(mode){
+        listForMode(mode).forEach(function(e){
+          var key = checkKey(mode, e.id);
+          if(state.checks[key]){
+            toRemoveIds.forEach(function(id){ delete state.checks[key][id]; });
+          }
+        });
+      });
+    }
   }
 
   function parseCSVLine(line){
@@ -809,7 +939,7 @@
     if(view.csvFallbackOpen && view.csvFallbackText){
       html += '<div class="panel">';
       html += '<div class="panel-label">CSV（自動ダウンロードできなかったので、コピーしてお使いください）</div>';
-      html += '<textarea id="csv-fallback-text" readonly style="width:100%;height:120px;background:#1a1917;border:1px solid var(--seam);color:var(--cream);border-radius:7px;padding:9px;font-size:12px;">'+esc(view.csvFallbackText)+'</textarea>';
+      html += '<textarea id="csv-fallback-text" readonly style="width:100%;height:120px;background:var(--field-bg);border:1px solid var(--seam);color:var(--cream);border-radius:7px;padding:9px;font-size:12px;">'+esc(view.csvFallbackText)+'</textarea>';
       html += '<div class="row-between" style="margin-top:8px;margin-bottom:0;">';
       html += '<button class="btn ghost" id="csv-fallback-copy" style="flex:1;margin-right:8px;">コピー</button>';
       html += '<button class="btn ghost" id="csv-fallback-close" style="flex:1;">閉じる</button>';
@@ -890,6 +1020,15 @@
   function renderItemsView(){
     var html = '';
     html += '<div class="panel">';
+    html += '<div class="panel-label">表示設定</div>';
+    html += '<label class="small">テーマ</label>';
+    html += '<div class="chip-wrap">';
+    html += '<span class="chip'+(view.theme==='dark'?' on':'')+'" data-theme-set="dark">ダーク</span>';
+    html += '<span class="chip'+(view.theme==='light'?' on':'')+'" data-theme-set="light">ライト</span>';
+    html += '</div>';
+    html += '</div>';
+
+    html += '<div class="panel">';
     html += '<div class="panel-label">持ち物を追加</div>';
     html += '<input type="text" id="item-name" placeholder="例: エフェクターボード">';
     html += '<label class="small">用途(複数選択可)</label>';
@@ -923,16 +1062,41 @@
       html += '<div class="empty">持ち物が登録されていません</div>';
     } else {
       state.items.forEach(function(it){
-        html += '<div class="item-row">';
+        html += '<div class="item-row" style="align-items:flex-start;">';
         html += '<div style="flex:1;min-width:0;">';
         html += '<input type="text" class="item-name-input" data-item-master-rename="'+it.id+'" value="'+esc(it.name)+'">';
         html += '<div class="item-meta">'+scopeArrayLabel(it.scope)+(it.roles&&it.roles.length? ' ・ '+it.roles.map(esc).join(' / ') : ' ・ 全パート共通')+'</div></div>';
-        html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">';
+        html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;margin-top:2px;">';
         html += '<button class="btn ghost" data-toggle-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;">'+(isBring(it)?'持ってく':'レンタル')+'</button>';
         html += '<button class="del-x" data-item-del="'+it.id+'">×</button>';
         html += '</div>';
         html += '</div>';
       });
+    }
+    html += '</div>';
+
+    html += '<div class="panel">';
+    html += '<div class="panel-label">持ち物の一括管理</div>';
+    if(view.itemsImportPlan){
+      var plan = view.itemsImportPlan;
+      html += '<p class="hint" style="color:var(--red);">更新 '+plan.updated+'件 ／ 新規追加 '+plan.created+'件 ／ 削除 '+plan.removedItems.length+'件 になります。この内容で取り込みますか？</p>';
+      if(plan.removedItems.length>0){
+        html += '<p class="hint">削除される持ち物：'+plan.removedItems.map(function(it){ return esc(it.name); }).join('、')+'（登録済みのイベントからも外れます）</p>';
+      }
+      if(plan.newRoles && plan.newRoles.length>0){
+        html += '<p class="hint">新しく追加されるパート：'+plan.newRoles.map(esc).join('、')+'</p>';
+      }
+      html += '<div class="row-between" style="margin-bottom:0;">';
+      html += '<button class="btn ghost" id="items-import-cancel" style="flex:1;margin-right:8px;">キャンセル</button>';
+      html += '<button class="btn danger" id="items-import-confirm" style="flex:1;">取り込む</button>';
+      html += '</div>';
+    } else {
+      html += '<p class="hint">全ての持ち物をCSVで書き出し・まとめて整理できます。取り込み時、CSVに無い名前の持ち物は削除されます。</p>';
+      html += '<div class="row-between" style="margin-bottom:0;">';
+      html += '<button class="btn ghost" id="items-export-btn" style="flex:1;margin-right:8px;">一括出力<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:5px;"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>';
+      html += '<button class="btn ghost" id="items-import-btn" style="flex:1;">一括取り込み<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:5px;"><path d="M12 15V3"/><path d="M7 10l5 5 5-5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>';
+      html += '</div>';
+      html += '<input type="file" id="items-import-input" accept=".csv,text/csv" style="display:none;">';
     }
     html += '</div>';
 
@@ -985,6 +1149,7 @@
         view.confirmDeleteEntry = false;
         view.csvFallbackOpen = false;
         view.csvFallbackText = '';
+        view.itemsImportPlan = null;
         render();
       };
     });
@@ -1340,6 +1505,58 @@
       };
     });
 
+    document.querySelectorAll('[data-theme-set]').forEach(function(c){
+      c.onclick = function(){
+        var t = c.dataset.themeSet;
+        if(t===view.theme) return;
+        view.theme = t;
+        applyTheme(t);
+        render();
+      };
+    });
+
+    var itemsExportBtn = document.getElementById('items-export-btn');
+    if(itemsExportBtn){
+      itemsExportBtn.onclick = function(){
+        downloadCSV('持ち物マスター.csv', itemsFullCSV());
+      };
+    }
+
+    var itemsImportBtn = document.getElementById('items-import-btn');
+    var itemsImportInput = document.getElementById('items-import-input');
+    if(itemsImportBtn && itemsImportInput){
+      itemsImportBtn.onclick = function(){ itemsImportInput.click(); };
+      itemsImportInput.onchange = function(){
+        var file = itemsImportInput.files && itemsImportInput.files[0];
+        if(!file) return;
+        var reader = new FileReader();
+        reader.onload = function(){
+          view.itemsImportPlan = planItemsImport(String(reader.result));
+          itemsImportInput.value = '';
+          render();
+        };
+        reader.readAsText(file, 'UTF-8');
+      };
+    }
+
+    var itemsImportCancel = document.getElementById('items-import-cancel');
+    if(itemsImportCancel){
+      itemsImportCancel.onclick = function(){
+        view.itemsImportPlan = null;
+        render();
+      };
+    }
+
+    var itemsImportConfirm = document.getElementById('items-import-confirm');
+    if(itemsImportConfirm){
+      itemsImportConfirm.onclick = function(){
+        applyItemsImportPlan(view.itemsImportPlan);
+        view.itemsImportPlan = null;
+        saveState();
+        render();
+      };
+    }
+
     var addRoleBtn = document.getElementById('add-role-btn');
     if(addRoleBtn){
       addRoleBtn.onclick = function(){
@@ -1432,6 +1649,7 @@
         state = defaultState();
         view.selectedByMode = {studio:null, live:null, recording:null};
         view.confirmReset = false;
+        view.itemsImportPlan = null;
         saveState();
         render();
       };
