@@ -282,7 +282,16 @@
   }
   .backbtn{
     background:none;border:none;color:var(--cream-dim);
-    font-size:20px;cursor:pointer;padding:0 6px 0 0;
+    font-size:13.5px;font-family:'Oswald',sans-serif;letter-spacing:.02em;
+    cursor:pointer;padding:6px 10px 6px 0;white-space:nowrap;flex-shrink:0;
+  }
+  .backbtn-bottom{
+    width:100%;
+    background:none;
+    border:1px solid var(--seam);
+    color:var(--cream-dim);
+    font-size:13.5px;font-family:'Oswald',sans-serif;letter-spacing:.02em;
+    cursor:pointer;padding:10px;border-radius:7px;margin:4px 0 14px;
   }
   .detail-title{font-size:17px;font-family:'Oswald',sans-serif;flex:1;}
   .detail-title-input{
@@ -883,7 +892,7 @@
 
     var html = '';
     html += '<div class="backrow">';
-    html += '<button class="backbtn" id="back-btn">←</button>';
+    html += '<button class="backbtn" id="back-btn">← 一覧に戻る</button>';
     html += '<input type="text" id="detail-title-input" class="detail-title-input" value="'+esc(entry.name)+'">';
     html += '</div>';
 
@@ -929,6 +938,7 @@
         });
       }
       html += '</div>';
+      html += '<button class="backbtn-bottom" id="back-btn-bottom">← 一覧に戻る</button>';
     }
 
     if(view.editMode){
@@ -1164,8 +1174,10 @@
         var entry = {id:uid(), name:name, date:(dateEl?dateEl.value:''), roles:view.newEntryRoles.slice(), itemIds:computeAutoItemIds(view.mode, view.newEntryRoles), updatedAt:Date.now()};
         listForMode(view.mode).push(entry);
         view.newEntryRoles = [];
+        view.selectedByMode[view.mode] = entry.id;
         saveState();
         render();
+        window.scrollTo(0, 0);
       };
     }
 
@@ -1189,8 +1201,11 @@
       };
     });
 
+    function goBackToList(){ view.selectedByMode[view.mode] = null; view.editMode = false; view.confirmDeleteEntry = false; view.csvFallbackOpen = false; view.csvFallbackText = ''; render(); }
     var backBtn = document.getElementById('back-btn');
-    if(backBtn){ backBtn.onclick = function(){ view.selectedByMode[view.mode] = null; view.editMode = false; view.confirmDeleteEntry = false; view.csvFallbackOpen = false; view.csvFallbackText = ''; render(); }; }
+    if(backBtn){ backBtn.onclick = goBackToList; }
+    var backBtnBottom = document.getElementById('back-btn-bottom');
+    if(backBtnBottom){ backBtnBottom.onclick = goBackToList; }
 
     var toggleEditBtn = document.getElementById('toggle-edit-btn');
     if(toggleEditBtn){
