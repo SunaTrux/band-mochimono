@@ -132,7 +132,7 @@
   }
 
   /* form controls */
-  input[type=text],input[type=date],select,textarea{
+  input[type=text],input[type=date],input[type=time],select,textarea{
     width:100%;
     background:var(--field-bg);
     border:1px solid var(--seam);
@@ -142,7 +142,7 @@
     font-size:14.5px;
     margin-bottom:8px;
   }
-  input[type=date]{
+  input[type=date],input[type=time]{
     color-scheme:dark;
     -webkit-appearance:none;
     appearance:none;
@@ -151,7 +151,7 @@
     height:38px;
     line-height:1.2;
   }
-  :root[data-theme="light"] input[type=date]{color-scheme:light;}
+  :root[data-theme="light"] input[type=date],:root[data-theme="light"] input[type=time]{color-scheme:light;}
   input[type=text]::placeholder{color:var(--placeholder);}
   label.small{font-size:12px;color:var(--cream-dim);display:block;margin-bottom:4px;}
 
@@ -241,29 +241,41 @@
 
   /* checklist */
   .check-row{
-    display:flex;align-items:center;gap:12px;
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
     padding:11px 2px;
     border-bottom:1px solid var(--seam);
   }
   .check-row:last-child{border-bottom:none;}
-  .toggle{
-    width:38px;height:22px;
-    border-radius:99px;
-    background:var(--field-bg);
+  .icon-btn{
+    flex-shrink:0;
+    width:26px;height:26px;
+    display:flex;align-items:center;justify-content:center;
+    background:transparent;
     border:1px solid var(--seam);
+    border-radius:50%;
+    color:var(--cream-dim);
+    cursor:pointer;
+    padding:0;
+  }
+  .toggle{
+    width:24px;height:24px;
+    border-radius:6px;
+    background:var(--field-bg);
+    border:2px solid var(--seam);
     position:relative;
     flex-shrink:0;
     cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
   }
   .toggle .knob{
-    position:absolute;top:2px;left:2px;
-    width:16px;height:16px;border-radius:50%;
-    background:var(--cream-dim);
-    transition:left .15s ease, background .15s ease;
+    width:14px;height:14px;
+    opacity:0;
+    transition:opacity .1s ease;
   }
-  .toggle.on{background:var(--teal-dim);border-color:var(--teal);}
-  .toggle.on .knob{left:18px;background:var(--amber);}
-  .check-label{font-size:14.5px;flex:1;}
+  .toggle .knob svg{display:block;width:100%;height:100%;color:var(--bg);}
+  .toggle.on{background:var(--amber);border-color:var(--amber);}
+  .toggle.on .knob{opacity:1;}
+  .check-label{font-size:14.5px;flex:1;min-width:0;}
   .check-label.done{color:var(--cream-dim);text-decoration:line-through;}
 
   .progress-bar-wrap{
@@ -570,13 +582,25 @@
     return it.name;
   }
 
+  function isHiddenForEntry(it, entry){
+    return !!(entry && entry.hiddenIds && entry.hiddenIds.indexOf(it.id)!==-1);
+  }
+
   function checkKey(mode, entryId){ return mode+':'+entryId; }
 
   function progressFor(mode, entry){
-    var items = itemsForEntry(mode, entry).filter(function(it){ return isBringForEntry(it, entry); });
+    var items = itemsForEntry(mode, entry).filter(function(it){ return isBringForEntry(it, entry) && !isHiddenForEntry(it, entry); });
     var ck = state.checks[checkKey(mode, entry.id)] || {};
     var done = items.filter(function(it){ return ck[it.id]; }).length;
     return {done:done, total:items.length};
+  }
+
+  function weekdayJa(dateStr){
+    if(!dateStr) return '';
+    var d = new Date(dateStr+'T00:00:00');
+    if(isNaN(d.getTime())) return '';
+    var days = ['日','月','火','水','木','金','土'];
+    return days[d.getDay()]+'曜日';
   }
 
   function esc(s){
@@ -687,6 +711,7 @@
         e.itemIds = e.itemIds.filter(function(id){ return toRemoveIds.indexOf(id)===-1; });
         if(e.bringOverride){ toRemoveIds.forEach(function(id){ delete e.bringOverride[id]; }); }
         if(e.nameOverride){ toRemoveIds.forEach(function(id){ delete e.nameOverride[id]; }); }
+        if(e.hiddenIds){ e.hiddenIds = e.hiddenIds.filter(function(id){ return toRemoveIds.indexOf(id)===-1; }); }
       });
       MODES.forEach(function(mode){
         listForMode(mode).forEach(function(e){
@@ -853,8 +878,12 @@
     };
     html += '<label class="small">'+label+'名</label>';
     html += '<input type="text" id="entry-name" placeholder="'+placeholders[mode]+'" value="'+(defaultNames[mode]?esc(defaultNames[mode]):'')+'">';
-    html += '<label class="small">対象日(任意)</label>';
-    html += '<input type="date" id="entry-date">';
+    html += '<label class="small">対象日・開始時間(任意)</label>';
+    html += '<div style="display:flex;gap:8px;margin-bottom:2px;">';
+    html += '<input type="date" id="entry-date" style="flex:1.4;margin-bottom:0;">';
+    html += '<input type="time" id="entry-time" style="flex:1;margin-bottom:0;">';
+    html += '</div>';
+    html += '<div id="entry-date-weekday" class="hint" style="margin:2px 0 8px;min-height:1em;"></div>';
     html += '<button class="btn block" id="add-entry-btn">+ '+label+'を追加</button>';
     html += '</div>';
 
@@ -868,7 +897,11 @@
         var p = progressFor(mode, e);
         html += '<div class="entry-card" data-entry="'+e.id+'">';
         html += '<div><div class="name">'+esc(e.name)+'</div>';
-        if(e.date){ html += '<div class="progress" style="color:var(--cream-dim);margin-left:0;">'+esc(e.date)+'</div>'; }
+        if(e.date){
+          var wd = weekdayJa(e.date);
+          var dateLine = e.date + (wd? '('+wd.charAt(0)+')' : '') + (e.time? ' '+e.time : '');
+          html += '<div class="progress" style="color:var(--cream-dim);margin-left:0;">'+esc(dateLine)+'</div>';
+        }
         if(e.roles && e.roles.length){ html += '<div class="progress" style="color:var(--cream-dim);margin-left:0;">'+e.roles.map(esc).join(' / ')+'</div>'; }
         html += '</div>';
         html += '<div class="progress">'+p.done+' / '+p.total+'</div>';
@@ -885,7 +918,7 @@
     if(!entry){ view.selectedByMode[mode] = null; return renderEntryListView(mode); }
 
     var items = itemsForEntry(mode, entry);
-    var bringItems = items.filter(function(it){ return isBringForEntry(it, entry); });
+    var bringItems = items.filter(function(it){ return isBringForEntry(it, entry) && !isHiddenForEntry(it, entry); });
     var ck = state.checks[checkKey(mode, entry.id)] || {};
     var done = bringItems.filter(function(it){return ck[it.id];}).length;
     var pct = bringItems.length? Math.round(done/bringItems.length*100) : 0;
@@ -902,38 +935,43 @@
       entry.roles.forEach(function(r){ html += '<span class="chip static on">'+esc(r)+'</span>'; });
       html += '</div>';
     }
-    html += '<label class="small">対象日</label>';
-    html += '<input type="date" id="detail-date-input" value="'+(entry.date?esc(entry.date):'')+'">';
-
-    html += '<div class="progress-bar-wrap"><div class="progress-bar" style="width:'+pct+'%"></div></div>';
+    html += '<label class="small">対象日・開始時間</label>';
+    html += '<div style="display:flex;gap:8px;margin-bottom:2px;">';
+    html += '<input type="date" id="detail-date-input" value="'+(entry.date?esc(entry.date):'')+'" style="flex:1.4;margin-bottom:0;">';
+    html += '<input type="time" id="detail-time-input" value="'+(entry.time?esc(entry.time):'')+'" style="flex:1;margin-bottom:0;">';
+    html += '</div>';
+    if(entry.date){
+      html += '<div class="hint" style="margin:2px 0 8px;">'+esc(weekdayJa(entry.date))+'</div>';
+    }
 
     html += '<div class="row-between">';
     html += '<div class="panel-label" style="margin-bottom:0;">'+(view.editMode?'含める持ち物を選ぶ':'持ち物チェックリスト')+'</div>';
     html += '<button class="btn ghost" id="toggle-edit-btn">'+(view.editMode?'完了':'持ち物を編集')+'</button>';
     html += '</div>';
-    if(!view.editMode){
-      html += '<p class="hint" style="margin-top:-6px;">レンタルする場合は、持ち物を編集から設定できます。</p>';
-    }
 
     if(view.editMode){
       html += renderEditItemsPanel(mode, entry);
     } else {
+      var visibleItems = items.filter(function(it){ return !isHiddenForEntry(it, entry); });
       html += '<div class="panel">';
       if(items.length===0){
         html += '<div class="empty">まだ持ち物がありません。「持ち物を編集」から追加してください。</div>';
+      } else if(visibleItems.length===0){
+        html += '<div class="empty">表示できる持ち物がありません（全て非表示中）。「持ち物を編集」から表示を戻してください。</div>';
       } else {
-        items.forEach(function(it){
-          if(!isBringForEntry(it, entry)){
-            html += '<div class="check-row" style="opacity:.5;">';
-            html += '<div style="width:38px;flex-shrink:0;text-align:center;font-size:9.5px;color:var(--cream-dim);">レンタル</div>';
+        visibleItems.forEach(function(it){
+          var bringNow = isBringForEntry(it, entry);
+          html += '<div class="check-row"'+(bringNow?'':' style="opacity:.5;"')+'>';
+          if(bringNow){
+            var on = !!ck[it.id];
+            html += '<div class="toggle'+(on?' on':'')+'" data-item="'+it.id+'"><div class="knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>';
+            html += '<div class="check-label'+(on?' done':'')+'" data-item="'+it.id+'" style="cursor:pointer;">'+esc(effectiveItemName(it, entry))+'</div>';
+          } else {
+            html += '<div style="width:24px;flex-shrink:0;"></div>';
             html += '<div class="check-label">'+esc(effectiveItemName(it, entry))+'</div>';
-            html += '</div>';
-            return;
           }
-          var on = !!ck[it.id];
-          html += '<div class="check-row">';
-          html += '<div class="toggle'+(on?' on':'')+'" data-item="'+it.id+'"><div class="knob"></div></div>';
-          html += '<div class="check-label'+(on?' done':'')+'">'+esc(effectiveItemName(it, entry))+'</div>';
+          html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:3px 7px;font-size:10px;flex-shrink:0;'+(bringNow?'':'color:var(--amber);border-color:var(--amber);')+'">'+(bringNow?'持込':'レンタル')+'</button>';
+          html += '<button class="icon-btn" data-hide-item="'+it.id+'" aria-label="非表示にする" title="非表示にする"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg></button>';
           html += '</div>';
         });
       }
@@ -990,15 +1028,17 @@
 
     html += '<div class="panel">';
     html += '<div class="panel-label">このリストに含まれている</div>';
-    html += '<p class="hint">持ち物名の変更・「持ってく／レンタル」は、この'+modeLabel(mode)+'だけの設定です（他のイベントや「設定」タブの持ち物一覧には影響しません）。持ってく↔︎レンタルはトグルになってます。</p>';
+    html += '<p class="hint">持ち物名の変更・「持込／レンタル」・表示/非表示は、この'+modeLabel(mode)+'だけの設定です（他のイベントや「設定」タブの持ち物一覧には影響しません）。いずれもトグルになってます。チェックリストで「非表示にする」を押した持ち物は、ここの「表示」ボタンで元に戻せます。</p>';
     if(included.length===0){
       html += '<div class="empty">まだありません</div>';
     } else {
       included.forEach(function(it){
-        html += '<div class="item-row">';
+        var hiddenNow = isHiddenForEntry(it, entry);
+        html += '<div class="item-row" style="align-items:flex-start;">';
         html += '<input type="text" class="item-name-input" data-item-rename="'+it.id+'" value="'+esc(effectiveItemName(it, entry))+'">';
-        html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;">';
-        html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;">'+(isBringForEntry(it,entry)?'持ってく':'レンタル')+'</button>';
+        html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:52%;">';
+        html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+(isBringForEntry(it,entry)?'':'color:var(--amber);border-color:var(--amber);')+'">'+(isBringForEntry(it,entry)?'持込':'レンタル')+'</button>';
+        html += '<button class="btn ghost" data-toggle-entry-visible="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+(hiddenNow?'color:var(--amber);border-color:var(--amber);':'')+'">'+(hiddenNow?'非表示':'表示')+'</button>';
         html += '<button class="del-x" data-remove-item="'+it.id+'">×</button>';
         html += '</div>';
         html += '</div>';
@@ -1058,7 +1098,7 @@
     html += '<p class="hint">選んだ用途のシーンで新規リストに自動で入ります。パート指定ありの持ち物は、既存のスタジオ/ライブ/レコーディングには自動追加されないので「持ち物を編集」から個別に追加してください。</p>';
     html += '<label class="small">初期状態</label>';
     html += '<div class="chip-wrap">';
-    html += '<span class="chip'+(view.newItemBring?' on':'')+'" data-bring-new="bring">持ってく</span>';
+    html += '<span class="chip'+(view.newItemBring?' on':'')+'" data-bring-new="bring">持込</span>';
     html += '<span class="chip'+(!view.newItemBring?' on':'')+'" data-bring-new="rental">レンタル</span>';
     html += '</div>';
     html += '<p class="hint">「レンタル」にすると、チェックリスト上でグレー表示になり、チェック対象・進捗カウントから外れます。各持ち物ごと、あとで一覧から切り替えられます。</p>';
@@ -1077,7 +1117,7 @@
         html += '<input type="text" class="item-name-input" data-item-master-rename="'+it.id+'" value="'+esc(it.name)+'">';
         html += '<div class="item-meta">'+scopeArrayLabel(it.scope)+(it.roles&&it.roles.length? ' ・ '+it.roles.map(esc).join(' / ') : ' ・ 全パート共通')+'</div></div>';
         html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;margin-top:2px;">';
-        html += '<button class="btn ghost" data-toggle-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;">'+(isBring(it)?'持ってく':'レンタル')+'</button>';
+        html += '<button class="btn ghost" data-toggle-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+(isBring(it)?'':'color:var(--amber);border-color:var(--amber);')+'">'+(isBring(it)?'持込':'レンタル')+'</button>';
         html += '<button class="del-x" data-item-del="'+it.id+'">×</button>';
         html += '</div>';
         html += '</div>';
@@ -1164,14 +1204,22 @@
       };
     });
 
+    var entryDateEl = document.getElementById('entry-date');
+    var entryDateWeekdayEl = document.getElementById('entry-date-weekday');
+    if(entryDateEl && entryDateWeekdayEl){
+      entryDateWeekdayEl.textContent = weekdayJa(entryDateEl.value);
+      entryDateEl.oninput = function(){ entryDateWeekdayEl.textContent = weekdayJa(entryDateEl.value); };
+    }
+
     var addEntryBtn = document.getElementById('add-entry-btn');
     if(addEntryBtn){
       addEntryBtn.onclick = function(){
         var nameEl = document.getElementById('entry-name');
         var dateEl = document.getElementById('entry-date');
+        var timeEl = document.getElementById('entry-time');
         var name = nameEl.value.trim();
         if(!name){ nameEl.focus(); return; }
-        var entry = {id:uid(), name:name, date:(dateEl?dateEl.value:''), roles:view.newEntryRoles.slice(), itemIds:computeAutoItemIds(view.mode, view.newEntryRoles), updatedAt:Date.now()};
+        var entry = {id:uid(), name:name, date:(dateEl?dateEl.value:''), time:(timeEl?timeEl.value:''), roles:view.newEntryRoles.slice(), itemIds:computeAutoItemIds(view.mode, view.newEntryRoles), updatedAt:Date.now()};
         listForMode(view.mode).push(entry);
         view.newEntryRoles = [];
         view.selectedByMode[view.mode] = entry.id;
@@ -1246,6 +1294,10 @@
         if(state.checks[key]) delete state.checks[key][b.dataset.removeItem];
         if(entry.bringOverride) delete entry.bringOverride[b.dataset.removeItem];
         if(entry.nameOverride) delete entry.nameOverride[b.dataset.removeItem];
+        if(entry.hiddenIds){
+          var hIdx = entry.hiddenIds.indexOf(b.dataset.removeItem);
+          if(hIdx!==-1) entry.hiddenIds.splice(hIdx,1);
+        }
         entry.updatedAt = Date.now();
         saveState();
         render();
@@ -1267,7 +1319,31 @@
       };
     });
 
-    document.querySelectorAll('.toggle[data-item]').forEach(function(t){
+    document.querySelectorAll('[data-hide-item]').forEach(function(b){
+      b.onclick = function(){
+        var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
+        if(!entry) return;
+        if(!entry.hiddenIds) entry.hiddenIds = [];
+        if(entry.hiddenIds.indexOf(b.dataset.hideItem)===-1) entry.hiddenIds.push(b.dataset.hideItem);
+        entry.updatedAt = Date.now();
+        saveState();
+        render();
+      };
+    });
+
+    document.querySelectorAll('[data-toggle-entry-visible]').forEach(function(b){
+      b.onclick = function(){
+        var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
+        if(!entry || !entry.hiddenIds) return;
+        var idx = entry.hiddenIds.indexOf(b.dataset.toggleEntryVisible);
+        if(idx!==-1) entry.hiddenIds.splice(idx,1); else entry.hiddenIds.push(b.dataset.toggleEntryVisible);
+        entry.updatedAt = Date.now();
+        saveState();
+        render();
+      };
+    });
+
+    document.querySelectorAll('.toggle[data-item], .check-label[data-item]').forEach(function(t){
       t.onclick = function(){
         var key = checkKey(view.mode, view.selectedByMode[view.mode]);
         if(!state.checks[key]) state.checks[key] = {};
@@ -1383,6 +1459,7 @@
           id: uid(),
           name: entry.name + 'のコピー',
           date: entry.date || '',
+          time: entry.time || '',
           roles: (entry.roles||[]).slice(),
           itemIds: (entry.itemIds||[]).slice(),
           updatedAt: Date.now()
@@ -1455,6 +1532,19 @@
         var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
         if(!entry) return;
         entry.date = detailDateInput.value;
+        entry.updatedAt = Date.now();
+        saveState();
+        render();
+      };
+    }
+
+    var detailTimeInput = document.getElementById('detail-time-input');
+    if(detailTimeInput){
+      detailTimeInput.onchange = function(){
+        var list = listForMode(view.mode);
+        var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
+        if(!entry) return;
+        entry.time = detailTimeInput.value;
         entry.updatedAt = Date.now();
         saveState();
         render();
@@ -1636,6 +1726,12 @@
         state.studios.concat(state.lives, state.recordings).forEach(function(e){
           var i = e.itemIds.indexOf(id);
           if(i!==-1) e.itemIds.splice(i,1);
+          if(e.bringOverride) delete e.bringOverride[id];
+          if(e.nameOverride) delete e.nameOverride[id];
+          if(e.hiddenIds){
+            var hIdx = e.hiddenIds.indexOf(id);
+            if(hIdx!==-1) e.hiddenIds.splice(hIdx,1);
+          }
         });
         saveState();
         render();
