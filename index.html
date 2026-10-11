@@ -255,6 +255,7 @@
     border-bottom:1px solid var(--seam);
   }
   .check-row:last-child{border-bottom:none;}
+  .wd-badge{color:var(--amber);font-weight:700;margin-left:6px;}
   .dt-row{display:flex;flex-wrap:nowrap;gap:5px;align-items:center;margin-bottom:2px;}
   .dt-row input{min-width:0;width:auto;}
   .dt-sep{color:var(--cream-dim);font-size:12px;flex:0 0 auto;}
@@ -389,7 +390,7 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '2026.10.12-4';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
+  var APP_VERSION = '2026.10.12-5';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
 
   var TABORDER_KEY = 'gp-taborder-v1';
   function loadTabOrder(){
@@ -944,14 +945,14 @@
     var nameValue = (view.newEntryName===null) ? (defaultNames[mode]||'') : view.newEntryName;
     html += '<label class="small">'+label+'名</label>';
     html += '<input type="text" id="entry-name" placeholder="'+placeholders[mode]+'" value="'+esc(nameValue)+'">';
-    html += '<label class="small">対象日・開始〜終了時間(任意)</label>';
+    html += '<label class="small">対象日・開始〜終了時間(任意) <span id="entry-date-weekday" class="wd-badge"></span></label>';
     html += '<div class="dt-row">';
     html += '<input type="date" id="entry-date" value="'+esc(view.newEntryDate)+'" style="flex:1.7;margin-bottom:0;">';
     html += '<input type="time" id="entry-time" value="'+esc(view.newEntryTime)+'" style="flex:1;margin-bottom:0;">';
     html += '<span class="dt-sep">〜</span>';
     html += '<input type="time" id="entry-endtime" value="'+esc(view.newEntryEndTime)+'" style="flex:1;margin-bottom:0;">';
     html += '</div>';
-    html += '<div id="entry-date-weekday" class="hint" style="margin:2px 0 8px;min-height:1em;"></div>';
+    html += '<div style="height:8px;"></div>';
     html += '<button class="btn block" id="add-entry-btn">+ この'+label+'の持ち物</button>';
     html += '</div>';
 
@@ -1003,16 +1004,14 @@
       entry.roles.forEach(function(r){ html += '<span class="chip static on">'+esc(r)+'</span>'; });
       html += '</div>';
     }
-    html += '<label class="small">対象日・開始〜終了時間</label>';
+    html += '<label class="small">対象日・開始〜終了時間 '+(entry.date?'<span class="wd-badge">'+esc(weekdayJa(entry.date))+'</span>':'')+'</label>';
     html += '<div class="dt-row">';
     html += '<input type="date" id="detail-date-input" value="'+(entry.date?esc(entry.date):'')+'" style="flex:1.7;margin-bottom:0;">';
     html += '<input type="time" id="detail-time-input" value="'+(entry.time?esc(entry.time):'')+'" style="flex:1;margin-bottom:0;">';
     html += '<span class="dt-sep">〜</span>';
     html += '<input type="time" id="detail-endtime-input" value="'+(entry.endTime?esc(entry.endTime):'')+'" style="flex:1;margin-bottom:0;">';
     html += '</div>';
-    if(entry.date){
-      html += '<div class="hint" style="margin:2px 0 8px;">'+esc(weekdayJa(entry.date))+'</div>';
-    }
+    html += '<div style="height:8px;"></div>';
 
     html += '<div class="row-between">';
     html += '<div class="panel-label" style="margin-bottom:0;">'+(view.editMode?'含める持ち物を選ぶ':'持ち物チェックリスト')+'</div>';
@@ -1031,7 +1030,7 @@
       } else {
         visibleItems.forEach(function(it){
           var bringNow = isBringForEntry(it, entry);
-          html += '<div class="swipe-wrap"><div class="swipe-bg hide">非表示</div><div class="check-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="hide"'+(bringNow?'':' data-rental="1"')+'>';
+          html += '<div class="swipe-wrap"><button class="swipe-bg del" data-remove-item="'+it.id+'">削除</button><div class="check-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="del"'+(bringNow?'':' data-rental="1"')+'>';
           if(bringNow){
             var on = !!ck[it.id];
             html += '<div class="toggle'+(on?' on':'')+'" data-item="'+it.id+'"><div class="knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>';
@@ -1046,7 +1045,7 @@
         });
       }
       if(visibleItems.length>0){
-        html += '<p class="hint" style="margin:6px 2px 0;">← 持ち物を左にスワイプすると青い「非表示」が出ます（戻すのは「持ち物を編集」から）</p>';
+        html += '<p class="hint" style="margin:6px 2px 0;">← 左にスワイプすると赤い「削除」が出ます（このイベントから外すだけ。マスタは消えません）。目のアイコンで非表示にできます（戻すのは「持ち物を編集」から）</p>';
       }
       html += '</div>';
       html += renderCustomItemForm(mode);
@@ -1095,6 +1094,9 @@
     return html;
   }
 
+  var EYE_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYE_OFF_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+
   function renderCustomItemForm(mode){
     var html = '<div class="panel">';
     html += '<div class="panel-label">この'+modeLabel(mode)+'だけの持ち物を追加</div>';
@@ -1126,7 +1128,7 @@
         html += '</div>';
         html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:52%;">';
         html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+(isBringForEntry(it,entry)?'':'color:var(--amber);border-color:var(--amber);')+'">'+(isBringForEntry(it,entry)?'持込':'レンタル')+'</button>';
-        html += '<button class="btn ghost" data-toggle-entry-visible="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+(hiddenNow?'color:var(--amber);border-color:var(--amber);':'')+'">'+(hiddenNow?'非表示':'表示')+'</button>';
+        html += '<button class="btn ghost" data-toggle-entry-visible="'+it.id+'" style="padding:5px 9px;line-height:0;'+(hiddenNow?'color:var(--amber);border-color:var(--amber);':'')+'" aria-label="'+(hiddenNow?'非表示中（タップで表示）':'表示中（タップで非表示）')+'" title="'+(hiddenNow?'非表示中（タップで表示）':'表示中（タップで非表示）')+'">'+(hiddenNow?EYE_OFF_SVG:EYE_SVG)+'</button>';
         html += '<button class="del-x" data-remove-item="'+it.id+'">×</button>';
         html += '</div>';
         html += '</div>';
@@ -1414,6 +1416,7 @@
         if(!entry) return;
         var idx = entry.itemIds.indexOf(b.dataset.removeItem);
         if(idx!==-1) entry.itemIds.splice(idx,1);
+        state.items = state.items.filter(function(it){ return !(it.local && it.id===b.dataset.removeItem); });
         var key = checkKey(view.mode, entry.id);
         if(state.checks[key]) delete state.checks[key][b.dataset.removeItem];
         if(entry.bringOverride) delete entry.bringOverride[b.dataset.removeItem];
