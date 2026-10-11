@@ -395,7 +395,7 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '2026.10.12-8';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
+  var APP_VERSION = '2026.10.12-9';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
 
   var TABORDER_KEY = 'gp-taborder-v1';
   function loadTabOrder(){
@@ -634,14 +634,15 @@
     var groups = {}, order = [];
     items.forEach(function(it){
       var roles = (it.roles||[]).slice().sort(function(a,b){ return state.roles.indexOf(a)-state.roles.indexOf(b); });
-      var key = roles.join(' / ');
+      var key = roles.length ? roles[0] : '';  // ざっくり：先頭（並び順で最初）のパートでまとめる
       if(!groups[key]){ groups[key] = {label: key || '共通', items: [], rank: roles.length ? state.roles.indexOf(roles[0]) : -1}; order.push(key); }
       groups[key].items.push(it);
     });
     return order.map(function(k){ return groups[k]; }).sort(function(a,b){ return a.rank-b.rank; });
   }
 
-  function groupHeading(label, count){
+  function groupHeading(label, count, total){
+    if(total<=1) return '';  // 見出しが1種類だけなら出さない
     return '<div class="group-head">'+esc(label)+'<span class="group-count">'+count+'</span></div>';
   }
 
@@ -1067,8 +1068,9 @@
       } else if(visibleItems.length===0){
         html += '<div class="empty">表示できる持ち物がありません（全て非表示中）。「持ち物を編集」から表示を戻してください。</div>';
       } else {
-        groupItemsByRole(visibleItems).forEach(function(g){
-        html += groupHeading(g.label, g.items.length);
+        var gs = groupItemsByRole(visibleItems);
+        gs.forEach(function(g){
+        html += groupHeading(g.label, g.items.length, gs.length);
         g.items.forEach(function(it){
           var bringNow = isBringForEntry(it, entry);
           html += '<div class="swipe-wrap"><button class="swipe-bg del" data-remove-item="'+it.id+'">削除</button><div class="check-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="del"'+(bringNow?'':' data-rental="1"')+'>';
@@ -1254,8 +1256,9 @@
     if(masterItems().length===0){
       html += '<div class="empty">持ち物が登録されていません</div>';
     } else {
-      groupItemsByRole(masterItems()).forEach(function(g){
-      html += groupHeading(g.label, g.items.length);
+      var mgs = groupItemsByRole(masterItems());
+      mgs.forEach(function(g){
+      html += groupHeading(g.label, g.items.length, mgs.length);
       g.items.forEach(function(it){
         html += '<div class="swipe-wrap"><button class="swipe-bg del" data-item-del="'+it.id+'">削除</button><div class="item-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="del" style="align-items:flex-start;">';
         html += '<div style="flex:1;min-width:0;">';
