@@ -255,7 +255,9 @@
     border-bottom:1px solid var(--seam);
   }
   .check-row:last-child{border-bottom:none;}
-  .wd-badge{color:var(--amber);font-weight:700;margin-left:6px;}
+  .dow-badge{flex:0 0 auto;min-width:22px;text-align:center;font-size:12.5px;font-weight:700;color:var(--amber);}
+  .dt-row input[type=date],.dt-row input[type=time]{font-size:13px;padding-left:4px;padding-right:4px;}
+  .dt-row{gap:4px;}
   .dt-row{display:flex;flex-wrap:nowrap;gap:5px;align-items:center;margin-bottom:2px;}
   .dt-row input{min-width:0;width:auto;}
   .dt-sep{color:var(--cream-dim);font-size:12px;flex:0 0 auto;}
@@ -317,19 +319,14 @@
     display:flex;align-items:center;gap:8px;
     margin-bottom:12px;
   }
-  .backbtn{
-    background:none;border:none;color:var(--cream-dim);
-    font-size:13.5px;font-family:'Oswald',sans-serif;letter-spacing:.02em;
-    cursor:pointer;padding:6px 10px 6px 0;white-space:nowrap;flex-shrink:0;
+  .backbtn,.backbtn-bottom{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    min-height:44px;padding:8px 16px 8px 12px;border-radius:10px;
+    border:1px solid var(--seam);background:var(--panel);color:var(--cream);
+    font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;white-space:nowrap;flex-shrink:0;
   }
-  .backbtn-bottom{
-    width:100%;
-    background:none;
-    border:1px solid var(--seam);
-    color:var(--cream-dim);
-    font-size:13.5px;font-family:'Oswald',sans-serif;letter-spacing:.02em;
-    cursor:pointer;padding:10px;border-radius:7px;margin:4px 0 14px;
-  }
+  .backbtn-bottom{width:100%;margin:4px 0 14px;}
   .detail-title{font-size:17px;font-family:'Oswald',sans-serif;flex:1;}
   .detail-title-input{
     font-size:17px;
@@ -390,7 +387,7 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '2026.10.12-6';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
+  var APP_VERSION = '2026.10.12-7';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
 
   var TABORDER_KEY = 'gp-taborder-v1';
   function loadTabOrder(){
@@ -658,6 +655,11 @@
     var ck = state.checks[checkKey(mode, entry.id)] || {};
     var done = items.filter(function(it){ return ck[it.id]; }).length;
     return {done:done, total:items.length};
+  }
+
+  function dowShort(dateStr){
+    var w = weekdayJa(dateStr);
+    return w ? '('+w.charAt(0)+')' : '';
   }
 
   function weekdayJa(dateStr){
@@ -952,9 +954,10 @@
     var nameValue = (view.newEntryName===null) ? (defaultNames[mode]||'') : view.newEntryName;
     html += '<label class="small">'+label+'名</label>';
     html += '<input type="text" id="entry-name" placeholder="'+placeholders[mode]+'" value="'+esc(nameValue)+'">';
-    html += '<label class="small">対象日・開始〜終了時間(任意) <span id="entry-date-weekday" class="wd-badge"></span></label>';
+    html += '<label class="small">対象日・開始〜終了時間(任意)</label>';
     html += '<div class="dt-row">';
-    html += '<input type="date" id="entry-date" value="'+esc(view.newEntryDate)+'" style="flex:1.7;margin-bottom:0;">';
+    html += '<input type="date" id="entry-date" value="'+esc(view.newEntryDate)+'" style="flex:1.6;margin-bottom:0;">';
+    html += '<span class="dow-badge" id="entry-date-weekday"></span>';
     html += '<input type="time" id="entry-time" value="'+esc(view.newEntryTime)+'" style="flex:1;margin-bottom:0;">';
     html += '<span class="dt-sep">〜</span>';
     html += '<input type="time" id="entry-endtime" value="'+esc(view.newEntryEndTime)+'" style="flex:1;margin-bottom:0;">';
@@ -1001,7 +1004,7 @@
 
     var html = '';
     html += '<div class="backrow">';
-    html += '<button class="backbtn" id="back-btn">← 一覧に戻る</button>';
+    html += '<button class="backbtn" id="back-btn">← 一覧</button>';
     html += '<input type="text" id="detail-title-input" class="detail-title-input" value="'+esc(entry.name)+'">';
     html += '</div>';
 
@@ -1011,9 +1014,10 @@
       entry.roles.forEach(function(r){ html += '<span class="chip static on">'+esc(r)+'</span>'; });
       html += '</div>';
     }
-    html += '<label class="small">対象日・開始〜終了時間 '+(entry.date?'<span class="wd-badge">'+esc(weekdayJa(entry.date))+'</span>':'')+'</label>';
+    html += '<label class="small">対象日・開始〜終了時間</label>';
     html += '<div class="dt-row">';
-    html += '<input type="date" id="detail-date-input" value="'+(entry.date?esc(entry.date):'')+'" style="flex:1.7;margin-bottom:0;">';
+    html += '<input type="date" id="detail-date-input" value="'+(entry.date?esc(entry.date):'')+'" style="flex:1.6;margin-bottom:0;">';
+    html += '<span class="dow-badge">'+esc(dowShort(entry.date))+'</span>';
     html += '<input type="time" id="detail-time-input" value="'+(entry.time?esc(entry.time):'')+'" style="flex:1;margin-bottom:0;">';
     html += '<span class="dt-sep">〜</span>';
     html += '<input type="time" id="detail-endtime-input" value="'+(entry.endTime?esc(entry.endTime):'')+'" style="flex:1;margin-bottom:0;">';
@@ -1324,10 +1328,10 @@
     var entryDateEl = document.getElementById('entry-date');
     var entryDateWeekdayEl = document.getElementById('entry-date-weekday');
     if(entryDateEl && entryDateWeekdayEl){
-      entryDateWeekdayEl.textContent = weekdayJa(entryDateEl.value);
+      entryDateWeekdayEl.textContent = dowShort(entryDateEl.value);
       entryDateEl.oninput = function(){
         view.newEntryDate = entryDateEl.value;
-        entryDateWeekdayEl.textContent = weekdayJa(entryDateEl.value);
+        entryDateWeekdayEl.textContent = dowShort(entryDateEl.value);
       };
     }
 
