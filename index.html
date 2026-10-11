@@ -390,7 +390,7 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '2026.10.12-5';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
+  var APP_VERSION = '2026.10.12-6';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
 
   var TABORDER_KEY = 'gp-taborder-v1';
   function loadTabOrder(){
@@ -884,7 +884,14 @@
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
-      a.download = filename;
+      // Brave(iOS)等は日本語のファイル名がURLエンコードされて表示されるため、日本語を含む場合は英数字名にする
+      var dlName = filename;
+      if(/[^\x20-\x7E]/.test(dlName)){
+        var d = new Date();
+        function p2(n){ return (n<10?'0':'')+n; }
+        dlName = 'mochimono-' + d.getFullYear() + p2(d.getMonth()+1) + p2(d.getDate()) + '-' + p2(d.getHours()) + p2(d.getMinutes()) + '.csv';
+      }
+      a.download = dlName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
