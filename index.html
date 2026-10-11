@@ -255,6 +255,14 @@
     border-bottom:1px solid var(--seam);
   }
   .check-row:last-child{border-bottom:none;}
+  .group-head{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--amber);letter-spacing:.04em;padding:10px 2px 4px;border-bottom:1px solid var(--seam);}
+  .group-head:first-child{padding-top:2px;}
+  .group-count{font-size:10.5px;font-weight:400;color:var(--cream-dim);}
+  .suggest{margin-top:8px;}
+  .suggest-row{display:flex;align-items:center;gap:8px;padding:7px 2px;border-top:1px solid var(--seam);font-size:13.5px;}
+  .suggest-row .nm{flex:1;min-width:0;}
+  .suggest-tag{font-size:10.5px;color:var(--cream-dim);border:1px solid var(--seam);border-radius:4px;padding:0 5px;white-space:nowrap;}
+  .suggest-note{font-size:11.5px;color:var(--amber);margin-bottom:2px;}
   .dow-badge{flex:0 0 auto;min-width:22px;text-align:center;font-size:12.5px;font-weight:700;color:var(--amber);}
   .dt-row input[type=date],.dt-row input[type=time]{font-size:13px;padding-left:4px;padding-right:4px;}
   .dt-row{gap:4px;}
@@ -387,7 +395,7 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '2026.10.12-7';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
+  var APP_VERSION = '2026.10.12-8';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
 
   var TABORDER_KEY = 'gp-taborder-v1';
   function loadTabOrder(){
@@ -619,6 +627,26 @@
       var scopeOk = it.scope && it.scope.indexOf(mode)!==-1;
       return scopeOk && ids.indexOf(it.id)===-1;
     });
+  }
+
+  // パートごとの小見出し用グルーピング（共通 → パート順）
+  function groupItemsByRole(items){
+    var groups = {}, order = [];
+    items.forEach(function(it){
+      var roles = (it.roles||[]).slice().sort(function(a,b){ return state.roles.indexOf(a)-state.roles.indexOf(b); });
+      var key = roles.join(' / ');
+      if(!groups[key]){ groups[key] = {label: key || '共通', items: [], rank: roles.length ? state.roles.indexOf(roles[0]) : -1}; order.push(key); }
+      groups[key].items.push(it);
+    });
+    return order.map(function(k){ return groups[k]; }).sort(function(a,b){ return a.rank-b.rank; });
+  }
+
+  function groupHeading(label, count){
+    return '<div class="group-head">'+esc(label)+'<span class="group-count">'+count+'</span></div>';
+  }
+
+  function normName(str){
+    return String(str||'').toLowerCase().replace(/[\s\u3000・\/／()（）\-ー]/g,'').replace(/[\u30A1-\u30F6]/g,function(c){ return String.fromCharCode(c.charCodeAt(0)-0x60); });
   }
 
   function isBring(it){ return it.bring !== false; }
@@ -1039,7 +1067,9 @@
       } else if(visibleItems.length===0){
         html += '<div class="empty">表示できる持ち物がありません（全て非表示中）。「持ち物を編集」から表示を戻してください。</div>';
       } else {
-        visibleItems.forEach(function(it){
+        groupItemsByRole(visibleItems).forEach(function(g){
+        html += groupHeading(g.label, g.items.length);
+        g.items.forEach(function(it){
           var bringNow = isBringForEntry(it, entry);
           html += '<div class="swipe-wrap"><button class="swipe-bg del" data-remove-item="'+it.id+'">削除</button><div class="check-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="del"'+(bringNow?'':' data-rental="1"')+'>';
           if(bringNow){
@@ -1053,6 +1083,7 @@
           html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:3px 7px;font-size:10px;flex-shrink:0;'+(bringNow?'':'color:var(--amber);border-color:var(--amber);')+'">'+(bringNow?'持込':'レンタル')+'</button>';
           html += '<button class="icon-btn" data-hide-item="'+it.id+'" aria-label="非表示にする" title="非表示にする"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg></button>';
           html += '</div></div>';
+        });
         });
       }
       if(visibleItems.length>0){
@@ -1115,6 +1146,7 @@
     html += '<input type="text" id="custom-item-name" placeholder="例：予備のシールド" style="flex:1;margin-bottom:0;">';
     html += '<button class="btn" id="custom-item-add-btn">追加</button>';
     html += '</div>';
+    html += '<div id="custom-item-suggest" class="suggest"></div>';
     html += '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer;"><input type="checkbox" id="custom-item-master"'+(view.newCustomMaster?' checked':'')+' style="width:auto;margin:0;"> 持ち物マスタにも登録する</label>';
     html += '</div>';
     return html;
@@ -1222,7 +1254,9 @@
     if(masterItems().length===0){
       html += '<div class="empty">持ち物が登録されていません</div>';
     } else {
-      masterItems().forEach(function(it){
+      groupItemsByRole(masterItems()).forEach(function(g){
+      html += groupHeading(g.label, g.items.length);
+      g.items.forEach(function(it){
         html += '<div class="swipe-wrap"><button class="swipe-bg del" data-item-del="'+it.id+'">削除</button><div class="item-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="del" style="align-items:flex-start;">';
         html += '<div style="flex:1;min-width:0;">';
         html += '<input type="text" class="item-name-input" data-item-master-rename="'+it.id+'" value="'+esc(it.name)+'">';
@@ -1232,6 +1266,7 @@
         html += '<button class="del-x" data-item-del="'+it.id+'" aria-label="削除" title="削除">×</button>';
         html += '</div>';
         html += '</div></div>';
+      });
       });
     }
     html += '</div>';
@@ -1717,6 +1752,50 @@
       saveState();
       render();
     }
+    function updateSuggest(){
+      var box = document.getElementById('custom-item-suggest');
+      var entry = currentEntry();
+      if(!box || !entry || !customNameEl) return;
+      var q = normName(customNameEl.value);
+      var btn = customAddBtn;
+      if(btn) btn.textContent = '追加';
+      if(!q){ box.innerHTML = ''; return; }
+      var inEntry = {};
+      (entry.itemIds||[]).forEach(function(id){ inEntry[id] = true; });
+      var found = [], exact = false;
+      state.items.forEach(function(it){
+        if(it.local && it.ownerId!==entry.id) return;
+        var n = normName(effectiveItemName(it, entry));
+        var n2 = normName(it.name);
+        var hit = (n && (n.indexOf(q)!==-1 || q.indexOf(n)!==-1)) || (n2 && (n2.indexOf(q)!==-1 || q.indexOf(n2)!==-1));
+        if(!hit) return;
+        if(n===q || n2===q) exact = true;
+        found.push(it);
+      });
+      if(found.length===0){ box.innerHTML = ''; return; }
+      found.sort(function(a,b){ return (inEntry[b.id]?1:0)-(inEntry[a.id]?1:0); });
+      var h = '<div class="suggest-note">'+(exact?'同じ名前の持ち物があります。別の持ち物として追加もできます。':'似た持ち物があります。')+'</div>';
+      found.slice(0,5).forEach(function(it){
+        var here = !!inEntry[it.id];
+        h += '<div class="suggest-row"><div class="nm">'+esc(effectiveItemName(it, entry))+'</div>';
+        h += '<span class="suggest-tag">'+(it.local ? 'このイベント専用' : 'マスタ')+(here?'・追加済み':'')+'</span>';
+        if(!here){ h += '<button class="btn ghost" data-suggest-add="'+it.id+'" style="padding:3px 9px;font-size:11px;">これを追加</button>'; }
+        h += '</div>';
+      });
+      box.innerHTML = h;
+      if(btn && exact) btn.textContent = '別に追加';
+      box.querySelectorAll('[data-suggest-add]').forEach(function(b){
+        b.onclick = function(){
+          var e2 = currentEntry();
+          if(!e2) return;
+          if(e2.itemIds.indexOf(b.dataset.suggestAdd)===-1) e2.itemIds.push(b.dataset.suggestAdd);
+          e2.updatedAt = Date.now();
+          saveState();
+          render();
+        };
+      });
+    }
+    if(customNameEl){ customNameEl.oninput = updateSuggest; }
     if(customAddBtn){ customAddBtn.onclick = addCustomItem; }
     if(customNameEl){
       customNameEl.onkeydown = function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); addCustomItem(); } };
