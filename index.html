@@ -260,9 +260,13 @@
   .dt-sep{color:var(--cream-dim);font-size:12px;flex:0 0 auto;}
   .swipe-wrap{position:relative;overflow:hidden;}
   .swipe-bg{position:absolute;top:0;bottom:0;right:0;width:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:22px;color:#fff;font-size:13px;font-weight:600;border:none;border-radius:0;margin:0;font-family:inherit;}
+  .swipe-bg{opacity:0;pointer-events:none;transition:opacity .12s;}
+  .swipe-wrap.sw-on .swipe-bg{opacity:1;}
+  .swipe-wrap.sw-on .swipe-bg.del{pointer-events:auto;}
   .swipe-bg.hide{background:#2f7de1;}
   .swipe-bg.del{background:#d93a2f;cursor:pointer;}
   .swipe-wrap > .swipe-row{position:relative;background:var(--panel);z-index:1;}
+  .swipe-row[data-rental] > *{opacity:.5;}
   .swipe-row{touch-action:pan-y;transition:transform .18s ease;}
   .swipe-row.swiping{transition:none;}
   .local-tag{font-size:10px;color:var(--amber);border:1px solid var(--amber);border-radius:4px;padding:0 4px;margin-left:6px;white-space:nowrap;}
@@ -385,7 +389,29 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '2026.10.12-3';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
+  var APP_VERSION = '2026.10.12-4';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
+
+  var TABORDER_KEY = 'gp-taborder-v1';
+  function loadTabOrder(){
+    var def = ['studio','live','recording'];
+    try{
+      var a = JSON.parse(localStorage.getItem(TABORDER_KEY)||'null');
+      if(Array.isArray(a) && a.length===3 && def.every(function(m){ return a.indexOf(m)!==-1; })) return a;
+    }catch(e){}
+    return def;
+  }
+  var tabOrder = loadTabOrder();
+  function saveTabOrder(){ try{ localStorage.setItem(TABORDER_KEY, JSON.stringify(tabOrder)); }catch(e){} }
+  function applyTabOrder(){
+    var nav = document.querySelector('.nav');
+    if(!nav) return;
+    tabOrder.forEach(function(m){
+      var b = nav.querySelector('button[data-mode="'+m+'"]');
+      if(b) nav.appendChild(b);
+    });
+    var st = nav.querySelector('button[data-mode="items"]');
+    if(st) nav.appendChild(st);
+  }
 
   function loadTheme(){
     try{ return localStorage.getItem(THEME_KEY) || 'light'; }catch(e){ return 'light'; }
@@ -871,6 +897,7 @@
 
   // ---------- render ----------
   function render(){
+    applyTabOrder();
     document.querySelectorAll('.nav button').forEach(function(b){
       b.classList.toggle('active', b.dataset.mode===view.mode);
     });
@@ -1004,7 +1031,7 @@
       } else {
         visibleItems.forEach(function(it){
           var bringNow = isBringForEntry(it, entry);
-          html += '<div class="swipe-wrap"><div class="swipe-bg hide">非表示</div><div class="check-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="hide"'+(bringNow?'':' style="opacity:.5;"')+'>';
+          html += '<div class="swipe-wrap"><div class="swipe-bg hide">非表示</div><div class="check-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="hide"'+(bringNow?'':' data-rental="1"')+'>';
           if(bringNow){
             var on = !!ck[it.id];
             html += '<div class="toggle'+(on?' on':'')+'" data-item="'+it.id+'"><div class="knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>';
@@ -1137,6 +1164,16 @@
     html += '<span class="chip'+(view.theme==='dark'?' on':'')+'" data-theme-set="dark">ダーク</span>';
     html += '<span class="chip'+(view.theme==='light'?' on':'')+'" data-theme-set="light">ライト</span>';
     html += '</div>';
+    html += '<label class="small" style="margin-top:6px;">タブの並び順</label>';
+    tabOrder.forEach(function(m, i){
+      html += '<div class="item-row" style="align-items:center;">';
+      html += '<div class="item-name">'+esc(modeLabel(m))+'</div>';
+      html += '<div style="display:flex;gap:6px;">';
+      html += '<button class="btn ghost" data-tab-move="up" data-tab-mode="'+m+'" style="padding:4px 12px;"'+(i===0?' disabled':'')+' aria-label="上へ">↑</button>';
+      html += '<button class="btn ghost" data-tab-move="down" data-tab-mode="'+m+'" style="padding:4px 12px;"'+(i===tabOrder.length-1?' disabled':'')+' aria-label="下へ">↓</button>';
+      html += '</div></div>';
+    });
+    html += '<p class="hint" style="margin-top:6px;">上から順に、左→右のタブになります（「設定」は常に右端）。この端末だけの設定です。</p>';
     html += '</div>';
 
     html += '<div class="panel">';
@@ -1179,6 +1216,7 @@
         html += '<div class="item-meta">'+scopeArrayLabel(it.scope)+(it.roles&&it.roles.length? ' ・ '+it.roles.map(esc).join(' / ') : ' ・ 全パート共通')+'</div></div>';
         html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;margin-top:2px;">';
         html += '<button class="btn ghost" data-toggle-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+(isBring(it)?'':'color:var(--amber);border-color:var(--amber);')+'">'+(isBring(it)?'持込':'レンタル')+'</button>';
+        html += '<button class="del-x" data-item-del="'+it.id+'" aria-label="削除" title="削除">×</button>';
         html += '</div>';
         html += '</div></div>';
       });
@@ -1690,6 +1728,7 @@
       document.querySelectorAll('.swipe-row.swipe-open').forEach(function(r){
         if(r===except) return;
         r.classList.remove('swipe-open'); r.style.transform='';
+        setTimeout(function(){ if(r.parentNode && !r.classList.contains('swipe-open')) r.parentNode.classList.remove('sw-on'); }, 200);
       });
     }
     document.querySelectorAll('[data-swipe-row]').forEach(function(row){
@@ -1709,6 +1748,7 @@
           if(Math.abs(mx)<10) return;
           if(Math.abs(my)>Math.abs(mx)){ tracking=false; return; }
           moved=true;
+          row.parentNode.classList.add('sw-on');
           row.classList.add('swiping');
           try{ row.setPointerCapture(pid); }catch(e){}
         }
@@ -1739,6 +1779,7 @@
           } else {
             row.classList.remove('swipe-open');
             row.style.transform='';
+            setTimeout(function(){ if(!row.classList.contains('swipe-open')) row.parentNode.classList.remove('sw-on'); }, 200);
           }
           row._swiped = true;
           setTimeout(function(){ row._swiped=false; }, 350);
@@ -1834,6 +1875,17 @@
         if(!item) return;
         item.bring = !isBring(item);
         saveState();
+        render();
+      };
+    });
+
+    document.querySelectorAll('[data-tab-move]').forEach(function(b){
+      b.onclick = function(){
+        var i = tabOrder.indexOf(b.dataset.tabMode);
+        var j = b.dataset.tabMove==='up' ? i-1 : i+1;
+        if(i<0 || j<0 || j>=tabOrder.length) return;
+        var t = tabOrder[i]; tabOrder[i] = tabOrder[j]; tabOrder[j] = t;
+        saveTabOrder();
         render();
       };
     });
