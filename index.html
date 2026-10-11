@@ -263,6 +263,10 @@
   .suggest-row .nm{flex:1;min-width:0;}
   .suggest-tag{font-size:10.5px;color:var(--cream-dim);border:1px solid var(--seam);border-radius:4px;padding:0 5px;white-space:nowrap;}
   .suggest-note{font-size:11.5px;color:var(--amber);margin-bottom:2px;}
+  .op-label{font-size:11px;color:var(--cream-dim);margin:14px 2px 6px;letter-spacing:.04em;}
+  .op-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;}
+  .op-row.two{grid-template-columns:1fr 1fr;}
+  .op-row .btn{padding:9px 4px;font-size:12.5px;white-space:nowrap;min-width:0;width:100%;}
   .dow-badge{flex:0 0 auto;min-width:22px;text-align:center;font-size:12.5px;font-weight:700;color:var(--amber);}
   .dt-row input[type=date],.dt-row input[type=time]{font-size:13px;padding-left:4px;padding-right:4px;}
   .dt-row{gap:4px;}
@@ -395,7 +399,7 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '2026.10.12-9';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
+  var APP_VERSION = '2026.10.12-10';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
 
   var TABORDER_KEY = 'gp-taborder-v1';
   function loadTabOrder(){
@@ -602,6 +606,7 @@
     editMode: false,
     confirmReset: false,
     confirmDeleteEntry: false,
+    confirmRoleDel: null,
     csvFallbackOpen: false,
     csvFallbackText: '',
     itemsImportPlan: null
@@ -635,7 +640,7 @@
     items.forEach(function(it){
       var roles = (it.roles||[]).slice().sort(function(a,b){ return state.roles.indexOf(a)-state.roles.indexOf(b); });
       var key = roles.length ? roles[0] : '';  // ざっくり：先頭（並び順で最初）のパートでまとめる
-      if(!groups[key]){ groups[key] = {label: key || '共通', items: [], rank: roles.length ? state.roles.indexOf(roles[0]) : -1}; order.push(key); }
+      if(!groups[key]){ groups[key] = {label: key || '共通', items: [], rank: roles.length ? state.roles.indexOf(roles[0]) : 99999}; order.push(key); }
       groups[key].items.push(it);
     });
     return order.map(function(k){ return groups[k]; }).sort(function(a,b){ return a.rank-b.rank; });
@@ -1112,12 +1117,15 @@
       html += '</div>';
     }
 
-    html += '<div class="row-between">';
+    html += '<div class="op-label">持ち物操作</div>';
+    html += '<div class="op-row">';
+    html += '<button class="btn ghost" id="reset-check-btn">チェック解除</button>';
     html += '<button class="btn ghost" id="csv-export-btn">CSV出力</button>';
-    html += '<button class="btn ghost" id="csv-import-btn">CSV取り込み</button>';
+    html += '<button class="btn ghost" id="csv-import-btn">CSV取込</button>';
     html += '</div>';
     html += '<input type="file" id="csv-import-input" accept=".csv,text/csv" style="display:none;">';
 
+    html += '<div class="op-label">イベント操作</div>';
     if(view.confirmDeleteEntry){
       html += '<div class="panel">';
       html += '<p class="hint" style="color:var(--red);">本当にこの'+modeLabel(mode)+'を削除しますか？この操作は取り消せません。</p>';
@@ -1127,13 +1135,11 @@
       html += '</div>';
       html += '</div>';
     } else {
-      html += '<div class="row-between">';
-      html += '<button class="btn ghost" id="reset-check-btn">チェックをリセット</button>';
-      html += '<button class="btn danger" id="delete-entry-btn">この'+modeLabel(mode)+'を削除</button>';
+      html += '<div class="op-row two">';
+      html += '<button class="btn ghost" id="copy-entry-btn">コピー</button>';
+      html += '<button class="btn danger" id="delete-entry-btn">削除</button>';
       html += '</div>';
     }
-
-    html += '<button class="btn ghost block" id="copy-entry-btn" style="margin-top:2px;">このイベントをコピー</button>';
 
     return html;
   }
@@ -1220,7 +1226,7 @@
       html += '<button class="btn ghost" data-tab-move="down" data-tab-mode="'+m+'" style="padding:4px 12px;"'+(i===tabOrder.length-1?' disabled':'')+' aria-label="下へ">↓</button>';
       html += '</div></div>';
     });
-    html += '<p class="hint" style="margin-top:6px;">上から順に、左→右のタブになります（「設定」は常に右端）。この端末だけの設定です。</p>';
+    html += '<p class="hint" style="margin-top:6px;">上から順に、左→右のタブになります（「設定」は常に右端）。このブラウザだけの設定です（同じ端末でも、別のブラウザやホーム画面に追加したアプリとは別になります）。</p>';
     html += '</div>';
 
     html += '<div class="panel">';
@@ -1306,14 +1312,23 @@
     if(state.roles.length>0){
       html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更できます。</p>';
       state.roles.forEach(function(r, i){
-        html += '<div class="item-row">';
+        html += '<div class="swipe-wrap"><button class="swipe-bg del" data-role-del="'+esc(r)+'">削除</button><div class="item-row swipe-row" data-swipe-row="role-'+i+'" data-swipe-kind="del">';
         html += '<div class="item-name">'+esc(r)+'</div>';
         html += '<div style="display:flex;gap:4px;align-items:center;">';
         html += '<button class="btn ghost" data-role-up="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===0?' disabled':'')+'>▲</button>';
         html += '<button class="btn ghost" data-role-down="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===state.roles.length-1?' disabled':'')+'>▼</button>';
-        html += '<button class="del-x" data-role-del="'+esc(r)+'">×</button>';
+        html += '<button class="del-x" data-role-del="'+esc(r)+'" aria-label="削除">×</button>';
         html += '</div>';
-        html += '</div>';
+        html += '</div></div>';
+        if(view.confirmRoleDel===r){
+          var usedN = state.items.filter(function(it){ return (it.roles||[]).indexOf(r)!==-1; }).length;
+          html += '<div class="panel" style="margin:6px 0 8px;border-color:var(--red);">';
+          html += '<p class="hint" style="color:var(--red);margin-top:0;">パート「'+esc(r)+'」を削除しますか？'+(usedN?'このパートが指定された持ち物'+usedN+'件から、パート指定が外れます（持ち物自体は消えません）。':'')+'</p>';
+          html += '<div class="row-between" style="margin-bottom:0;">';
+          html += '<button class="btn ghost" data-role-del-cancel="1" style="flex:1;margin-right:8px;">キャンセル</button>';
+          html += '<button class="btn danger" data-role-del-confirm="'+esc(r)+'" style="flex:1;">削除する</button>';
+          html += '</div></div>';
+        }
       });
     }
     html += '</div>';
@@ -2080,7 +2095,17 @@
 
     document.querySelectorAll('[data-role-del]').forEach(function(b){
       b.onclick = function(){
-        var r = b.dataset.roleDel;
+        view.confirmRoleDel = b.dataset.roleDel;
+        render();
+      };
+    });
+    document.querySelectorAll('[data-role-del-cancel]').forEach(function(b){
+      b.onclick = function(){ view.confirmRoleDel = null; render(); };
+    });
+    document.querySelectorAll('[data-role-del-confirm]').forEach(function(b){
+      b.onclick = function(){
+        var r = b.dataset.roleDelConfirm;
+        view.confirmRoleDel = null;
         var idx = state.roles.indexOf(r);
         if(idx!==-1) state.roles.splice(idx,1);
         state.items.forEach(function(it){
