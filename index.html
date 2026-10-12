@@ -413,7 +413,7 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '2026.10.12-12';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
+  var APP_VERSION = '2026.10.12-13';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
 
   var TABORDER_KEY = 'gp-taborder-v1';
   function loadTabOrder(){
@@ -505,6 +505,7 @@
         {id:uid(), name:'譜面 / タブレット', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'譜面台', scope:['live'], roles:[]},
         {id:uid(), name:'セットリスト', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'リードシート', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'録音、録画機材', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'ノートパソコン / 電源', scope:['recording'], roles:[]},
         {id:uid(), name:'ヘッドフォン', scope:['recording'], roles:[]},
@@ -1229,7 +1230,7 @@
       included.forEach(function(it){
         var hiddenNow = isHiddenForEntry(it, entry);
         if(hiddenNow && !view.showHiddenInEdit) return;
-        html += '<div class="item-row" style="align-items:flex-start;">';
+        html += '<div class="swipe-wrap"><button class="swipe-bg del" data-remove-item="'+it.id+'">削除</button><div class="item-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="del" style="align-items:flex-start;">';
         html += '<div style="flex:1;min-width:0;"><input type="text" class="item-name-input" data-item-rename="'+it.id+'" value="'+esc(effectiveItemName(it, entry))+'">';
         if(it.local){ html += '<div class="item-meta"><span class="local-tag">この'+modeLabel(mode)+'だけ</span> <button class="btn ghost" data-promote-item="'+it.id+'" style="padding:2px 7px;font-size:10px;">マスタに登録</button></div>'; }
         html += '</div>';
@@ -1238,7 +1239,7 @@
         html += '<button class="btn ghost" data-toggle-entry-visible="'+it.id+'" style="padding:5px 9px;line-height:0;'+(hiddenNow?'color:var(--amber);border-color:var(--amber);':'')+'" aria-label="'+(hiddenNow?'非表示中（タップで表示）':'表示中（タップで非表示）')+'" title="'+(hiddenNow?'非表示中（タップで表示）':'表示中（タップで非表示）')+'">'+(hiddenNow?EYE_OFF_SVG:EYE_SVG)+'</button>';
         html += '<button class="del-x" data-remove-item="'+it.id+'">×</button>';
         html += '</div>';
-        html += '</div>';
+        html += '</div></div>';
       });
     }
     html += '</div>';
