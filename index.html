@@ -413,7 +413,7 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '2026.10.12-14';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
+  var APP_VERSION = '2026.10.12-15';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
 
   var TABORDER_KEY = 'gp-taborder-v1';
   function loadTabOrder(){
@@ -812,7 +812,8 @@
       });
     });
 
-    return {parsed:parsed, updated:updated, created:created, removedItems:removedItems, newRoles:newRoles};
+    var looksEntry = isFull && header.indexOf('checked')!==-1;  // イベントのCSV出力の形式
+    return {parsed:parsed, updated:updated, created:created, removedItems:removedItems, newRoles:newRoles, looksEntry:looksEntry};
   }
 
   function applyItemsImportPlan(plan){
@@ -889,6 +890,7 @@
     var nameIdx = isFull ? header.indexOf('name') : 0;
     plan.hasBring = isFull && header.indexOf('bring')!==-1;
     plan.hasChecked = isFull && header.indexOf('checked')!==-1;
+    plan.looksMaster = isFull && !plan.hasChecked && header.indexOf('scope')!==-1 && header.indexOf('roles')!==-1;  // 持ち物マスタ一括出力の形式
     var seen = {};
     dataRows.forEach(function(row){
       var name = (row[nameIdx]||'').trim();
@@ -1207,6 +1209,9 @@
       var total = eplan.already.length + eplan.fromMaster.length + eplan.created.length;
       html += '<div class="panel" style="border-color:var(--amber);">';
       html += '<div class="panel-label">CSV取込の確認</div>';
+      if(eplan.looksMaster && total>0){
+        html += '<p class="hint" style="margin-top:0;color:var(--red);font-weight:700;">⚠ これは「持ち物マスタの一括出力」ファイルのようです。取り込むと、この'+modeLabel(mode)+'に、マスタ全体の持ち物'+total+'件が対象として入ります（うち新しく追加'+(eplan.fromMaster.length+eplan.created.length)+'件）。イベントのCSVを取り込むつもりなら、キャンセルしてファイルを確認してください。</p>';
+      }
       if(total===0){
         html += '<p class="hint" style="margin-top:0;">取り込める持ち物が見つかりませんでした。</p>';
       } else {
@@ -1395,6 +1400,9 @@
     html += '<div class="panel-label">持ち物の一括管理</div>';
     if(view.itemsImportPlan){
       var plan = view.itemsImportPlan;
+      if(plan.looksEntry){
+        html += '<p class="hint" style="color:var(--red);font-weight:700;">⚠ これは「イベントのCSV出力」ファイルのようです。取り込むと、このファイルに無い持ち物'+plan.removedItems.length+'件が持ち物マスタから削除され、登録済みのイベントからも外れます。イベントに取り込むつもりなら、キャンセルしてイベント画面の「CSV取込」を使ってください。</p>';
+      }
       html += '<p class="hint" style="color:var(--red);">更新 '+plan.updated+'件 ／ 新規追加 '+plan.created+'件 ／ 削除 '+plan.removedItems.length+'件 になります。この内容で取り込みますか？</p>';
       if(plan.removedItems.length>0){
         html += '<p class="hint">削除される持ち物：'+plan.removedItems.map(function(it){ return esc(it.name); }).join('、')+'（登録済みのイベントからも外れます）</p>';
