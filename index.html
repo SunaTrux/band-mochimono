@@ -270,6 +270,12 @@
   .op-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;}
   .op-row.two{grid-template-columns:1fr 1fr;}
   .op-row .btn{padding:9px 4px;font-size:12.5px;white-space:nowrap;min-width:0;width:100%;}
+  .update-notice{position:relative;background:var(--panel);border:1px solid var(--amber);border-radius:12px;padding:12px 40px 12px 14px;margin-bottom:14px;font-size:13px;}
+  .update-title{font-weight:700;color:var(--amber);margin-bottom:6px;}
+  .update-notice ul{margin:0 0 8px;padding-left:18px;}
+  .update-notice li{margin:2px 0;}
+  .update-notice a{color:var(--cream-dim);font-size:12px;}
+  .update-close{position:absolute;top:6px;right:6px;width:32px;height:32px;border:none;background:none;color:var(--cream-dim);font-size:20px;cursor:pointer;}
   .dow-badge{flex:0 0 auto;min-width:22px;text-align:center;font-size:12.5px;font-weight:700;color:var(--amber);}
   .dt-row input[type=date],.dt-row input[type=time]{font-size:13px;padding-left:4px;padding-right:4px;}
   .dt-row{gap:4px;}
@@ -413,8 +419,18 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.1.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
-  var APP_RELEASE_DATE = '2026-10-12'; // リリース日。CHANGELOG.md と合わせる
+  var APP_VERSION = '1.2.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_RELEASE_DATE = '2026-10-12';
+  // アップデート時に一度だけ出すお知らせ（最新版の分だけ書けばOK。無い版はお知らせを出さない）
+  var RELEASE_NOTES = {
+    '1.2.0': [
+      'イベントに終了時間・アーティスト名を登録できるように',
+      'イベントだけの持ち物を、イベント画面からすぐ追加',
+      '持ち物は左スワイプで非表示／「持ち物を編集」でスワイプ削除',
+      '設定の「データ管理」で、全データのバックアップと復元ができるように'
+    ]
+  };
+  var SEEN_VERSION_KEY = 'gp-seen-version-v1'; // リリース日。CHANGELOG.md と合わせる
 
   var TABORDER_KEY = 'gp-taborder-v1';
   function loadTabOrder(){
@@ -602,7 +618,32 @@
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
   }
 
+  var hadSavedData = false;
+  try{ hadSavedData = !!localStorage.getItem(STORAGE_KEY); }catch(e){}
   var state = loadState();
+  var seenVersion = null;
+  try{ seenVersion = localStorage.getItem(SEEN_VERSION_KEY); }catch(e){}
+  if(!hadSavedData){
+    // 初めて使う人にはお知らせを出さない
+    seenVersion = APP_VERSION;
+    try{ localStorage.setItem(SEEN_VERSION_KEY, APP_VERSION); }catch(e){}
+  }
+  function markVersionSeen(){
+    seenVersion = APP_VERSION;
+    try{ localStorage.setItem(SEEN_VERSION_KEY, APP_VERSION); }catch(e){}
+  }
+  function renderUpdateNotice(){
+    if(seenVersion===APP_VERSION) return '';
+    var notes = RELEASE_NOTES[APP_VERSION];
+    if(!notes || !notes.length) return '';
+    var h = '<div class="update-notice">';
+    h += '<button class="update-close" id="update-close-btn" aria-label="閉じる">×</button>';
+    h += '<div class="update-title">v'+esc(APP_VERSION)+' にアップデートしました</div>';
+    h += '<ul>'+notes.map(function(n){ return '<li>'+esc(n)+'</li>'; }).join('')+'</ul>';
+    h += '<a href="https://github.com/sunatrux/band-mochimono/blob/main/CHANGELOG.md" target="_blank" rel="noopener">すべての更新履歴を見る</a>';
+    h += '</div>';
+    return h;
+  }
 
   var view = {
     mode: 'studio',
@@ -628,7 +669,9 @@
     csvFallbackOpen: false,
     csvFallbackText: '',
     itemsImportPlan: null,
-    entryImportPlan: null
+    entryImportPlan: null,
+    backupPlan: null,
+    backupDone: ''
   };
 
   function scopeArrayLabel(scope){
@@ -973,6 +1016,81 @@
     downloadCSVPlain(filename, csvText);
   }
 
+  function tsName(prefix, ext){
+    var d = new Date();
+    function p2(n){ return (n<10?'0':'')+n; }
+    return prefix + d.getFullYear() + p2(d.getMonth()+1) + p2(d.getDate()) + '-' + p2(d.getHours()) + p2(d.getMinutes()) + ext;
+  }
+
+  // ---------- 全データのバックアップ／復元 ----------
+  function buildBackup(){
+    var theme = 'light';
+    try{ theme = localStorage.getItem(THEME_KEY) || 'light'; }catch(e){}
+    return JSON.stringify({
+      app: 'band-mochimono',
+      format: 1,
+      appVersion: APP_VERSION,
+      exportedAt: new Date().toISOString(),
+      theme: theme,
+      tabOrder: tabOrder.slice(),
+      data: state
+    }, null, 1);
+  }
+
+  function parseBackup(text){
+    var obj;
+    try{ obj = JSON.parse(text); }catch(e){ return {error:'バックアップファイルを読み込めませんでした（JSON形式ではありません）。'}; }
+    if(!obj || obj.app!=='band-mochimono' || !obj.data){ return {error:'このアプリのバックアップファイルではないようです。'}; }
+    var d = obj.data;
+    if(!Array.isArray(d.items)){ return {error:'バックアップファイルの中身が壊れているようです。'}; }
+    var count = function(a){ return Array.isArray(a) ? a.length : 0; };
+    return {
+      obj: obj,
+      exportedAt: obj.exportedAt || '',
+      appVersion: obj.appVersion || '',
+      studios: count(d.studios), lives: count(d.lives), recordings: count(d.recordings),
+      items: d.items.filter(function(it){ return !it.local; }).length
+    };
+  }
+
+  function applyBackup(plan){
+    var o = plan.obj;
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(o.data)); }catch(e){}
+    state = loadState();
+    saveState();
+    if(o.theme==='light' || o.theme==='dark'){ view.theme = o.theme; applyTheme(o.theme); }
+    if(Array.isArray(o.tabOrder) && o.tabOrder.length===3){ tabOrder = o.tabOrder.slice(); saveTabOrder(); }
+    MODES.forEach(function(m){ view.selectedByMode[m] = null; });
+  }
+
+  function downloadText(filename, text, mime){
+    if(window.claude && typeof window.claude.use === 'function'){
+      window.claude.use('downloads').then(function(downloads){
+        if(!downloads){ downloadTextPlain(filename, text, mime); return; }
+        return downloads.save({filename: filename, data: text}).catch(function(err){
+          if(err && err.code === 'declined') return;
+          downloadTextPlain(filename, text, mime);
+        });
+      }).catch(function(){ downloadTextPlain(filename, text, mime); });
+      return;
+    }
+    downloadTextPlain(filename, text, mime);
+  }
+
+  function downloadTextPlain(filename, text, mime){
+    try{
+      var blob = new Blob([text], {type: mime});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    }catch(e){}
+  }
+
   function downloadCSVPlain(filename, csvText){
     try{
       var blob = new Blob(["\uFEFF"+csvText], {type:'text/csv;charset=utf-8;'});
@@ -1014,6 +1132,10 @@
         app.innerHTML = renderEntryListView(view.mode);
       }
     }
+    var notice = renderUpdateNotice();
+    if(notice){ app.insertAdjacentHTML('afterbegin', notice); }
+    var updClose = document.getElementById('update-close-btn');
+    if(updClose){ updClose.onclick = function(){ markVersionSeen(); render(); }; }
     bindEvents();
   }
 
@@ -1455,7 +1577,30 @@
 
     html += '<div class="panel">';
     html += '<div class="panel-label">データ管理</div>';
-    html += '<p class="hint">この端末のブラウザ内にのみ保存されます（他の端末とは同期されません）。</p>';
+    html += '<p class="hint">この端末のブラウザ内にのみ保存されます（他の端末とは同期されません）。ブラウザのデータ消去や機種変更に備えて、ときどきバックアップしておくと安心です。</p>';
+    if(view.backupPlan){
+      var bp = view.backupPlan;
+      if(bp.error){
+        html += '<p class="hint" style="color:var(--red);">'+esc(bp.error)+'</p>';
+        html += '<button class="btn ghost block" id="backup-cancel-btn">閉じる</button>';
+      } else {
+        var when = bp.exportedAt ? new Date(bp.exportedAt) : null;
+        var whenStr = (when && !isNaN(when.getTime())) ? (when.getFullYear()+'/'+(when.getMonth()+1)+'/'+when.getDate()+' '+('0'+when.getHours()).slice(-2)+':'+('0'+when.getMinutes()).slice(-2)) : '不明';
+        html += '<p class="hint" style="color:var(--cream);"><b>このバックアップを復元しますか？</b><br>作成日時：'+esc(whenStr)+(bp.appVersion?'（v'+esc(bp.appVersion)+'）':'')+'<br>内容：スタジオ'+bp.studios+'件・ライブ'+bp.lives+'件・レコ'+bp.recordings+'件・持ち物マスタ'+bp.items+'件</p>';
+        html += '<p class="hint" style="color:var(--red);">今このブラウザにあるデータ（スタジオ'+state.studios.length+'件・ライブ'+state.lives.length+'件・レコ'+state.recordings.length+'件・持ち物マスタ'+masterItems().length+'件）は、すべてバックアップの内容に置き換わります。</p>';
+        html += '<div class="row-between" style="margin-bottom:0;">';
+        html += '<button class="btn ghost" id="backup-cancel-btn" style="flex:1;margin-right:8px;">キャンセル</button>';
+        html += '<button class="btn danger" id="backup-restore-confirm" style="flex:1;">復元する</button>';
+        html += '</div>';
+      }
+      html += '</div>';
+    } else {
+    html += '<div class="row-between">';
+    html += '<button class="btn ghost" id="backup-export-btn" style="flex:1;margin-right:8px;">バックアップ</button>';
+    html += '<button class="btn ghost" id="backup-import-btn" style="flex:1;">復元</button>';
+    html += '</div>';
+    html += '<input type="file" id="backup-import-input" accept=".json,application/json" style="display:none;">';
+    if(view.backupDone){ html += '<p class="hint" style="color:var(--teal);margin-top:0;">'+esc(view.backupDone)+'</p>'; }
     if(view.confirmReset){
       html += '<p class="hint" style="color:var(--red);">本当に全ての持ち物・スタジオ・ライブ・レコーディング・チェック状態を削除しますか？この操作は取り消せません。</p>';
       html += '<div class="row-between" style="margin-bottom:0;">';
@@ -1466,6 +1611,7 @@
       html += '<button class="btn danger block" id="reset-all-btn">全データを初期化</button>';
     }
     html += '</div>';
+    }
 
     html += '<div style="text-align:center;color:var(--cream-dim);font-size:10.5px;letter-spacing:.05em;padding:6px 0 18px;">Powered by SunaTrux</div>';
     html += '<div style="text-align:center;color:var(--cream-dim);font-size:12px;padding:0 0 22px;">バージョン '+APP_VERSION+'（'+APP_RELEASE_DATE+'）<br><a href="https://github.com/sunatrux/band-mochimono/blob/main/CHANGELOG.md" target="_blank" rel="noopener" style="color:var(--cream-dim);">更新履歴</a></div>';
@@ -2308,6 +2454,45 @@
         render();
       };
     });
+
+    var backupExportBtn = document.getElementById('backup-export-btn');
+    if(backupExportBtn){
+      backupExportBtn.onclick = function(){
+        downloadText(tsName('mochimono-backup-', '.json'), buildBackup(), 'application/json');
+        view.backupDone = 'バックアップファイルを保存しました（ファイル名：mochimono-backup-日付.json）。';
+        render();
+      };
+    }
+    var backupImportBtn = document.getElementById('backup-import-btn');
+    var backupImportInput = document.getElementById('backup-import-input');
+    if(backupImportBtn && backupImportInput){
+      backupImportBtn.onclick = function(){ backupImportInput.click(); };
+      backupImportInput.onchange = function(){
+        var file = backupImportInput.files && backupImportInput.files[0];
+        if(!file) return;
+        var reader = new FileReader();
+        reader.onload = function(){
+          view.backupPlan = parseBackup(String(reader.result));
+          view.backupDone = '';
+          backupImportInput.value = '';
+          render();
+          var c = document.getElementById('backup-cancel-btn');
+          if(c && c.scrollIntoView) c.scrollIntoView({block:'center'});
+        };
+        reader.readAsText(file, 'UTF-8');
+      };
+    }
+    var backupCancelBtn = document.getElementById('backup-cancel-btn');
+    if(backupCancelBtn){ backupCancelBtn.onclick = function(){ view.backupPlan = null; render(); }; }
+    var backupRestoreConfirm = document.getElementById('backup-restore-confirm');
+    if(backupRestoreConfirm){
+      backupRestoreConfirm.onclick = function(){
+        if(view.backupPlan && view.backupPlan.obj){ applyBackup(view.backupPlan); }
+        view.backupPlan = null;
+        view.backupDone = 'バックアップから復元しました。';
+        render();
+      };
+    }
 
     var resetAllBtn = document.getElementById('reset-all-btn');
     if(resetAllBtn){
