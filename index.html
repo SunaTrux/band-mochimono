@@ -270,12 +270,19 @@
   .op-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;}
   .op-row.two{grid-template-columns:1fr 1fr;}
   .op-row .btn{padding:9px 4px;font-size:12.5px;white-space:nowrap;min-width:0;width:100%;}
+  .newver-bar{display:flex;align-items:center;gap:10px;background:var(--amber-dim);border:1px solid var(--amber);border-radius:12px;padding:10px 10px 10px 14px;margin-bottom:12px;font-size:13px;font-weight:700;}
+  .newver-bar span{flex:1;}
+  .newver-bar .btn{padding:7px 12px;font-size:12.5px;white-space:nowrap;}
   .update-notice{position:relative;background:var(--panel);border:1px solid var(--amber);border-radius:12px;padding:12px 40px 12px 14px;margin-bottom:14px;font-size:13px;}
   .update-title{font-weight:700;color:var(--amber);margin-bottom:6px;}
   .update-notice ul{margin:0 0 8px;padding-left:18px;}
   .update-notice li{margin:2px 0;}
   .update-notice a{color:var(--cream-dim);font-size:12px;}
   .update-close{position:absolute;top:6px;right:6px;width:32px;height:32px;border:none;background:none;color:var(--cream-dim);font-size:20px;cursor:pointer;}
+  .reg-toggle{width:100%;display:flex;align-items:center;gap:8px;background:none;border:none;padding:2px 0;margin:0;cursor:pointer;text-align:left;font-family:inherit;color:inherit;}
+  .reg-chev{margin-left:auto;flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid var(--seam);display:flex;align-items:center;justify-content:center;color:var(--cream);background:var(--field-bg);}
+  .reg-chev svg{transition:transform .18s;}
+  .reg-toggle.open .reg-chev svg{transform:rotate(180deg);}
   .dow-badge{flex:0 0 auto;min-width:22px;text-align:center;font-size:12.5px;font-weight:700;color:var(--amber);}
   .dt-row input[type=date],.dt-row input[type=time]{font-size:13px;padding-left:4px;padding-right:4px;}
   .dt-row{gap:4px;}
@@ -396,7 +403,7 @@
   .hint{font-size:11.5px;color:var(--cream-dim);margin:0 0 10px;}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 </head>
 <body>
 
@@ -419,10 +426,17 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.2.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.3.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-12';
   // アップデート時に一度だけ出すお知らせ（最新版の分だけ書けばOK。無い版はお知らせを出さない）
   var RELEASE_NOTES = {
+    '1.3.0': [
+      '電波の弱いスタジオやライブハウスでも、一度開いていればアプリが起動するように',
+      '新しいバージョンが出たら、画面上部でお知らせ（「再読み込み」で更新）',
+      'イベント登録欄は「パートを選んで〇〇の予定を登録」の ∨ で開く形に',
+      '「設定」の一番下に、ご意見・不具合報告の窓口（X）を追加',
+      '全データのバックアップと復元（「設定」→「データ管理」）'
+    ],
     '1.2.0': [
       'イベントに終了時間・アーティスト名を登録できるように',
       'イベントだけの持ち物を、イベント画面からすぐ追加',
@@ -430,7 +444,8 @@
       '設定の「データ管理」で、全データのバックアップと復元ができるように'
     ]
   };
-  var SEEN_VERSION_KEY = 'gp-seen-version-v1'; // リリース日。CHANGELOG.md と合わせる
+  var SEEN_VERSION_KEY = 'gp-seen-version-v1';
+  var SCHEMA_VERSION = 1;  // 保存データの形式番号。データ構造を変えるときに上げ、loadState で古い形式を変換する // リリース日。CHANGELOG.md と合わせる
 
   var TABORDER_KEY = 'gp-taborder-v1';
   function loadTabOrder(){
@@ -534,6 +549,7 @@
         {id:uid(), name:'名刺', scope:['live'], roles:[]}
     ];
     return {
+      schemaVersion: SCHEMA_VERSION,
       roles: defaultRoles(),
       items: items,
       studios: [
@@ -605,6 +621,7 @@
       if(!parsed.lives) parsed.lives = [];
       if(!parsed.recordings) parsed.recordings = [];
       if(!parsed.roles) parsed.roles = defaultRoles();
+      if(!parsed.schemaVersion) parsed.schemaVersion = 1;  // 形式1：v1.0〜（将来、形式を変えるときはここで変換する）
       parsed.items.forEach(function(it){ delete it.tags; if(!it.roles) it.roles = []; it.scope = migrateScope(it.scope); });
       state = parsed;
       parsed.studios.forEach(function(e){ migrateEntry('studio', e); });
@@ -632,6 +649,37 @@
     seenVersion = APP_VERSION;
     try{ localStorage.setItem(SEEN_VERSION_KEY, APP_VERSION); }catch(e){}
   }
+  // ---------- オフライン対応と新バージョン検知（GitHub Pages 上でのみ動作） ----------
+  var IS_HOSTED = location.protocol==='https:' && /github\.io$/.test(location.hostname);
+  if(IS_HOSTED && 'serviceWorker' in navigator){
+    try{ navigator.serviceWorker.register('sw.js').catch(function(){}); }catch(e){}
+  }
+  function cmpVersion(a, b){
+    var x = String(a).split('.'), y = String(b).split('.');
+    for(var i=0;i<3;i++){ var d = (parseInt(x[i],10)||0) - (parseInt(y[i],10)||0); if(d) return d; }
+    return 0;
+  }
+  var lastUpdateCheck = 0;
+  function checkForUpdate(){
+    if(!IS_HOSTED || !window.fetch) return;
+    if(Date.now() - lastUpdateCheck < 60*1000) return;
+    lastUpdateCheck = Date.now();
+    fetch('index.html?check=' + Date.now(), {cache:'no-store'}).then(function(res){ return res.ok ? res.text() : ''; }).then(function(t){
+      var m = /var APP_VERSION = '([0-9.]+)'/.exec(t||'');
+      if(m && cmpVersion(m[1], APP_VERSION) > 0 && view.newVersion!==m[1]){
+        view.newVersion = m[1];
+        render();
+      }
+    }).catch(function(){});
+  }
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') checkForUpdate(); });
+  setTimeout(checkForUpdate, 3000);
+
+  function renderNewVersionBar(){
+    if(!view.newVersion) return '';
+    return '<div class="newver-bar"><span>新しいバージョン v'+esc(view.newVersion)+' があります</span><button class="btn" id="newver-reload-btn">再読み込み</button></div>';
+  }
+
   function renderUpdateNotice(){
     if(seenVersion===APP_VERSION) return '';
     var notes = RELEASE_NOTES[APP_VERSION];
@@ -671,6 +719,8 @@
     itemsImportPlan: null,
     entryImportPlan: null,
     backupPlan: null,
+    regOpen: {studio:false, live:false, recording:false},
+    newVersion: null,
     backupDone: ''
   };
 
@@ -1029,6 +1079,7 @@
     return JSON.stringify({
       app: 'band-mochimono',
       format: 1,
+      schemaVersion: SCHEMA_VERSION,
       appVersion: APP_VERSION,
       exportedAt: new Date().toISOString(),
       theme: theme,
@@ -1043,6 +1094,7 @@
     if(!obj || obj.app!=='band-mochimono' || !obj.data){ return {error:'このアプリのバックアップファイルではないようです。'}; }
     var d = obj.data;
     if(!Array.isArray(d.items)){ return {error:'バックアップファイルの中身が壊れているようです。'}; }
+    if((d.schemaVersion||1) > SCHEMA_VERSION){ return {error:'新しいバージョンのアプリで作られたバックアップです。アプリを最新にしてから復元してください。'}; }
     var count = function(a){ return Array.isArray(a) ? a.length : 0; };
     return {
       obj: obj,
@@ -1132,8 +1184,12 @@
         app.innerHTML = renderEntryListView(view.mode);
       }
     }
-    var notice = renderUpdateNotice();
+    var notice = renderNewVersionBar() + renderUpdateNotice();
     if(notice){ app.insertAdjacentHTML('afterbegin', notice); }
+    var nvReload = document.getElementById('newver-reload-btn');
+    if(nvReload){ nvReload.onclick = function(){ location.reload(); }; }
+    var regToggle = document.getElementById('reg-toggle-btn');
+    if(regToggle){ regToggle.onclick = function(){ view.regOpen[view.mode] = !view.regOpen[view.mode]; render(); }; }
     var updClose = document.getElementById('update-close-btn');
     if(updClose){ updClose.onclick = function(){ markVersionSeen(); render(); }; }
     bindEvents();
@@ -1149,8 +1205,11 @@
     };
 
     var html = '';
+    var regOpen = !!view.regOpen[mode];
     html += '<div class="panel">';
-    html += '<div class="panel-label">'+label+'を登録</div>';
+    html += '<button class="reg-toggle'+(regOpen?' open':'')+'" id="reg-toggle-btn"><span class="panel-label" style="margin-bottom:0;">パートを選んで'+label+'の予定を登録</span><span class="reg-chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></button>';
+    if(regOpen){
+    html += '<div style="height:10px;"></div>';
     if(state.roles.length>0){
       html += '<label class="small">担当パート(任意・複数選択可)</label>';
       html += '<div class="chip-wrap">';
@@ -1180,6 +1239,7 @@
     html += '<label class="small" style="margin-top:8px;">アーティスト名(任意)</label>';
     html += '<input type="text" id="entry-artist" placeholder="例：バンド名" value="'+esc(view.newEntryArtist)+'">';
     html += '<button class="btn block" id="add-entry-btn">+ この'+label+'の持ち物</button>';
+    }
     html += '</div>';
 
     html += '<div class="panel">';
@@ -1612,6 +1672,13 @@
     }
     html += '</div>';
     }
+
+    html += '<div class="panel">';
+    html += '<div class="panel-label">ご意見・不具合報告</div>';
+    html += '<p class="hint" style="margin-top:0;">使ってみた感想や「ここが使いにくい」「動かない」などは、X（旧Twitter）の <a href="https://x.com/DtmerPronk" target="_blank" rel="noopener" style="color:var(--amber);">@DtmerPronk</a> まで気軽にどうぞ。不具合の場合は、どの画面で何をしたかと、使っている端末・ブラウザを添えてもらえると助かります。</p>';
+    var fbText = '@DtmerPronk バンドマン持ち物リスト v'+APP_VERSION+' について：\n';
+    html += '<a class="btn block" href="https://x.com/intent/post?text='+encodeURIComponent(fbText)+'" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block;">Xでポストして送る</a>';
+    html += '</div>';
 
     html += '<div style="text-align:center;color:var(--cream-dim);font-size:10.5px;letter-spacing:.05em;padding:6px 0 18px;">Powered by SunaTrux</div>';
     html += '<div style="text-align:center;color:var(--cream-dim);font-size:12px;padding:0 0 22px;">バージョン '+APP_VERSION+'（'+APP_RELEASE_DATE+'）<br><a href="https://github.com/sunatrux/band-mochimono/blob/main/CHANGELOG.md" target="_blank" rel="noopener" style="color:var(--cream-dim);">更新履歴</a></div>';

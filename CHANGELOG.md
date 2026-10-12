@@ -9,6 +9,17 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.3.0] - 2026-10-12
+
+### 追加
+- オフライン対応：一度開いていれば、電波の弱い場所や圏外でも保存済みの版で起動（Service Worker）
+- 新しいバージョンが公開されたら、画面上部に「再読み込み」付きでお知らせ
+- 「設定」に、ご意見・不具合報告の窓口（X：@DtmerPronk）
+- 保存データに形式番号（schemaVersion）を記録。将来データ構造を変えるときに自動変換できるように
+
+### 変更
+- イベント登録欄の見出しを「パートを選んで〇〇の予定を登録」に。∨ ボタンで開閉
+
 ## [1.2.0] - 2026-10-12
 
 ### 追加
@@ -54,6 +65,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.3.0]: https://github.com/sunatrux/band-mochimono/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/sunatrux/band-mochimono/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/sunatrux/band-mochimono/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/sunatrux/band-mochimono/releases/tag/v1.0.0
