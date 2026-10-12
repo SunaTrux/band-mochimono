@@ -413,7 +413,7 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '2026.10.12-13';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
+  var APP_VERSION = '2026.10.12-14';  // 更新のたびに変える（設定画面の一番下に表示。古い画面が残っていないかの確認用）
 
   var TABORDER_KEY = 'gp-taborder-v1';
   function loadTabOrder(){
@@ -626,7 +626,8 @@
     infoOpen: false,
     csvFallbackOpen: false,
     csvFallbackText: '',
-    itemsImportPlan: null
+    itemsImportPlan: null,
+    entryImportPlan: null
   };
 
   function scopeArrayLabel(scope){
@@ -875,6 +876,35 @@
   function parseCSV(text){
     var lines = text.replace(/^\uFEFF/,'').split(/\r\n|\n|\r/).filter(function(l){ return l.trim().length>0; });
     return lines.map(parseCSVLine);
+  }
+
+  // イベントCSV取込の事前確認用
+  function planEntryImport(mode, entry, csvText){
+    var rows = parseCSV(csvText);
+    var plan = {entryId: entry.id, mode: mode, text: csvText, already: [], fromMaster: [], created: [], hasBring: false, hasChecked: false};
+    if(rows.length===0) return plan;
+    var header = rows[0].map(function(h){ return h.trim().toLowerCase(); });
+    var isFull = rows[0].length>1 && header.indexOf('name')!==-1;
+    var dataRows = isFull ? rows.slice(1) : rows;
+    var nameIdx = isFull ? header.indexOf('name') : 0;
+    plan.hasBring = isFull && header.indexOf('bring')!==-1;
+    plan.hasChecked = isFull && header.indexOf('checked')!==-1;
+    var seen = {};
+    dataRows.forEach(function(row){
+      var name = (row[nameIdx]||'').trim();
+      if(!name || seen[name]) return;
+      seen[name] = true;
+      var item = masterItems().filter(function(it){ return it.name===name; })[0];
+      if(!item) plan.created.push(name);
+      else if((entry.itemIds||[]).indexOf(item.id)!==-1) plan.already.push(name);
+      else plan.fromMaster.push(name);
+    });
+    return plan;
+  }
+
+  function namesPreview(arr){
+    var shown = arr.slice(0, 12).map(esc).join('、');
+    return shown + (arr.length>12 ? ' ほか'+(arr.length-12)+'件' : '');
   }
 
   function importCSVIntoEntry(mode, entry, csvText){
@@ -1172,6 +1202,25 @@
     }
 
     html += '<div class="op-label">持ち物操作</div>';
+    var eplan = view.entryImportPlan;
+    if(eplan && eplan.entryId===entry.id){
+      var total = eplan.already.length + eplan.fromMaster.length + eplan.created.length;
+      html += '<div class="panel" style="border-color:var(--amber);">';
+      html += '<div class="panel-label">CSV取込の確認</div>';
+      if(total===0){
+        html += '<p class="hint" style="margin-top:0;">取り込める持ち物が見つかりませんでした。</p>';
+      } else {
+        html += '<p class="hint" style="margin-top:0;color:var(--cream);">この'+modeLabel(mode)+'に、次のように取り込みます（今ある持ち物は消えません）。</p>';
+        if(eplan.fromMaster.length){ html += '<p class="hint"><b>マスタから追加 '+eplan.fromMaster.length+'件</b>：'+namesPreview(eplan.fromMaster)+'</p>'; }
+        if(eplan.created.length){ html += '<p class="hint"><b style="color:var(--amber);">新規 '+eplan.created.length+'件</b>（持ち物マスタにも登録されます）：'+namesPreview(eplan.created)+'</p>'; }
+        if(eplan.already.length){ html += '<p class="hint"><b>追加済み '+eplan.already.length+'件</b>'+((eplan.hasBring||eplan.hasChecked)?'（'+[eplan.hasBring?'持込/レンタル':'', eplan.hasChecked?'チェック状態':''].filter(Boolean).join('・')+'をCSVの内容で上書き）':'（変更なし）')+'：'+namesPreview(eplan.already)+'</p>'; }
+        if(eplan.hasChecked && (eplan.fromMaster.length||eplan.created.length)){ html += '<p class="hint">チェック状態もCSVの内容が反映されます。</p>'; }
+      }
+      html += '<div class="row-between" style="margin-bottom:0;">';
+      html += '<button class="btn ghost" id="entry-import-cancel" style="flex:1;margin-right:8px;">キャンセル</button>';
+      if(total>0){ html += '<button class="btn" id="entry-import-confirm" style="flex:1;">取り込む</button>'; }
+      html += '</div></div>';
+    }
     html += '<div class="op-row">';
     html += '<button class="btn ghost" id="reset-check-btn">チェック解除</button>';
     html += '<button class="btn ghost" id="csv-export-btn">CSV出力</button>';
@@ -1507,7 +1556,7 @@
       };
     });
 
-    function goBackToList(){ view.infoOpen = false; view.selectedByMode[view.mode] = null; view.editMode = false; view.confirmDeleteEntry = false; view.csvFallbackOpen = false; view.csvFallbackText = ''; render(); }
+    function goBackToList(){ view.infoOpen = false; view.entryImportPlan = null; view.selectedByMode[view.mode] = null; view.editMode = false; view.confirmDeleteEntry = false; view.csvFallbackOpen = false; view.csvFallbackText = ''; render(); }
     var backBtn = document.getElementById('back-btn');
     if(backBtn){ backBtn.onclick = goBackToList; }
     var backBtnBottom = document.getElementById('back-btn-bottom');
@@ -1647,13 +1696,30 @@
         reader.onload = function(){
           var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
           if(entry){
-            importCSVIntoEntry(view.mode, entry, String(reader.result));
-            saveState();
+            view.entryImportPlan = planEntryImport(view.mode, entry, String(reader.result));
           }
           csvImportInput.value = '';
           render();
+          var cb = document.getElementById('entry-import-cancel');
+          if(cb && cb.scrollIntoView) cb.scrollIntoView({block:'center'});
         };
         reader.readAsText(file, 'UTF-8');
+      };
+    }
+
+    var entryImportCancel = document.getElementById('entry-import-cancel');
+    if(entryImportCancel){ entryImportCancel.onclick = function(){ view.entryImportPlan = null; render(); }; }
+    var entryImportConfirm = document.getElementById('entry-import-confirm');
+    if(entryImportConfirm){
+      entryImportConfirm.onclick = function(){
+        var plan = view.entryImportPlan;
+        var entry = currentEntry();
+        view.entryImportPlan = null;
+        if(plan && entry && plan.entryId===entry.id){
+          importCSVIntoEntry(view.mode, entry, plan.text);
+          saveState();
+        }
+        render();
       };
     }
 
