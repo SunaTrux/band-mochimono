@@ -9,6 +9,12 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.3.1] - 2026-10-13
+
+### 修正
+- Windows の Chrome などで、ボタンや入力欄が明朝体・小さい文字で表示される問題（日本語フォントの指定を見直し）
+- PC の広い画面では全体を少し大きく表示し、ヘッダーとタブを本文と同じ幅に揃えた
+
 ## [1.3.0] - 2026-10-12
 
 ### 追加
@@ -65,6 +71,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.3.1]: https://github.com/sunatrux/band-mochimono/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/sunatrux/band-mochimono/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/sunatrux/band-mochimono/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/sunatrux/band-mochimono/compare/v1.0.0...v1.1.0
