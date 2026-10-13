@@ -9,6 +9,11 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.3.2] - 2026-10-13
+
+### 変更
+- イベント登録欄で、パート選択は最初から表示。パートを選ぶと名前・日時などの入力欄が自動で開く
+
 ## [1.3.1] - 2026-10-13
 
 ### 修正
@@ -71,6 +76,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.3.2]: https://github.com/sunatrux/band-mochimono/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/sunatrux/band-mochimono/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/sunatrux/band-mochimono/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/sunatrux/band-mochimono/compare/v1.1.0...v1.2.0
