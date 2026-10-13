@@ -9,6 +9,11 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.3.3] - 2026-10-13
+
+### 変更
+- 案内文の「タップ」を「選択」「押す」に統一（PCでも使えるため）。パート未選択時の説明を分かりやすく
+
 ## [1.3.2] - 2026-10-13
 
 ### 変更
@@ -76,6 +81,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.3.3]: https://github.com/sunatrux/band-mochimono/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/sunatrux/band-mochimono/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/sunatrux/band-mochimono/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/sunatrux/band-mochimono/compare/v1.2.0...v1.3.0

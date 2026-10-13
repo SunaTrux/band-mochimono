@@ -433,7 +433,7 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.3.2';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.3.3';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-13';
   // アップデート時に一度だけ出すお知らせ（最新版の分だけ書けばOK。無い版はお知らせを出さない）
   var RELEASE_NOTES = {
@@ -1223,7 +1223,7 @@
         html += '<span class="chip'+(on?' on':'')+'" data-role-entry="'+esc(r)+'">'+esc(r)+'</span>';
       });
       html += '</div>';
-      html += '<p class="hint" style="margin-bottom:0;">担当するパートをタップ（複数可）。そのパート＋共通の持ち物で自動リストを作ります。選ばずに ∨ から進めると全部入りになります。</p>';
+      html += '<p class="hint" style="margin-bottom:0;">担当するパートを選択（複数可）。そのパート＋共通の持ち物で自動リストを作ります。未選択の場合は全部入ります。</p>';
     }
     if(regOpen){
     html += '<div style="height:10px;"></div>';
@@ -1480,7 +1480,7 @@
         html += '</div>';
         html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:52%;">';
         html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+(isBringForEntry(it,entry)?'':'color:var(--amber);border-color:var(--amber);')+'">'+(isBringForEntry(it,entry)?'持込':'レンタル')+'</button>';
-        html += '<button class="btn ghost" data-toggle-entry-visible="'+it.id+'" style="padding:5px 9px;line-height:0;'+(hiddenNow?'color:var(--amber);border-color:var(--amber);':'')+'" aria-label="'+(hiddenNow?'非表示中（タップで表示）':'表示中（タップで非表示）')+'" title="'+(hiddenNow?'非表示中（タップで表示）':'表示中（タップで非表示）')+'">'+(hiddenNow?EYE_OFF_SVG:EYE_SVG)+'</button>';
+        html += '<button class="btn ghost" data-toggle-entry-visible="'+it.id+'" style="padding:5px 9px;line-height:0;'+(hiddenNow?'color:var(--amber);border-color:var(--amber);':'')+'" aria-label="'+(hiddenNow?'非表示中（押すと表示）':'表示中（押すと非表示）')+'" title="'+(hiddenNow?'非表示中（押すと表示）':'表示中（押すと非表示）')+'">'+(hiddenNow?EYE_OFF_SVG:EYE_SVG)+'</button>';
         html += '<button class="del-x" data-remove-item="'+it.id+'">×</button>';
         html += '</div>';
         html += '</div></div>';
@@ -1564,7 +1564,7 @@
       html += '<div class="empty">持ち物が登録されていません</div>';
     } else {
       var mgs = groupItemsByRole(masterItems());
-      if(mgs.length>1){ html += '<p class="hint" style="margin:0 0 4px;">パート名をタップすると一覧が開きます。</p>'; }
+      if(mgs.length>1){ html += '<p class="hint" style="margin:0 0 4px;">パート名を選択すると一覧が開きます。</p>'; }
       mgs.forEach(function(g){
       var gOpen = mgs.length<=1 || !!view.openGroups[g.label];
       if(mgs.length>1){
