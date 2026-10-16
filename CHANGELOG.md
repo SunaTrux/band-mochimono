@@ -9,6 +9,14 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.4.0] - 2026-10-16
+
+### 追加
+- イベント一覧で、左スワイプしてイベントを削除（確認付き）
+
+### 変更
+- アップデートのたびに、お知らせで変更点を表示（パッチ版も含む。しばらく開いていなかった場合は直近3版分をまとめて表示）
+
 ## [1.3.3] - 2026-10-13
 
 ### 変更
@@ -81,6 +89,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.4.0]: https://github.com/sunatrux/band-mochimono/compare/v1.3.3...v1.4.0
 [1.3.3]: https://github.com/sunatrux/band-mochimono/compare/v1.3.2...v1.3.3
 [1.3.2]: https://github.com/sunatrux/band-mochimono/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/sunatrux/band-mochimono/compare/v1.3.0...v1.3.1
