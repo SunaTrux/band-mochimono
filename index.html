@@ -303,6 +303,11 @@
   .swipe-wrap.sw-on .swipe-bg{opacity:1;}
   .swipe-wrap.sw-on .swipe-bg.del{pointer-events:auto;}
   .swipe-bg.hide{background:#2f7de1;}
+  .swipe-bg.pin{background:#2e9e6b;justify-content:flex-start;padding-right:0;padding-left:18px;}
+  .swipe-wrap.sw-on.sw-right .swipe-bg:not(.pin){opacity:0;}
+  .swipe-wrap.sw-on:not(.sw-right) .swipe-bg.pin{opacity:0;}
+  .check-row.pinned{box-shadow:inset 3px 0 0 var(--amber);padding-left:10px;}
+  .pin-head{color:var(--amber);}
   .swipe-bg.del{background:#d93a2f;cursor:pointer;}
   .swipe-wrap > .swipe-row{position:relative;background:var(--panel);z-index:1;}
   .swipe-row[data-rental] > *{opacity:.5;}
@@ -436,10 +441,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.4.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.5.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-16';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.5.0': [
+      'チェックリストの持ち物を右スワイプで📌ピン留め。ピン留めした持ち物はリストの先頭に表示（もう一度右スワイプで解除）',
+      'PCでは「持ち物を編集」の📌ボタンでもピン留めできます'
+    ],
     '1.4.0': [
       'イベント一覧で、左スワイプしてイベントを削除できるように（確認付き）',
       'アップデートのたびに、このお知らせで変更点を表示'
@@ -1383,12 +1392,13 @@
       } else if(visibleItems.length===0){
         html += '<div class="empty">表示できる持ち物がありません（全て非表示中）。「持ち物を編集」から表示を戻してください。</div>';
       } else {
-        var gs = groupItemsByRole(visibleItems);
-        gs.forEach(function(g){
-        html += groupHeading(g.label, g.items.length, gs.length);
-        g.items.forEach(function(it){
+        var pinnedIds = entry.pinnedIds || [];
+        var pinnedItems = visibleItems.filter(function(it){ return pinnedIds.indexOf(it.id)!==-1; });
+        var restItems = visibleItems.filter(function(it){ return pinnedIds.indexOf(it.id)===-1; });
+        function renderCheckRow(it){
+          var isPinned = pinnedIds.indexOf(it.id)!==-1;
           var bringNow = isBringForEntry(it, entry);
-          html += '<div class="swipe-wrap"><div class="swipe-bg hide">非表示</div><div class="check-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="hide"'+(bringNow?'':' data-rental="1"')+'>';
+          html += '<div class="swipe-wrap"><div class="swipe-bg hide">非表示</div><div class="swipe-bg pin">'+(isPinned?'📌 解除':'📌 ピン留め')+'</div><div class="check-row swipe-row'+(isPinned?' pinned':'')+'" data-swipe-row="'+it.id+'" data-swipe-kind="hide" data-swipe-right="pin"'+(bringNow?'':' data-rental="1"')+'>';
           if(bringNow){
             var on = !!ck[it.id];
             html += '<div class="toggle'+(on?' on':'')+'" data-item="'+it.id+'"><div class="knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>';
@@ -1400,11 +1410,19 @@
           html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:3px 7px;font-size:10px;flex-shrink:0;'+(bringNow?'':'color:var(--amber);border-color:var(--amber);')+'">'+(bringNow?'持込':'レンタル')+'</button>';
           html += '<button class="icon-btn" data-hide-item="'+it.id+'" aria-label="非表示にする" title="非表示にする"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg></button>';
           html += '</div></div>';
-        });
+        }
+        if(pinnedItems.length){
+          html += '<div class="group-head pin-head">📌 ピン留め<span class="group-count">'+pinnedItems.length+'</span></div>';
+          pinnedItems.forEach(renderCheckRow);
+        }
+        var gs = groupItemsByRole(restItems);
+        gs.forEach(function(g){
+          html += groupHeading(g.label, g.items.length, gs.length + (pinnedItems.length?1:0));
+          g.items.forEach(renderCheckRow);
         });
       }
       if(visibleItems.length>0){
-        html += '<p class="hint" style="margin:6px 2px 0;">← 左にスワイプで非表示にできます（戻すのは「持ち物を編集」から）</p>';
+        html += '<p class="hint" style="margin:6px 2px 0;">← 左スワイプで非表示（戻すのは「持ち物を編集」から）／ 右スワイプ → で📌ピン留め（先頭に表示）</p>';
       }
       html += '</div>';
       html += renderCustomItemForm(mode);
@@ -1514,6 +1532,8 @@
         html += '</div>';
         html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:52%;">';
         html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+(isBringForEntry(it,entry)?'':'color:var(--amber);border-color:var(--amber);')+'">'+(isBringForEntry(it,entry)?'持込':'レンタル')+'</button>';
+        var pinnedNow = (entry.pinnedIds||[]).indexOf(it.id)!==-1;
+        html += '<button class="btn ghost" data-toggle-pin="'+it.id+'" style="padding:4px 8px;font-size:12px;line-height:1.2;'+(pinnedNow?'border-color:var(--amber);background:var(--amber-dim);':'opacity:.55;')+'" aria-label="'+(pinnedNow?'ピン留め中（押すと解除）':'ピン留めする')+'" title="'+(pinnedNow?'ピン留め中（押すと解除）':'ピン留めする')+'">📌</button>';
         html += '<button class="btn ghost" data-toggle-entry-visible="'+it.id+'" style="padding:5px 9px;line-height:0;'+(hiddenNow?'color:var(--amber);border-color:var(--amber);':'')+'" aria-label="'+(hiddenNow?'非表示中（押すと表示）':'表示中（押すと非表示）')+'" title="'+(hiddenNow?'非表示中（押すと表示）':'表示中（押すと非表示）')+'">'+(hiddenNow?EYE_OFF_SVG:EYE_SVG)+'</button>';
         html += '<button class="del-x" data-remove-item="'+it.id+'">×</button>';
         html += '</div>';
@@ -1862,6 +1882,7 @@
         var idx = entry.itemIds.indexOf(b.dataset.removeItem);
         if(idx!==-1) entry.itemIds.splice(idx,1);
         state.items = state.items.filter(function(it){ return !(it.local && it.id===b.dataset.removeItem); });
+        if(entry.pinnedIds){ entry.pinnedIds = entry.pinnedIds.filter(function(id){ return id!==b.dataset.removeItem; }); }
         var key = checkKey(view.mode, entry.id);
         if(state.checks[key]) delete state.checks[key][b.dataset.removeItem];
         if(entry.bringOverride) delete entry.bringOverride[b.dataset.removeItem];
@@ -2094,6 +2115,7 @@
         if(entry.bringOverride){ copyEntry.bringOverride = mapKeys(entry.bringOverride); }
         if(entry.nameOverride){ copyEntry.nameOverride = mapKeys(entry.nameOverride); }
         if(entry.hiddenIds){ copyEntry.hiddenIds = entry.hiddenIds.map(function(id){ return idMap[id] || id; }); }
+        if(entry.pinnedIds){ copyEntry.pinnedIds = entry.pinnedIds.map(function(id){ return idMap[id] || id; }); }
         list.push(copyEntry);
         view.selectedByMode[view.mode] = copyEntry.id;
         view.editMode = false;
@@ -2147,6 +2169,19 @@
         render();
       };
     }
+
+    document.querySelectorAll('[data-toggle-pin]').forEach(function(b){
+      b.onclick = function(){
+        var entry = currentEntry();
+        if(!entry) return;
+        if(!entry.pinnedIds) entry.pinnedIds = [];
+        var i = entry.pinnedIds.indexOf(b.dataset.togglePin);
+        if(i===-1) entry.pinnedIds.push(b.dataset.togglePin); else entry.pinnedIds.splice(i,1);
+        entry.updatedAt = Date.now();
+        saveState();
+        render();
+      };
+    });
 
     var showHiddenToggle = document.getElementById('show-hidden-toggle');
     if(showHiddenToggle){ showHiddenToggle.onchange = function(){ view.showHiddenInEdit = showHiddenToggle.checked; render(); }; }
@@ -2291,13 +2326,15 @@
     }
     document.querySelectorAll('[data-swipe-row]').forEach(function(row){
       var kind = row.dataset.swipeKind;
-      var startX=0, startY=0, dx=0, tracking=false, moved=false, pid=null, wasOpen=false;
+      var startX=0, startY=0, dx=0, tracking=false, moved=false, pid=null, wasOpen=false, canRight=false;
       var OPEN = 88;
       row.addEventListener('pointerdown', function(ev){
         if(ev.target.closest('button')) return;
         wasOpen = row.classList.contains('swipe-open');
         closeSwipeRows(row);
         tracking=true; moved=false; dx=0; startX=ev.clientX; startY=ev.clientY; pid=ev.pointerId;
+        // 画面左端からのスワイプは、iPhoneの「戻る」操作と重なるので右スワイプとして扱わない
+        canRight = !!row.dataset.swipeRight && ev.clientX > 28;
       });
       row.addEventListener('pointermove', function(ev){
         if(!tracking || ev.pointerId!==pid) return;
@@ -2311,7 +2348,8 @@
           try{ row.setPointerCapture(pid); }catch(e){}
         }
         var base = wasOpen ? -OPEN : 0;
-        dx = Math.min(0, base+mx);
+        dx = canRight ? Math.min(160, base+mx) : Math.min(0, base+mx);
+        row.parentNode.classList.toggle('sw-right', dx>0);
         row.style.transform = 'translateX('+dx+'px)';
       });
       function end(){
@@ -2319,7 +2357,19 @@
         tracking=false;
         row.classList.remove('swiping');
         if(moved){
-          if(kind==='hide' && dx < -90){
+          if(canRight && dx > 90){
+            row.style.transform='';
+            var pid2=row.dataset.swipeRow;
+            var entryP=currentEntry();
+            if(entryP){
+              if(!entryP.pinnedIds) entryP.pinnedIds=[];
+              var pi=entryP.pinnedIds.indexOf(pid2);
+              if(pi===-1) entryP.pinnedIds.push(pid2); else entryP.pinnedIds.splice(pi,1);
+              entryP.updatedAt=Date.now();
+              saveState();
+            }
+            setTimeout(render, 120);
+          } else if(kind==='hide' && dx < -90){
             row.style.transform='translateX(-110%)';
             var id=row.dataset.swipeRow;
             setTimeout(function(){
