@@ -277,6 +277,10 @@
   .op-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;}
   .op-row.two{grid-template-columns:1fr 1fr;}
   .op-row .btn{padding:9px 4px;font-size:12.5px;white-space:nowrap;min-width:0;width:100%;}
+  #top-notice:empty{display:none;}
+  #top-notice{padding:calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 2px max(16px, env(safe-area-inset-left, 0px));background:var(--bg);}
+  #top-notice > *{max-width:448px;margin-left:auto;margin-right:auto;}
+  body.has-top-notice .header{padding-top:18px;}
   .newver-bar{display:flex;align-items:center;gap:10px;background:var(--amber-dim);border:1px solid var(--amber);border-radius:12px;padding:10px 10px 10px 14px;margin-bottom:12px;font-size:13px;font-weight:700;}
   .newver-bar span{flex:1;}
   .newver-bar .btn{padding:7px 12px;font-size:12.5px;white-space:nowrap;}
@@ -422,6 +426,7 @@
 </head>
 <body>
 
+<div id="top-notice"></div>
 <div class="header">
   <div class="led"></div>
   <h1>バンドマン持ち物リスト</h1>
@@ -441,10 +446,13 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.5.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.5.1';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-16';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.5.1': [
+      'バージョンのお知らせを画面の一番上に表示するように'
+    ],
     '1.5.0': [
       'チェックリストの持ち物を右スワイプで📌ピン留め。ピン留めした持ち物はリストの先頭に表示（もう一度右スワイプで解除）',
       'PCでは「持ち物を編集」の📌ボタンでもピン留めできます'
@@ -1226,8 +1234,17 @@
         app.innerHTML = renderEntryListView(view.mode);
       }
     }
+    // バージョンのお知らせは画面の一番上（ヘッダーより上）に出す
     var notice = renderNewVersionBar() + renderUpdateNotice();
-    if(notice){ app.insertAdjacentHTML('afterbegin', notice); }
+    var topNotice = document.getElementById('top-notice');
+    if(topNotice){ topNotice.innerHTML = notice; }
+    document.body.classList.toggle('has-top-notice', !!notice);
+    if(notice && !window.__noticeScrolled){
+      window.__noticeScrolled = true;
+      try{ history.scrollRestoration = 'manual'; }catch(e){}
+      window.scrollTo(0,0);
+      window.addEventListener('load', function(){ setTimeout(function(){ window.scrollTo(0,0); }, 0); });
+    }
     var nvReload = document.getElementById('newver-reload-btn');
     if(nvReload){ nvReload.onclick = function(){ location.reload(); }; }
     var regToggle = document.getElementById('reg-toggle-btn');
