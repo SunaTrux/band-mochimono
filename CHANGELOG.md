@@ -9,6 +9,12 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.6.0] - 2026-10-17
+
+### 追加
+- イベントの日付で色分け：今日＝オレンジ「今日」、これから＝緑「明日」「あと○日」、過去＝グレー「終了」（一覧のカードとイベント情報カード）
+- イベント一覧に「過去の○○を隠す」チェック（ブラウザごとに記憶）
+
 ## [1.5.2] - 2026-10-17
 
 ### 修正
@@ -107,6 +113,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.6.0]: https://github.com/sunatrux/band-mochimono/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/sunatrux/band-mochimono/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/sunatrux/band-mochimono/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/sunatrux/band-mochimono/compare/v1.4.0...v1.5.0

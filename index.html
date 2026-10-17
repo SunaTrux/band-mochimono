@@ -364,6 +364,17 @@
   }
   .progress-bar{height:100%;background:var(--amber);}
 
+  .st-badge{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;margin-right:6px;vertical-align:2px;font-family:var(--font-jp);letter-spacing:0;}
+  .st-today{background:var(--amber);color:#fff;}
+  .st-future{background:var(--teal-dim);color:var(--teal);border:1px solid var(--teal);}
+  :root[data-theme="dark"] .st-future, :root:not([data-theme]) .st-future{color:#bfe3dd;}
+  .st-past{background:transparent;color:var(--cream-dim);border:1px solid var(--seam);}
+  .entry-card.st-card-today, .info-card.st-card-today{box-shadow:inset 4px 0 0 var(--amber);}
+  .entry-card.st-card-future, .info-card.st-card-future{box-shadow:inset 4px 0 0 var(--teal);}
+  .entry-card.st-card-past, .info-card.st-card-past{box-shadow:inset 4px 0 0 var(--seam);}
+  .entry-card.st-card-past .name, .entry-card.st-card-past .progress{opacity:.6;}
+  .past-toggle{display:flex;align-items:center;gap:8px;font-size:13px;margin:-2px 0 10px;cursor:pointer;color:var(--cream-dim);}
+  .past-toggle input{width:auto;margin:0;}
   .info-card{display:flex;align-items:flex-start;gap:10px;background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:14px 14px 14px 16px;}
   .info-main{flex:1;min-width:0;}
   .info-name{font-size:17px;font-weight:700;word-break:break-word;}
@@ -448,10 +459,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.5.2';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
-  var APP_RELEASE_DATE = '2026-10-16';
+  var APP_VERSION = '1.6.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.6.0': [
+      'イベントの日付で色分け：今日はオレンジ、これからは緑（「明日」「あと○日」）、過去はグレー（「終了」）',
+      'イベント一覧に「過去の○○を隠す」チェックを追加'
+    ],
     '1.5.2': [
       'イベントの「コピー」を押したとき、コピーできたことが分かるようにお知らせを表示し、そのまま名前・日時を書き換えられるように'
     ],
@@ -859,6 +874,29 @@
     return '〜'+e.endTime;
   }
 
+  // ---------- 日付の状態（過去／今日／これから） ----------
+  function todayStr(){
+    var d = new Date();
+    function p2(n){ return (n<10?'0':'')+n; }
+    return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
+  }
+  function dateStatus(e){
+    if(!e || !e.date) return {kind:'none'};
+    var t = todayStr();
+    if(e.date===t) return {kind:'today', label:'今日'};
+    var diff = Math.round((new Date(e.date+'T00:00:00') - new Date(t+'T00:00:00')) / 86400000);
+    if(isNaN(diff)) return {kind:'none'};
+    if(diff>0) return {kind:'future', label: diff===1 ? '明日' : 'あと'+diff+'日'};
+    return {kind:'past', label:'終了'};
+  }
+  function statusBadge(st){
+    if(!st || st.kind==='none') return '';
+    return '<span class="st-badge st-'+st.kind+'">'+esc(st.label)+'</span>';
+  }
+  var HIDE_PAST_KEY = 'gp-hide-past-v1';
+  var hidePast = false;
+  try{ hidePast = localStorage.getItem(HIDE_PAST_KEY)==='1'; }catch(e){}
+
   function durationMin(t1, t2){
     if(!t1 || !t2) return 0;
     var a = t1.split(':'), b = t2.split(':');
@@ -1262,6 +1300,14 @@
     }
     var nvReload = document.getElementById('newver-reload-btn');
     if(nvReload){ nvReload.onclick = function(){ location.reload(); }; }
+    var hidePastToggle = document.getElementById('hide-past-toggle');
+    if(hidePastToggle){
+      hidePastToggle.onchange = function(){
+        hidePast = hidePastToggle.checked;
+        try{ localStorage.setItem(HIDE_PAST_KEY, hidePast?'1':'0'); }catch(e){}
+        render();
+      };
+    }
     var regToggle = document.getElementById('reg-toggle-btn');
     if(regToggle){ regToggle.onclick = function(){ view.regOpen[view.mode] = !view.regOpen[view.mode]; render(); }; }
     var updClose = document.getElementById('update-close-btn');
@@ -1317,15 +1363,23 @@
     html += '</div>';
 
     html += '<div class="panel">';
+    var pastCount = list.filter(function(e){ return dateStatus(e).kind==='past'; }).length;
     html += '<div class="panel-label">登録済み '+label+'（'+list.length+'）</div>';
+    if(pastCount>0){
+      html += '<label class="past-toggle"><input type="checkbox" id="hide-past-toggle"'+(hidePast?' checked':'')+'> 過去の'+label+'を隠す（'+pastCount+'件）</label>';
+    }
+    var shownList = hidePast ? list.filter(function(e){ return dateStatus(e).kind!=='past'; }) : list;
     if(list.length===0){
       html += '<div class="empty">まだ登録がありません</div>';
+    } else if(shownList.length===0){
+      html += '<div class="empty">これからの'+label+'はありません（過去の'+label+'は隠しています）</div>';
     } else {
-      var sorted = list.slice().sort(function(a,b){ return (b.updatedAt||0) - (a.updatedAt||0); });
+      var sorted = shownList.slice().sort(function(a,b){ return (b.updatedAt||0) - (a.updatedAt||0); });
       sorted.forEach(function(e){
         var p = progressFor(mode, e);
-        html += '<div class="swipe-wrap entry-wrap"><button class="swipe-bg del" data-entry-del="'+e.id+'">削除</button><div class="entry-card swipe-row" data-entry="'+e.id+'" data-swipe-row="entry-'+e.id+'" data-swipe-kind="del">';
-        html += '<div><div class="name">'+esc(e.name)+'</div>';
+        var st = dateStatus(e);
+        html += '<div class="swipe-wrap entry-wrap"><button class="swipe-bg del" data-entry-del="'+e.id+'">削除</button><div class="entry-card swipe-row st-card-'+st.kind+'" data-entry="'+e.id+'" data-swipe-row="entry-'+e.id+'" data-swipe-kind="del">';
+        html += '<div><div class="name">'+statusBadge(st)+esc(e.name)+'</div>';
         if(e.date){
           var wd = weekdayJa(e.date);
           var dateLine = e.date + (wd? '('+wd.charAt(0)+')' : '') + (timeRange(e)? ' '+timeRange(e) : '');
@@ -1370,9 +1424,10 @@
     var tr = timeRange(entry);
     if(tr){ dateLine += (dateLine?' ':'') + tr.replace('–','〜'); }
     var dur = durationMin(entry.time, entry.endTime);
-    html += '<div class="info-card">';
+    var stInfo = dateStatus(entry);
+    html += '<div class="info-card st-card-'+stInfo.kind+'">';
     html += '<div class="info-main">';
-    html += '<div class="info-name">'+esc(entry.name)+'</div>';
+    html += '<div class="info-name">'+statusBadge(stInfo)+esc(entry.name)+'</div>';
     if(entry.roles && entry.roles.length){ html += '<div class="info-sub">'+entry.roles.map(esc).join(' / ')+'</div>'; }
     if(dateLine || dur){
       html += '<div class="info-date">'+(dateLine?esc(dateLine):'')+(dur?' <span class="info-pill">'+dur+'分</span>':'')+'</div>';
