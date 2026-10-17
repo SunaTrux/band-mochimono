@@ -9,6 +9,11 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.11.0] - 2026-10-17
+
+### 追加
+- 「設定」→「パートを管理」に「いつものパート」（複数選択可・初期値は選択なし）。選んでおくと、イベント登録時に最初からそのパートが選ばれ、入力欄も開いた状態になる。バックアップにも含まれる
+
 ## [1.10.1] - 2026-10-17
 
 ### 追加
@@ -185,6 +190,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.11.0]: https://github.com/sunatrux/band-mochimono/compare/v1.10.1...v1.11.0
 [1.10.1]: https://github.com/sunatrux/band-mochimono/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/sunatrux/band-mochimono/compare/v1.9.2...v1.10.0
 [1.9.2]: https://github.com/sunatrux/band-mochimono/compare/v1.9.1...v1.9.2

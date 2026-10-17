@@ -514,10 +514,13 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.10.1';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.11.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.11.0': [
+      '「設定」→「パートを管理」に「いつものパート」を追加。選んでおくと、イベント登録時に最初からそのパートが選ばれます（兼務の人は複数選択OK）'
+    ],
     '1.10.1': [
       'タブの上の「📌 ピン留め」欄でも、右スワイプでピン留めを解除できるように'
     ],
@@ -866,6 +869,11 @@
     return h;
   }
 
+  // 設定の「いつものパート」：イベント登録時に最初から選んでおくパート（初期値は選択なし）
+  function defaultEntryRoles(){
+    return (state.defaultRoles||[]).filter(function(r){ return state.roles.indexOf(r)!==-1; });
+  }
+
   var view = {
     mode: 'studio',
     theme: loadTheme(),
@@ -873,7 +881,7 @@
     newItemScope: ['studio','live','recording'],
     newItemRoles: [],
     newItemBring: true,
-    newEntryRoles: [],
+    newEntryRoles: defaultEntryRoles(),
     newEntryName: null,
     newEntryDate: '',
     newEntryTime: '',
@@ -1545,7 +1553,7 @@
       };
     }
     var regToggle = document.getElementById('reg-toggle-btn');
-    if(regToggle){ regToggle.onclick = function(){ view.regOpen[view.mode] = !view.regOpen[view.mode]; render(); }; }
+    if(regToggle){ regToggle.onclick = function(){ var isOpen = regToggle.classList.contains('open'); view.regOpen[view.mode] = isOpen ? 'closed' : true; render(); }; }
     var updClose = document.getElementById('update-close-btn');
     if(updClose){ updClose.onclick = function(){ markVersionSeen(); render(); }; }
     bindEvents();
@@ -1561,7 +1569,8 @@
     };
 
     var html = '';
-    var regOpen = !!view.regOpen[mode] || state.roles.length===0;
+    // いつものパートが選ばれている間は、入力欄を最初から開いておく（∨で閉じたらその状態を優先）
+    var regOpen = view.regOpen[mode]===true || state.roles.length===0 || (view.regOpen[mode]!=='closed' && view.newEntryRoles.length>0);
     html += '<div class="panel reg-panel">';
     html += '<button class="reg-toggle'+(regOpen?' open':'')+'" id="reg-toggle-btn"><span class="reg-title">パートを選んで'+label+'を登録</span><span class="reg-chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></button>';
     html += '<div style="height:10px;"></div>';
@@ -2011,6 +2020,17 @@
 
     html += '<div class="panel">';
     html += '<div class="panel-label">パートを管理</div>';
+    if(state.roles.length>0){
+      var defs = state.defaultRoles || [];
+      html += '<label class="small">いつものパート（イベント登録時に最初から選んでおく・複数可）</label>';
+      html += '<div class="chip-wrap">';
+      state.roles.forEach(function(r){
+        var on = defs.indexOf(r)!==-1;
+        html += '<span class="chip'+(on?' on':'')+'" data-default-role="'+esc(r)+'">'+esc(r)+'</span>';
+      });
+      html += '</div>';
+      html += '<p class="hint">例：ドラムとギターを兼務するなら2つ選んでおくと、登録のたびに選び直さずに済みます。何も選ばなければ、これまで通り毎回選ぶ形です。</p>';
+    }
     html += '<input type="text" id="role-name" placeholder="例: サポートキーボード">';
     html += '<button class="btn block" id="add-role-btn">+ パートを追加</button>';
     if(state.roles.length>0){
@@ -2095,7 +2115,7 @@
         view.mode = b.dataset.mode;
         view.infoOpen = false;
         view.editMode = false;
-        view.newEntryRoles = [];
+        view.newEntryRoles = defaultEntryRoles();
         view.newEntryName = null;
         view.newEntryDate = '';
         view.newEntryTime = '';
@@ -2151,7 +2171,7 @@
         if(!name){ nameEl.focus(); return; }
         var entry = {id:uid(), name:name, date:(dateEl?dateEl.value:''), time:(timeEl?timeEl.value:''), endTime:(document.getElementById('entry-endtime')?document.getElementById('entry-endtime').value:''), artist:(document.getElementById('entry-artist')?document.getElementById('entry-artist').value.trim():''), roles:view.newEntryRoles.slice(), itemIds:computeAutoItemIds(view.mode, view.newEntryRoles), updatedAt:Date.now()};
         listForMode(view.mode).push(entry);
-        view.newEntryRoles = [];
+        view.newEntryRoles = defaultEntryRoles();
         view.newEntryName = null;
         view.newEntryDate = '';
         view.newEntryTime = '';
@@ -2950,6 +2970,19 @@
     document.querySelectorAll('[data-role-del-cancel]').forEach(function(b){
       b.onclick = function(){ view.confirmRoleDel = null; render(); };
     });
+    document.querySelectorAll('[data-default-role]').forEach(function(c){
+      c.onclick = function(){
+        var r = c.dataset.defaultRole;
+        if(!state.defaultRoles) state.defaultRoles = [];
+        var i = state.defaultRoles.indexOf(r);
+        if(i===-1) state.defaultRoles.push(r); else state.defaultRoles.splice(i,1);
+        saveState();
+        view.newEntryRoles = defaultEntryRoles();
+        MODES.forEach(function(m){ if(view.regOpen[m]==='closed') view.regOpen[m] = false; });
+        render();
+      };
+    });
+
     document.querySelectorAll('[data-role-del-confirm]').forEach(function(b){
       b.onclick = function(){
         var r = b.dataset.roleDelConfirm;
@@ -2962,6 +2995,8 @@
         });
         var ri = view.newItemRoles.indexOf(r);
         if(ri!==-1) view.newItemRoles.splice(ri,1);
+        if(state.defaultRoles){ state.defaultRoles = state.defaultRoles.filter(function(x){ return x!==r; }); }
+        view.newEntryRoles = view.newEntryRoles.filter(function(x){ return x!==r; });
         saveState();
         render();
       };
