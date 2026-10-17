@@ -9,6 +9,13 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.7.0] - 2026-10-17
+
+### 追加
+- イベント一覧で、右スワイプしてイベントを📌ピン留め。ピン留めしたイベントは一覧の先頭「📌 ピン留め」欄に表示（もう一度右スワイプで解除）
+- イベント画面の情報カードに📌ボタン（PCなどスワイプしにくい環境向け）
+- ピン留めしたイベントは「過去の○○を隠す」中でも表示
+
 ## [1.6.0] - 2026-10-17
 
 ### 追加
@@ -113,6 +120,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.7.0]: https://github.com/sunatrux/band-mochimono/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/sunatrux/band-mochimono/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/sunatrux/band-mochimono/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/sunatrux/band-mochimono/compare/v1.5.0...v1.5.1

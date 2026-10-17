@@ -373,6 +373,10 @@
   .entry-card.st-card-future, .info-card.st-card-future{box-shadow:inset 4px 0 0 var(--teal);}
   .entry-card.st-card-past, .info-card.st-card-past{box-shadow:inset 4px 0 0 var(--seam);}
   .entry-card.st-card-past .name, .entry-card.st-card-past .progress{opacity:.6;}
+  .entry-card.entry-pinned{border-color:var(--amber);}
+  .pin-mark{margin-right:4px;}
+  .info-pin{font-size:16px;opacity:.45;}
+  .info-pin.on{opacity:1;border-color:var(--amber);background:var(--amber-dim);}
   .past-toggle{display:flex;align-items:center;gap:8px;font-size:13px;margin:-2px 0 10px;cursor:pointer;color:var(--cream-dim);}
   .past-toggle input{width:auto;margin:0;}
   .info-card{display:flex;align-items:flex-start;gap:10px;background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:14px 14px 14px 16px;}
@@ -459,10 +463,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.6.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.7.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.7.0': [
+      'イベント一覧でも、右スワイプでイベントを📌ピン留め。一覧の先頭に表示されます',
+      'イベント画面の📌ボタンでもピン留め／解除できます（PC向け）'
+    ],
     '1.6.0': [
       'イベントの日付で色分け：今日はオレンジ、これからは緑（「明日」「あと○日」）、過去はグレー（「終了」）',
       'イベント一覧に「過去の○○を隠す」チェックを追加'
@@ -1363,23 +1371,26 @@
     html += '</div>';
 
     html += '<div class="panel">';
-    var pastCount = list.filter(function(e){ return dateStatus(e).kind==='past'; }).length;
+    var pastCount = list.filter(function(e){ return !e.pinned && dateStatus(e).kind==='past'; }).length;
     html += '<div class="panel-label">登録済み '+label+'（'+list.length+'）</div>';
     if(pastCount>0){
       html += '<label class="past-toggle"><input type="checkbox" id="hide-past-toggle"'+(hidePast?' checked':'')+'> 過去の'+label+'を隠す（'+pastCount+'件）</label>';
     }
-    var shownList = hidePast ? list.filter(function(e){ return dateStatus(e).kind!=='past'; }) : list;
+    // ピン留めしたイベントは「過去を隠す」中でも表示する
+    var shownList = hidePast ? list.filter(function(e){ return e.pinned || dateStatus(e).kind!=='past'; }) : list;
     if(list.length===0){
       html += '<div class="empty">まだ登録がありません</div>';
     } else if(shownList.length===0){
       html += '<div class="empty">これからの'+label+'はありません（過去の'+label+'は隠しています）</div>';
     } else {
       var sorted = shownList.slice().sort(function(a,b){ return (b.updatedAt||0) - (a.updatedAt||0); });
-      sorted.forEach(function(e){
+      var pinnedEntries = sorted.filter(function(e){ return e.pinned; });
+      var otherEntries = sorted.filter(function(e){ return !e.pinned; });
+      function renderEntryCard(e){
         var p = progressFor(mode, e);
         var st = dateStatus(e);
-        html += '<div class="swipe-wrap entry-wrap"><button class="swipe-bg del" data-entry-del="'+e.id+'">削除</button><div class="entry-card swipe-row st-card-'+st.kind+'" data-entry="'+e.id+'" data-swipe-row="entry-'+e.id+'" data-swipe-kind="del">';
-        html += '<div><div class="name">'+statusBadge(st)+esc(e.name)+'</div>';
+        html += '<div class="swipe-wrap entry-wrap"><button class="swipe-bg del" data-entry-del="'+e.id+'">削除</button><div class="swipe-bg pin">'+(e.pinned?'📌 解除':'📌 ピン留め')+'</div><div class="entry-card swipe-row st-card-'+st.kind+(e.pinned?' entry-pinned':'')+'" data-entry="'+e.id+'" data-swipe-row="entry-'+e.id+'" data-swipe-kind="del" data-swipe-right="pin-entry">';
+        html += '<div><div class="name">'+(e.pinned?'<span class="pin-mark">📌</span>':'')+statusBadge(st)+esc(e.name)+'</div>';
         if(e.date){
           var wd = weekdayJa(e.date);
           var dateLine = e.date + (wd? '('+wd.charAt(0)+')' : '') + (timeRange(e)? ' '+timeRange(e) : '');
@@ -1398,7 +1409,13 @@
           html += '<button class="btn danger" data-entry-del-confirm="'+e.id+'" style="flex:1;">削除する</button>';
           html += '</div></div>';
         }
-      });
+      }
+      if(pinnedEntries.length){
+        html += '<div class="group-head pin-head" style="margin-bottom:8px;">📌 ピン留め<span class="group-count">'+pinnedEntries.length+'</span></div>';
+        pinnedEntries.forEach(renderEntryCard);
+        if(otherEntries.length){ html += '<div class="group-head" style="margin-bottom:8px;">そのほか<span class="group-count">'+otherEntries.length+'</span></div>'; }
+      }
+      otherEntries.forEach(renderEntryCard);
     }
     html += '</div>';
     return html;
@@ -1437,7 +1454,10 @@
     if(entry.artist){ html += '<div class="info-artist">'+esc(entry.artist)+'</div>'; }
     html += '<div class="info-sub">持ち物 '+done+' / '+bringItems.length+' チェック済み</div>';
     html += '</div>';
+    html += '<div style="display:flex;gap:8px;flex:0 0 auto;">';
+    html += '<button class="info-toggle info-pin'+(entry.pinned?' on':'')+'" id="info-pin-btn" aria-label="'+(entry.pinned?'ピン留めを解除':'一覧の先頭にピン留め')+'" title="'+(entry.pinned?'ピン留めを解除':'一覧の先頭にピン留め')+'">📌</button>';
     html += '<button class="info-toggle'+(view.infoOpen?' open':'')+'" id="info-toggle-btn" aria-label="'+(view.infoOpen?'閉じる':'詳細を編集')+'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>';
+    html += '</div>';
     html += '</div>';
 
     if(view.infoOpen){
@@ -2285,6 +2305,9 @@
       };
     });
 
+    var infoPinBtn = document.getElementById('info-pin-btn');
+    if(infoPinBtn){ infoPinBtn.onclick = function(){ var en = currentEntry(); if(!en) return; en.pinned = !en.pinned; saveState(); render(); }; }
+
     var infoToggleBtn = document.getElementById('info-toggle-btn');
     if(infoToggleBtn){ infoToggleBtn.onclick = function(){ view.infoOpen = !view.infoOpen; render(); }; }
 
@@ -2448,7 +2471,12 @@
         tracking=false;
         row.classList.remove('swiping');
         if(moved){
-          if(canRight && dx > 90){
+          if(canRight && dx > 90 && row.dataset.swipeRight==='pin-entry'){
+            row.style.transform='';
+            var ev2 = listForMode(view.mode).filter(function(x){ return x.id===row.dataset.entry; })[0];
+            if(ev2){ ev2.pinned = !ev2.pinned; saveState(); }   // 並び順が変わらないよう updatedAt は更新しない
+            setTimeout(render, 120);
+          } else if(canRight && dx > 90){
             row.style.transform='';
             var pid2=row.dataset.swipeRow;
             var entryP=currentEntry();
