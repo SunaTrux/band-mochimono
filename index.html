@@ -286,6 +286,9 @@
   .pin-bar-inner{max-width:448px;margin:0 auto;}
   .pin-bar-title{font-size:11.5px;font-weight:700;color:var(--amber);margin:0 0 5px;letter-spacing:.04em;}
   .pin-row{width:100%;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--seam);border-radius:10px;padding:7px 10px;margin:0 0 5px;cursor:pointer;font-family:inherit;color:var(--cream);text-align:left;font-size:13.5px;}
+  .swipe-wrap.pin-wrap{border-radius:10px;margin:0 0 5px;}
+  .swipe-wrap.pin-wrap > .pin-row{margin:0;}
+  .pin-bar-hint{font-size:10.5px;color:var(--cream-dim);text-align:right;margin-top:-1px;}
   .pin-row.active{border-color:var(--amber);box-shadow:inset 3px 0 0 var(--amber);}
   .pin-mode{flex:0 0 auto;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 6px;color:#fff;background:#7d7466;}
   .pin-mode-studio{background:#5b7fa6;}
@@ -511,10 +514,13 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.10.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.10.1';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.10.1': [
+      'タブの上の「📌 ピン留め」欄でも、右スワイプでピン留めを解除できるように'
+    ],
     '1.10.0': [
       'ピン留めしたイベントを、スタジオ・ライブ・レコに関係なくタブの上にまとめて表示。押すとそのイベントを開きます',
       'チェックリストに色分けメーターを追加。進むほど色が変わり、全部そろうと「準備完了！」',
@@ -1466,12 +1472,14 @@
       var e = r.e, st = dateStatus(e), p = progressFor(r.mode, e);
       var d = e.date ? e.date.slice(5).replace('-','/') + dowShort(e.date) : '';
       var active = view.mode===r.mode && view.selectedByMode[r.mode]===e.id;
-      h += '<button class="pin-row'+(active?' active':'')+'" data-pin-open="'+r.mode+'|'+e.id+'">';
+      h += '<div class="swipe-wrap pin-wrap"><div class="swipe-bg pin">📌 解除</div>';
+      h += '<div class="pin-row swipe-row'+(active?' active':'')+'" role="button" tabindex="0" data-pin-open="'+r.mode+'|'+e.id+'" data-swipe-row="pinbar-'+e.id+'" data-swipe-kind="none" data-swipe-right="pin-entry" data-entry="'+e.id+'" data-entry-mode="'+r.mode+'">';
       h += '<span class="pin-mode pin-mode-'+r.mode+'">'+esc(r.mode==='recording'?'レコ':modeLabel(r.mode))+'</span>';
       h += '<span class="pin-name">'+statusBadge(st)+esc(e.name)+'</span>';
       h += '<span class="pin-meta">'+esc(d)+(p.total?' <b>'+p.done+'/'+p.total+'</b>':'')+'</span>';
-      h += '</button>';
+      h += '</div></div>';
     });
+    h += '<div class="pin-bar-hint">右にスワイプでピン留めを解除</div>';
     h += '</div>';
     return h;
   }
@@ -1484,6 +1492,7 @@
       pinBar.innerHTML = renderPinBar();
       pinBar.querySelectorAll('[data-pin-open]').forEach(function(b){
         b.onclick = function(){
+          if(b._swiped) return;   // スワイプ操作の直後は開かない
           var parts = b.dataset.pinOpen.split('|');
           view.mode = parts[0];
           view.selectedByMode[parts[0]] = parts[1];
@@ -2721,7 +2730,7 @@
         if(moved){
           if(canRight && dx > 90 && row.dataset.swipeRight==='pin-entry'){
             row.style.transform='';
-            var ev2 = listForMode(view.mode).filter(function(x){ return x.id===row.dataset.entry; })[0];
+            var ev2 = listForMode(row.dataset.entryMode || view.mode).filter(function(x){ return x.id===row.dataset.entry; })[0];
             if(ev2){ ev2.pinned = !ev2.pinned; saveState(); }   // 並び順が変わらないよう updatedAt は更新しない
             setTimeout(render, 120);
           } else if(canRight && dx > 90){
