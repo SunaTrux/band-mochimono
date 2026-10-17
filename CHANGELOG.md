@@ -9,6 +9,14 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.8.0] - 2026-10-17
+
+### 追加
+- イベント一覧の「並び順」切り替え（日付順／更新順。ブラウザごとに記憶）
+
+### 変更
+- イベント一覧の初期の並び順を日付順に：今日 → これから（近い順）→ 日付未設定 → 過去（新しい順）。同じ日は開始時間順。ピン留めは引き続き先頭
+
 ## [1.7.2] - 2026-10-17
 
 ### 変更
@@ -131,6 +139,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.8.0]: https://github.com/sunatrux/band-mochimono/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/sunatrux/band-mochimono/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/sunatrux/band-mochimono/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/sunatrux/band-mochimono/compare/v1.6.0...v1.7.0

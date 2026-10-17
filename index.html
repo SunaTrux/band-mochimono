@@ -379,6 +379,9 @@
   .pin-mark{margin-right:4px;}
   .info-pin{font-size:16px;opacity:.45;}
   .info-pin.on{opacity:1;border-color:var(--amber);background:var(--amber-dim);}
+  .sort-row{display:flex;align-items:center;gap:6px;margin:-2px 0 8px;}
+  .sort-label{font-size:12px;color:var(--cream-dim);margin-right:2px;}
+  .sort-row .chip{margin:0;}
   .past-toggle{display:flex;align-items:center;gap:8px;font-size:13px;margin:-2px 0 10px;cursor:pointer;color:var(--cream-dim);}
   .past-toggle input{width:auto;margin:0;}
   .info-card{display:flex;align-items:flex-start;gap:10px;background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:14px 14px 14px 16px;}
@@ -465,10 +468,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.7.2';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.8.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.8.0': [
+      'イベント一覧を日付順に並べるように（今日 → これから（近い順）→ 日付未設定 → 過去）',
+      '一覧上部の「並び順」で、日付順／更新順を切り替えられます'
+    ],
     '1.7.2': [
       'イベント登録欄の見出しを「パートを選んで○○を登録」に変更し、少し大きく表示',
       '登録ボタンを「+ 登録して持ち物をセット」に名前変更'
@@ -910,6 +917,21 @@
     if(!st || st.kind==='none') return '';
     return '<span class="st-badge st-'+st.kind+'">'+esc(st.label)+'</span>';
   }
+  var SORT_KEY = 'gp-sort-v1';
+  var sortMode = 'date';   // 'date'＝日付順（初期値） / 'updated'＝更新順
+  try{ if(localStorage.getItem(SORT_KEY)==='updated') sortMode = 'updated'; }catch(e){}
+  // 日付順：今日 → これから（近い順）→ 日付未設定 → 過去（新しい順）
+  function compareEntries(a, b){
+    if(sortMode==='updated') return (b.updatedAt||0) - (a.updatedAt||0);
+    var rank = {today:0, future:1, none:2, past:3};
+    var sa = dateStatus(a).kind, sb = dateStatus(b).kind;
+    if(rank[sa]!==rank[sb]) return rank[sa]-rank[sb];
+    if(sa==='none') return (b.updatedAt||0) - (a.updatedAt||0);
+    var ka = (a.date||'')+' '+(a.time||'99:99'), kb = (b.date||'')+' '+(b.time||'99:99');
+    if(ka===kb) return (b.updatedAt||0) - (a.updatedAt||0);
+    var asc = ka < kb ? -1 : 1;
+    return sa==='past' ? -asc : asc;
+  }
   var HIDE_PAST_KEY = 'gp-hide-past-v1';
   var hidePast = false;
   try{ hidePast = localStorage.getItem(HIDE_PAST_KEY)==='1'; }catch(e){}
@@ -1317,6 +1339,13 @@
     }
     var nvReload = document.getElementById('newver-reload-btn');
     if(nvReload){ nvReload.onclick = function(){ location.reload(); }; }
+    document.querySelectorAll('[data-sort-mode]').forEach(function(c){
+      c.onclick = function(){
+        sortMode = c.dataset.sortMode==='updated' ? 'updated' : 'date';
+        try{ localStorage.setItem(SORT_KEY, sortMode); }catch(e){}
+        render();
+      };
+    });
     var hidePastToggle = document.getElementById('hide-past-toggle');
     if(hidePastToggle){
       hidePastToggle.onchange = function(){
@@ -1382,6 +1411,12 @@
     html += '<div class="panel">';
     var pastCount = list.filter(function(e){ return !e.pinned && dateStatus(e).kind==='past'; }).length;
     html += '<div class="panel-label">登録済み '+label+'（'+list.length+'）</div>';
+    if(list.length>1){
+      html += '<div class="sort-row"><span class="sort-label">並び順</span>';
+      html += '<span class="chip'+(sortMode==='date'?' on':'')+'" data-sort-mode="date">日付順</span>';
+      html += '<span class="chip'+(sortMode==='updated'?' on':'')+'" data-sort-mode="updated">更新順</span>';
+      html += '</div>';
+    }
     if(pastCount>0){
       html += '<label class="past-toggle"><input type="checkbox" id="hide-past-toggle"'+(hidePast?' checked':'')+'> 過去の'+label+'を隠す（'+pastCount+'件）</label>';
     }
@@ -1392,7 +1427,7 @@
     } else if(shownList.length===0){
       html += '<div class="empty">これからの'+label+'はありません（過去の'+label+'は隠しています）</div>';
     } else {
-      var sorted = shownList.slice().sort(function(a,b){ return (b.updatedAt||0) - (a.updatedAt||0); });
+      var sorted = shownList.slice().sort(compareEntries);
       var pinnedEntries = sorted.filter(function(e){ return e.pinned; });
       var otherEntries = sorted.filter(function(e){ return !e.pinned; });
       function renderEntryCard(e){
