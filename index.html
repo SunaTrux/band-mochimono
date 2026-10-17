@@ -489,6 +489,30 @@
   .data-place-now{font-size:13px;}
   .data-place-now b{color:var(--amber);}
   .data-place-warn{color:var(--cream-dim);}
+
+  /* ---------- 横向き・広い画面：チェックリストを2列に ---------- */
+  @media (orientation:landscape) and (min-width:640px){
+    html body.is-detail .container{max-width:900px;}
+    html body.is-detail .nav, html body.is-detail .header{padding-left:max(16px, calc(50% - 434px));padding-right:max(16px, calc(50% - 434px));}
+    html body.is-detail .header .led{right:max(20px, calc(50% - 426px));}
+    html body.is-detail #pin-bar .pin-bar-inner{max-width:868px;}
+    .checklist-panel{display:grid;grid-template-columns:1fr 1fr;column-gap:22px;align-items:start;}
+    .checklist-panel > .group-head, .checklist-panel > .hint, .checklist-panel > .empty{grid-column:1 / -1;}
+    .checklist-panel > .swipe-wrap:last-of-type .check-row{border-bottom:1px solid var(--seam);}
+  }
+  /* ---------- スマホ横向き：高さを節約（タイトルとタブを細く） ---------- */
+  @media (orientation:landscape) and (max-height:500px){
+    .header{padding-top:calc(8px + env(safe-area-inset-top, 0px));padding-bottom:6px;}
+    body.has-top-notice .header{padding-top:8px;}
+    .header h1{font-size:16px;}
+    .header p{display:none;}
+    .header .led{top:12px;}
+    .nav{padding-top:6px;padding-bottom:6px;}
+    .nav button{padding:6px 2px;}
+    .container{padding-top:10px;}
+    #pin-bar{padding-top:5px;padding-bottom:5px;}
+    .meter{top:4px;padding:7px 12px 9px;}
+  }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -516,11 +540,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.12.0';
+  var APP_VERSION = '1.13.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.13.0': [
+      'スマホを横向きにすると、チェックリストを2列で表示（PCの広い画面でも2列）',
+      '横向きのときはタイトルとタブを細くして、チェックリストを広く使えるように'
+    ],
     '1.12.0': [
       'チェックリストを「未チェックだけ」に絞り込めるように。チェックするとその場で消えるので、残りがひと目で分かります'
     ],
@@ -1552,6 +1580,7 @@
       b.classList.toggle('active', b.dataset.mode===view.mode);
     });
     var app = document.getElementById('app');
+    document.body.classList.toggle('is-detail', view.mode!=='items' && !!view.selectedByMode[view.mode] && !view.editMode);
     if(view.mode==='items'){
       app.innerHTML = renderItemsView();
       applySettingsAccordion(app);
@@ -1790,7 +1819,7 @@
       }
       // 未チェックだけ：チェック済みとレンタル（チェック不要）を隠す
       if(uncheckedOnly){ visibleItems = visibleItems.filter(function(it){ return isBringForEntry(it, entry) && !ck[it.id]; }); }
-      html += '<div class="panel">';
+      html += '<div class="panel checklist-panel">';
       if(items.length===0){
         html += '<div class="empty">まだ持ち物がありません。「持ち物を編集」から追加してください。</div>';
       } else if(uncheckedOnly && allVisibleCount>0 && visibleItems.length===0){
