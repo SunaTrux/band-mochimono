@@ -63,6 +63,8 @@
   :root[data-theme="light"]{color-scheme:only light;}
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+  /* clip は横はみ出しを防ぎつつ、メーターの追従表示（sticky）を妨げない */
+  @supports (overflow:clip){ html,body{overflow-x:clip;} }
   html{background:var(--bg);}
   img,svg,textarea,select,input{max-width:100%;}
   body{
@@ -279,6 +281,19 @@
   .op-row .btn{padding:9px 4px;font-size:12.5px;white-space:nowrap;min-width:0;width:100%;}
   .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom, 0px));transform:translate(-50%, 20px);max-width:calc(100% - 32px);width:max-content;background:var(--cream);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:13px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:50;}
   .toast.show{opacity:1;transform:translate(-50%, 0);}
+  #pin-bar:empty{display:none;}
+  #pin-bar{background:var(--bg);border-bottom:1px solid var(--seam);padding:8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));}
+  .pin-bar-inner{max-width:448px;margin:0 auto;}
+  .pin-bar-title{font-size:11.5px;font-weight:700;color:var(--amber);margin:0 0 5px;letter-spacing:.04em;}
+  .pin-row{width:100%;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--seam);border-radius:10px;padding:7px 10px;margin:0 0 5px;cursor:pointer;font-family:inherit;color:var(--cream);text-align:left;font-size:13.5px;}
+  .pin-row.active{border-color:var(--amber);box-shadow:inset 3px 0 0 var(--amber);}
+  .pin-mode{flex:0 0 auto;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 6px;color:#fff;background:#7d7466;}
+  .pin-mode-studio{background:#5b7fa6;}
+  .pin-mode-live{background:#c2603f;}
+  .pin-mode-recording{background:#7a5ea8;}
+  .pin-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;}
+  .pin-meta{flex:0 0 auto;font-size:12px;color:var(--cream-dim);font-variant-numeric:tabular-nums;}
+  .pin-meta b{color:var(--amber);font-weight:700;margin-left:4px;}
   #top-notice:empty{display:none;}
   #top-notice{padding:calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 2px max(16px, env(safe-area-inset-left, 0px));background:var(--bg);}
   #top-notice > *{max-width:448px;margin-left:auto;margin-right:auto;}
@@ -311,6 +326,11 @@
   .dt-row{gap:4px;}
   .dt-row{display:flex;flex-wrap:nowrap;gap:5px;align-items:center;margin-bottom:2px;}
   .dt-row input{min-width:0;width:auto;}
+  /* 日付・時間の入力欄の高さと文字位置を揃える（iOS/Chromeで空欄・入力済みの高さがずれないように） */
+  .dt-row input[type=date],.dt-row input[type=time]{height:40px;min-height:40px;line-height:40px;padding-top:0;padding-bottom:0;margin:0;}
+  input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value{text-align:left;margin:0;min-height:0;line-height:40px;}
+  input[type=date]::-webkit-datetime-edit,input[type=time]::-webkit-datetime-edit{padding:0;line-height:1;}
+  .dt-row .dow-badge,.dt-row .dt-sep{line-height:40px;height:40px;}
   .dt-sep{color:var(--cream-dim);font-size:12px;flex:0 0 auto;}
   .swipe-wrap{position:relative;overflow:hidden;}
   .swipe-bg{position:absolute;top:0;bottom:0;right:0;width:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:22px;color:#fff;font-size:13px;font-weight:600;border:none;border-radius:0;margin:0;font-family:inherit;}
@@ -389,6 +409,17 @@
   .sort-row .chip{margin:0;}
   .past-toggle{display:flex;align-items:center;gap:8px;font-size:13px;margin:-2px 0 10px;cursor:pointer;color:var(--cream-dim);}
   .past-toggle input{width:auto;margin:0;}
+  .meter{background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:10px 14px 12px;margin:2px 0 12px;position:sticky;top:6px;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+  .meter-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px;}
+  .meter-msg{font-size:13px;font-weight:700;color:var(--cream);}
+  .meter-num{font-size:12.5px;color:var(--cream-dim);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .meter-num b{font-size:16px;color:var(--cream);}
+  .meter-track{height:12px;border-radius:999px;background:var(--field-bg);border:1px solid var(--seam);overflow:hidden;}
+  .meter-fill{height:100%;border-radius:999px;transition:width .35s ease, background .35s ease;}
+  .meter.complete{border-color:#2e9e6b;background:linear-gradient(180deg, rgba(46,158,107,.14), var(--panel));}
+  .meter.complete .meter-msg{color:#2e9e6b;}
+  .mini-meter{height:5px;border-radius:999px;background:var(--field-bg);border:1px solid var(--seam);overflow:hidden;margin-top:6px;width:120px;max-width:100%;}
+  .mini-meter i{display:block;height:100%;border-radius:999px;}
   .info-card{display:flex;align-items:flex-start;gap:10px;background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:14px 14px 14px 16px;}
   .info-main{flex:1;min-width:0;}
   .info-name{font-size:17px;font-weight:700;word-break:break-word;}
@@ -466,6 +497,7 @@
   <p>パート・スタジオ・ライブ・レコーディングごとに、忘れ物ゼロへ</p>
 </div>
 
+<div id="pin-bar"></div>
 <div class="nav">
   <button data-mode="studio">スタジオ</button>
   <button data-mode="live">ライブ</button>
@@ -479,10 +511,16 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.9.2';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.10.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.10.0': [
+      'ピン留めしたイベントを、スタジオ・ライブ・レコに関係なくタブの上にまとめて表示。押すとそのイベントを開きます',
+      'チェックリストに色分けメーターを追加。進むほど色が変わり、全部そろうと「準備完了！」',
+      'イベント一覧のカードにも小さな進み具合のメーター',
+      '日付・時間の入力欄の高さを揃えて見やすく／情報カードの所要時間表示を削除'
+    ],
     '1.9.2': [
       'イベント画面の日付・時間の入力を改善：選んだ値がすぐ反映され、入力の途中でピッカーが閉じたりずれたりしないように。スマホでは日付を選ぶとカレンダーが閉じます'
     ],
@@ -962,6 +1000,29 @@
   var hidePast = false;
   try{ hidePast = localStorage.getItem(HIDE_PAST_KEY)==='1'; }catch(e){}
 
+  // ---------- 持ち物チェックのメーター ----------
+  function meterColor(pct){
+    if(pct>=100) return '#2e9e6b';
+    if(pct>=67) return '#4f9fd8';
+    if(pct>=34) return 'var(--amber)';
+    return 'var(--red)';
+  }
+  function renderMeter(done, total){
+    var pct = total ? Math.round(done/total*100) : 0;
+    var complete = total>0 && done>=total;
+    var msg = complete ? '準備完了！忘れ物ゼロ 🎉' : (pct>=67 ? 'あと少し！' : (pct>=34 ? 'いい調子' : (done>0 ? 'スタート！' : 'チェックしていこう')));
+    var h = '<div class="meter'+(complete?' complete':'')+'">';
+    h += '<div class="meter-top"><span class="meter-msg">'+esc(msg)+'</span><span class="meter-num"><b>'+done+'</b> / '+total+'（'+pct+'%）</span></div>';
+    h += '<div class="meter-track"><div class="meter-fill" style="width:'+pct+'%;background:'+meterColor(pct)+';"></div></div>';
+    h += '</div>';
+    return h;
+  }
+  function miniMeter(done, total){
+    if(!total) return '';
+    var pct = Math.round(done/total*100);
+    return '<div class="mini-meter"><i style="width:'+pct+'%;background:'+meterColor(pct)+';"></i></div>';
+  }
+
   function durationMin(t1, t2){
     if(!t1 || !t2) return 0;
     var a = t1.split(':'), b = t2.split(':');
@@ -1390,9 +1451,48 @@
     });
   }
 
+  // ---------- タブの上の「📌 ピン留め」欄（スタジオ・ライブ・レコをまとめて表示） ----------
+  function renderPinBar(){
+    var rows = [];
+    MODES.forEach(function(m){
+      listForMode(m).forEach(function(e){ if(e.pinned) rows.push({mode:m, e:e}); });
+    });
+    if(!rows.length) return '';
+    var saved = sortMode; sortMode = 'date';
+    rows.sort(function(a,b){ return compareEntries(a.e, b.e); });
+    sortMode = saved;
+    var h = '<div class="pin-bar-inner"><div class="pin-bar-title">📌 ピン留め</div>';
+    rows.forEach(function(r){
+      var e = r.e, st = dateStatus(e), p = progressFor(r.mode, e);
+      var d = e.date ? e.date.slice(5).replace('-','/') + dowShort(e.date) : '';
+      var active = view.mode===r.mode && view.selectedByMode[r.mode]===e.id;
+      h += '<button class="pin-row'+(active?' active':'')+'" data-pin-open="'+r.mode+'|'+e.id+'">';
+      h += '<span class="pin-mode pin-mode-'+r.mode+'">'+esc(r.mode==='recording'?'レコ':modeLabel(r.mode))+'</span>';
+      h += '<span class="pin-name">'+statusBadge(st)+esc(e.name)+'</span>';
+      h += '<span class="pin-meta">'+esc(d)+(p.total?' <b>'+p.done+'/'+p.total+'</b>':'')+'</span>';
+      h += '</button>';
+    });
+    h += '</div>';
+    return h;
+  }
+
   // ---------- render ----------
   function render(){
     applyTabOrder();
+    var pinBar = document.getElementById('pin-bar');
+    if(pinBar){
+      pinBar.innerHTML = renderPinBar();
+      pinBar.querySelectorAll('[data-pin-open]').forEach(function(b){
+        b.onclick = function(){
+          var parts = b.dataset.pinOpen.split('|');
+          view.mode = parts[0];
+          view.selectedByMode[parts[0]] = parts[1];
+          view.editMode = false; view.infoOpen = false; view.confirmDeleteEntry = false;
+          render();
+          window.scrollTo(0, 0);
+        };
+      });
+    }
     document.querySelectorAll('.nav button').forEach(function(b){
       b.classList.toggle('active', b.dataset.mode===view.mode);
     });
@@ -1509,8 +1609,9 @@
       html += '<div class="empty">これからの'+label+'はありません（過去の'+label+'は隠しています）</div>';
     } else {
       var sorted = shownList.slice().sort(compareEntries);
-      var pinnedEntries = sorted.filter(function(e){ return e.pinned; });
-      var otherEntries = sorted.filter(function(e){ return !e.pinned; });
+      // ピン留めはタブの上の「📌 ピン留め」欄にまとめて表示するので、一覧では通常の並びのまま（📌マーク付き）
+      var pinnedEntries = [];
+      var otherEntries = sorted;
       function renderEntryCard(e){
         var p = progressFor(mode, e);
         var st = dateStatus(e);
@@ -1523,6 +1624,7 @@
         }
         if(e.artist){ html += '<div class="progress" style="color:var(--cream-dim);margin-left:0;">'+esc(e.artist)+'</div>'; }
         if(e.roles && e.roles.length){ html += '<div class="progress" style="color:var(--cream-dim);margin-left:0;">'+e.roles.map(esc).join(' / ')+'</div>'; }
+        html += miniMeter(p.done, p.total);
         html += '</div>';
         html += '<div class="progress">'+p.done+' / '+p.total+'</div>';
         html += '</div></div>';
@@ -1571,8 +1673,8 @@
     html += '<div class="info-main">';
     html += '<div class="info-name">'+statusBadge(stInfo)+esc(entry.name)+'</div>';
     if(entry.roles && entry.roles.length){ html += '<div class="info-sub">'+entry.roles.map(esc).join(' / ')+'</div>'; }
-    if(dateLine || dur){
-      html += '<div class="info-date">'+(dateLine?esc(dateLine):'')+(dur?' <span class="info-pill">'+dur+'分</span>':'')+'</div>';
+    if(dateLine){
+      html += '<div class="info-date">'+(dateLine?esc(dateLine):'')+''+'</div>';
     } else {
       html += '<div class="info-sub">日付未設定</div>';
     }
@@ -1610,6 +1712,7 @@
     html += '<div class="panel-label" style="margin-bottom:0;">'+(view.editMode?'含める持ち物を選ぶ':'持ち物チェックリスト')+'</div>';
     html += '<button class="btn ghost" id="toggle-edit-btn">'+(view.editMode?'完了':'持ち物を編集')+'</button>';
     html += '</div>';
+    if(!view.editMode && bringItems.length){ html += renderMeter(done, bringItems.length); }
 
     if(view.editMode){
       html += renderEditItemsPanel(mode, entry);
