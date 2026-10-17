@@ -277,6 +277,8 @@
   .op-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;}
   .op-row.two{grid-template-columns:1fr 1fr;}
   .op-row .btn{padding:9px 4px;font-size:12.5px;white-space:nowrap;min-width:0;width:100%;}
+  .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom, 0px));transform:translate(-50%, 20px);max-width:calc(100% - 32px);width:max-content;background:var(--cream);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:13px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:50;}
+  .toast.show{opacity:1;transform:translate(-50%, 0);}
   #top-notice:empty{display:none;}
   #top-notice{padding:calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 2px max(16px, env(safe-area-inset-left, 0px));background:var(--bg);}
   #top-notice > *{max-width:448px;margin-left:auto;margin-right:auto;}
@@ -446,10 +448,13 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.5.1';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.5.2';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-16';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.5.2': [
+      'イベントの「コピー」を押したとき、コピーできたことが分かるようにお知らせを表示し、そのまま名前・日時を書き換えられるように'
+    ],
     '1.5.1': [
       'バージョンのお知らせを画面の一番上に表示するように'
     ],
@@ -715,6 +720,16 @@
   }
   document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') checkForUpdate(); });
   setTimeout(checkForUpdate, 3000);
+
+  var toastTimer = null;
+  function showToast(msg){
+    var el = document.getElementById('toast');
+    if(!el){ el = document.createElement('div'); el.id = 'toast'; el.className = 'toast'; document.body.appendChild(el); }
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 3500);
+  }
 
   function renderNewVersionBar(){
     if(!view.newVersion) return '';
@@ -2137,9 +2152,13 @@
         view.selectedByMode[view.mode] = copyEntry.id;
         view.editMode = false;
         view.confirmDeleteEntry = false;
+        view.infoOpen = true;   // コピー後すぐ名前・日時を書き換えられるように編集欄を開く
+        showToast('「'+entry.name+'」をコピーしました。名前や日時を変えて使ってください');
         saveState();
         render();
         window.scrollTo(0, 0);
+        var ti = document.getElementById('detail-title-input');
+        if(ti){ try{ ti.focus(); ti.select(); }catch(e){} }
       };
     }
 

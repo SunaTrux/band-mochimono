@@ -9,6 +9,11 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.5.2] - 2026-10-17
+
+### 修正
+- イベントの「コピー」を押しても反応がないように見える問題。コピー後に「コピーしました」のお知らせを表示し、名前・日時の編集欄を開いた状態にする
+
 ## [1.5.1] - 2026-10-16
 
 ### 変更
@@ -102,6 +107,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.5.2]: https://github.com/sunatrux/band-mochimono/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/sunatrux/band-mochimono/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/sunatrux/band-mochimono/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/sunatrux/band-mochimono/compare/v1.3.3...v1.4.0
