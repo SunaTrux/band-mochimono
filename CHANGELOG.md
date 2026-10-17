@@ -9,6 +9,13 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.11.1] - 2026-10-17
+
+### 変更
+- 持ち物の一括出力・イベントのCSV出力のファイル名を、バックアップと同じく「環境名_日時_vバージョン」入りに（例：mochimono-items_iPhone-Safari_20261017-2210_v1.11.1.csv、mochimono-event_studio_…csv）
+- 一括取り込み・イベントのCSV取込・バックアップ復元の確認に、ファイル名と書き出し元（端末環境・日時・バージョン）を表示
+- 一括取り込みの確認に、新しく追加される持ち物と上書きされる持ち物の名前を表示
+
 ## [1.11.0] - 2026-10-17
 
 ### 追加
@@ -190,6 +197,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.11.1]: https://github.com/sunatrux/band-mochimono/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/sunatrux/band-mochimono/compare/v1.10.1...v1.11.0
 [1.10.1]: https://github.com/sunatrux/band-mochimono/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/sunatrux/band-mochimono/compare/v1.9.2...v1.10.0

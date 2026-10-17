@@ -514,10 +514,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.11.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.11.1';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.11.1': [
+      '持ち物の一括出力・イベントのCSV出力のファイル名に、端末環境名・日時・バージョンを入れるように（例：mochimono-items_iPhone-Safari_20261017-2210_v1.11.1.csv）',
+      '取り込み・復元の確認で、ファイル名と書き出し元（端末環境・日時・バージョン）、追加・上書きされる持ち物を表示'
+    ],
     '1.11.0': [
       '「設定」→「パートを管理」に「いつものパート」を追加。選んでおくと、イベント登録時に最初からそのパートが選ばれます（兼務の人は複数選択OK）'
     ],
@@ -1085,6 +1089,28 @@
     var br = /EdgA?\//.test(ua) ? 'Edge' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /FxiOS|Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
     return dev+'-'+br;
   }
+  // 書き出しファイル名の共通部分：環境名_日時_vバージョン（例：iPhone-Safari_20261017-2210_v1.11.0）
+  function fileTag(){
+    var d = new Date();
+    function p2(n){ return (n<10?'0':'')+n; }
+    return placeSlug()+'_'+d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+'-'+p2(d.getHours())+p2(d.getMinutes())+'_v'+APP_VERSION;
+  }
+  // 取り込むファイル名から、どこで・いつ・どの版で書き出したかを読み取る
+  function describeFileName(name){
+    if(!name) return '';
+    var m = /_([A-Za-z]+)-([A-Za-z]+)_(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(?:_v([0-9]+(?:\.[0-9]+)*))?/.exec(name);
+    var h = 'ファイル：'+esc(name);
+    if(m){
+      var place = m[2]==='HomeApp' ? m[1]+'のホーム画面のアプリ' : m[1]+'の '+m[2];
+      h += '<br>書き出し元：'+esc(place)+'・'+m[3]+'/'+parseInt(m[4],10)+'/'+parseInt(m[5],10)+' '+m[6]+':'+m[7]+(m[8]?'・v'+esc(m[8]):'');
+    }
+    return h;
+  }
+  function namesPreviewList(arr){
+    var shown = arr.slice(0, 12).map(esc).join('、');
+    return shown + (arr.length>12 ? ' ほか'+(arr.length-12)+'件' : '');
+  }
+
   function dataPlaceHtml(){
     return '<div class="data-place">'+
       '<div class="data-place-now">今のデータの保存場所：<b>'+esc(currentPlaceLabel())+'</b></div>'+
@@ -1162,9 +1188,9 @@
       parsed.push({name:name, scope:scopeField, roles:rolesField, bring:bringBool});
     });
 
-    var updated = 0, created = 0;
+    var updated = 0, created = 0, updatedNames = [], createdNames = [];
     parsed.forEach(function(p){
-      if(masterItems().some(function(it){ return it.name===p.name; })) updated++; else created++;
+      if(masterItems().some(function(it){ return it.name===p.name; })){ updated++; updatedNames.push(p.name); } else { created++; createdNames.push(p.name); }
     });
     var removedItems = masterItems().filter(function(it){ return !seenNames[it.name]; });
 
@@ -1176,7 +1202,7 @@
     });
 
     var looksEntry = isFull && header.indexOf('checked')!==-1;  // イベントのCSV出力の形式
-    return {parsed:parsed, updated:updated, created:created, removedItems:removedItems, newRoles:newRoles, looksEntry:looksEntry};
+    return {parsed:parsed, updated:updated, created:created, updatedNames:updatedNames, createdNames:createdNames, removedItems:removedItems, newRoles:newRoles, looksEntry:looksEntry};
   }
 
   function applyItemsImportPlan(plan){
@@ -1801,6 +1827,7 @@
       var total = eplan.already.length + eplan.fromMaster.length + eplan.created.length;
       html += '<div class="panel" style="border-color:var(--amber);">';
       html += '<div class="panel-label">CSV取込の確認</div>';
+      if(eplan.fileName){ html += '<p class="hint" style="margin-top:0;color:var(--cream);">'+describeFileName(eplan.fileName)+'</p>'; }
       if(eplan.looksMaster && total>0){
         html += '<p class="hint" style="margin-top:0;color:var(--red);font-weight:700;">⚠ これは「持ち物マスタの一括出力」ファイルのようです。取り込むと、この'+modeLabel(mode)+'に、マスタ全体の持ち物'+total+'件が対象として入ります（うち新しく追加'+(eplan.fromMaster.length+eplan.created.length)+'件）。イベントのCSVを取り込むつもりなら、キャンセルしてファイルを確認してください。</p>';
       }
@@ -1997,7 +2024,10 @@
       if(plan.looksEntry){
         html += '<p class="hint" style="color:var(--red);font-weight:700;">⚠ これは「イベントのCSV出力」ファイルのようです。取り込むと、このファイルに無い持ち物'+plan.removedItems.length+'件が持ち物マスタから削除され、登録済みのイベントからも外れます。イベントに取り込むつもりなら、キャンセルしてイベント画面の「CSV取込」を使ってください。</p>';
       }
+      if(plan.fileName){ html += '<p class="hint" style="color:var(--cream);">'+describeFileName(plan.fileName)+'</p>'; }
       html += '<p class="hint" style="color:var(--red);">更新 '+plan.updated+'件 ／ 新規追加 '+plan.created+'件 ／ 削除 '+plan.removedItems.length+'件 になります。この内容で取り込みますか？</p>';
+      if(plan.createdNames && plan.createdNames.length){ html += '<p class="hint"><b style="color:var(--amber);">新しく追加される持ち物</b>：'+namesPreviewList(plan.createdNames)+'</p>'; }
+      if(plan.updatedNames && plan.updatedNames.length){ html += '<p class="hint"><b>用途・パート・持込/レンタルがCSVの内容で上書きされる持ち物</b>：'+namesPreviewList(plan.updatedNames)+'</p>'; }
       if(plan.removedItems.length>0){
         html += '<p class="hint">削除される持ち物：'+plan.removedItems.map(function(it){ return esc(it.name); }).join('、')+'（登録済みのイベントからも外れます）</p>';
       }
@@ -2068,6 +2098,7 @@
       } else {
         var when = bp.exportedAt ? new Date(bp.exportedAt) : null;
         var whenStr = (when && !isNaN(when.getTime())) ? (when.getFullYear()+'/'+(when.getMonth()+1)+'/'+when.getDate()+' '+('0'+when.getHours()).slice(-2)+':'+('0'+when.getMinutes()).slice(-2)) : '不明';
+        if(bp.fileName){ html += '<p class="hint" style="color:var(--cream);margin-bottom:4px;">ファイル：'+esc(bp.fileName)+'</p>'; }
         html += '<p class="hint" style="color:var(--cream);"><b>このバックアップを復元しますか？</b><br>作成日時：'+esc(whenStr)+(bp.appVersion?'（v'+esc(bp.appVersion)+'）':'')+(bp.place?'<br>作成場所：'+esc(bp.place):'')+'<br>内容：スタジオ'+bp.studios+'件・ライブ'+bp.lives+'件・レコ'+bp.recordings+'件・持ち物マスタ'+bp.items+'件</p>';
         html += '<p class="hint" style="color:var(--red);">今このブラウザにあるデータ（スタジオ'+state.studios.length+'件・ライブ'+state.lives.length+'件・レコ'+state.recordings.length+'件・持ち物マスタ'+masterItems().length+'件）は、すべてバックアップの内容に置き換わります。</p>';
         html += '<div class="row-between" style="margin-bottom:0;">';
@@ -2332,7 +2363,7 @@
         var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
         if(!entry) return;
         var csv = entryToCSV(view.mode, entry);
-        downloadCSV(entry.name.replace(/[\\/:*?"<>|]/g,'_') + '.csv', csv);
+        downloadCSV('mochimono-event_'+view.mode+'_'+fileTag()+'.csv', csv);
       };
     }
 
@@ -2348,6 +2379,7 @@
           var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
           if(entry){
             view.entryImportPlan = planEntryImport(view.mode, entry, String(reader.result));
+            view.entryImportPlan.fileName = file.name;
           }
           csvImportInput.value = '';
           render();
@@ -2882,7 +2914,7 @@
     var itemsExportBtn = document.getElementById('items-export-btn');
     if(itemsExportBtn){
       itemsExportBtn.onclick = function(){
-        downloadCSV('持ち物マスター.csv', itemsFullCSV());
+        downloadCSV('mochimono-items_'+fileTag()+'.csv', itemsFullCSV());
       };
     }
 
@@ -2896,6 +2928,7 @@
         var reader = new FileReader();
         reader.onload = function(){
           view.itemsImportPlan = planItemsImport(String(reader.result));
+          view.itemsImportPlan.fileName = file.name;
           itemsImportInput.value = '';
           render();
         };
@@ -3041,6 +3074,7 @@
         var reader = new FileReader();
         reader.onload = function(){
           view.backupPlan = parseBackup(String(reader.result));
+          view.backupPlan.fileName = file.name;
           view.backupDone = '';
           backupImportInput.value = '';
           render();
