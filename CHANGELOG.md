@@ -9,6 +9,11 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.13.1] - 2026-10-17
+
+### 修正
+- スマホ横向きで、タブ（とタイトル・ピン留め欄）が本文より外側にはみ出して見える問題。iPhone横向きのノッチ・画面の角の余白（セーフエリア）を本文と同じように避けるように
+
 ## [1.13.0] - 2026-10-17
 
 ### 追加
@@ -215,6 +220,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.13.1]: https://github.com/sunatrux/band-mochimono/compare/v1.13.0...v1.13.1
 [1.13.0]: https://github.com/sunatrux/band-mochimono/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/sunatrux/band-mochimono/compare/v1.11.2...v1.12.0
 [1.11.2]: https://github.com/sunatrux/band-mochimono/compare/v1.11.1...v1.11.2

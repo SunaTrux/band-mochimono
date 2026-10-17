@@ -59,7 +59,7 @@
   /* PC（マウス操作・広い画面）では全体を少し大きく */
   @media (min-width:640px) and (pointer:fine){ html{zoom:1.15;} }
   /* 広い画面では、ヘッダーとタブも本文と同じ幅に揃える */
-  @media (min-width:560px){ html .nav,html .header{padding-left:calc(50% - 224px);padding-right:calc(50% - 224px);} html .header .led{right:calc(50% - 216px);} }
+  @media (min-width:560px){ html .nav,html .header{padding-left:max(16px, env(safe-area-inset-left, 0px), calc(50% - 224px));padding-right:max(16px, env(safe-area-inset-right, 0px), calc(50% - 224px));} html .header .led{right:max(20px, calc(50% - 216px));} }
   :root[data-theme="light"]{color-scheme:only light;}
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -493,8 +493,9 @@
   /* ---------- 横向き・広い画面：チェックリストを2列に ---------- */
   @media (orientation:landscape) and (min-width:640px){
     html body.is-detail .container{max-width:900px;}
-    html body.is-detail .nav, html body.is-detail .header{padding-left:max(16px, calc(50% - 434px));padding-right:max(16px, calc(50% - 434px));}
-    html body.is-detail .header .led{right:max(20px, calc(50% - 426px));}
+    /* タブ・タイトルは本文と同じ左右の位置に（iPhone横向きのノッチ・角の丸みの分も避ける） */
+    html body.is-detail .nav, html body.is-detail .header, html body.is-detail #pin-bar{padding-left:max(16px, env(safe-area-inset-left, 0px), calc(50% - 434px));padding-right:max(16px, env(safe-area-inset-right, 0px), calc(50% - 434px));}
+    html body.is-detail .header .led{right:max(20px, calc(env(safe-area-inset-right, 0px) + 8px), calc(50% - 426px));}
     html body.is-detail #pin-bar .pin-bar-inner{max-width:868px;}
     .checklist-panel{display:grid;grid-template-columns:1fr 1fr;column-gap:22px;align-items:start;}
     .checklist-panel > .group-head, .checklist-panel > .hint, .checklist-panel > .empty{grid-column:1 / -1;}
@@ -540,11 +541,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.13.0';
+  var APP_VERSION = '1.13.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.13.1': [
+      'スマホ横向きで、タブが本文より外にはみ出して見える問題を修正'
+    ],
     '1.13.0': [
       'スマホを横向きにすると、チェックリストを2列で表示（PCの広い画面でも2列）',
       '横向きのときはタイトルとタブを細くして、チェックリストを広く使えるように'
