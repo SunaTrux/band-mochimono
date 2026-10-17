@@ -9,6 +9,11 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.7.1] - 2026-10-17
+
+### 変更
+- イベント操作の「コピー」ボタンを「この内容で新規作成」に名前変更（押した後のお知らせ文も合わせて変更）
+
 ## [1.7.0] - 2026-10-17
 
 ### 追加
@@ -120,6 +125,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.7.1]: https://github.com/sunatrux/band-mochimono/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/sunatrux/band-mochimono/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/sunatrux/band-mochimono/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/sunatrux/band-mochimono/compare/v1.5.1...v1.5.2

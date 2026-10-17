@@ -463,10 +463,13 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.7.0';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.7.1';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.7.1': [
+      'イベント操作の「コピー」ボタンを「この内容で新規作成」に名前変更'
+    ],
     '1.7.0': [
       'イベント一覧でも、右スワイプでイベントを📌ピン留め。一覧の先頭に表示されます',
       'イベント画面の📌ボタンでもピン留め／解除できます（PC向け）'
@@ -1593,7 +1596,7 @@
       html += '</div>';
     } else {
       html += '<div class="op-row two">';
-      html += '<button class="btn ghost" id="copy-entry-btn">コピー</button>';
+      html += '<button class="btn ghost" id="copy-entry-btn">この内容で新規作成</button>';
       html += '<button class="btn danger" id="delete-entry-btn">削除</button>';
       html += '</div>';
     }
@@ -2228,7 +2231,7 @@
         view.editMode = false;
         view.confirmDeleteEntry = false;
         view.infoOpen = true;   // コピー後すぐ名前・日時を書き換えられるように編集欄を開く
-        showToast('「'+entry.name+'」をコピーしました。名前や日時を変えて使ってください');
+        showToast('「'+entry.name+'」の内容で新しいイベントを作りました。名前や日時を変えてください');
         saveState();
         render();
         window.scrollTo(0, 0);
