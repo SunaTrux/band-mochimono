@@ -9,6 +9,11 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.11.2] - 2026-10-17
+
+### 変更
+- ご意見・不具合報告の窓口を、X からフォーム（Tally）に変更。プレイヤーズセットリストと共通のフォームで、フォーム内でアプリを選んで送る形（今のバージョンを自動で添付）
+
 ## [1.11.1] - 2026-10-17
 
 ### 変更
@@ -197,6 +202,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.11.2]: https://github.com/sunatrux/band-mochimono/compare/v1.11.1...v1.11.2
 [1.11.1]: https://github.com/sunatrux/band-mochimono/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/sunatrux/band-mochimono/compare/v1.10.1...v1.11.0
 [1.10.1]: https://github.com/sunatrux/band-mochimono/compare/v1.10.0...v1.10.1
