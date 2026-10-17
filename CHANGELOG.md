@@ -9,6 +9,12 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.8.2] - 2026-10-17
+
+### 変更
+- バックアップのファイル名を「mochimono-backup_場所_日時_vバージョン.json」に（例：mochimono-backup_iPhone-Safari_20261017-1742_v1.8.2.json）。場所は端末とブラウザ（ホーム画面のアプリは HomeApp）
+- バックアップに作成場所を記録し、復元の確認画面に「作成場所」を表示
+
 ## [1.8.1] - 2026-10-17
 
 ### 変更
@@ -144,6 +150,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.8.2]: https://github.com/sunatrux/band-mochimono/compare/v1.8.1...v1.8.2
 [1.8.1]: https://github.com/sunatrux/band-mochimono/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/sunatrux/band-mochimono/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/sunatrux/band-mochimono/compare/v1.7.1...v1.7.2

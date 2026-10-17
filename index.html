@@ -474,10 +474,13 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.8.1';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.8.2';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.8.2': [
+      'バックアップのファイル名に、保存した場所・日時・アプリのバージョンを入れるように（例：mochimono-backup_iPhone-Safari_20261017-1742_v1.8.2.json）。復元の確認にも作成場所を表示します'
+    ],
     '1.8.1': [
       '「設定」→「データ管理」に、データの保存場所の説明を追加。今どこにデータがあるか（例：iPhoneの Safari／ホーム画面のアプリ）と、ブラウザ・ホーム画面のアプリごとにデータが別になること、移し方をまとめました'
     ],
@@ -980,10 +983,18 @@
   function isStandaloneApp(){ return !!(navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)); }
   function currentPlaceLabel(){
     var ua = navigator.userAgent || '';
-    var dev = /iPhone/.test(ua) ? 'iPhone' : (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) ? 'iPad' : /Android/.test(ua) ? 'Android' : 'この端末';
+    var dev = /iPhone/.test(ua) ? 'iPhone' : (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Macintosh/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'この端末';
     if(isStandaloneApp()) return dev+'のホーム画面のアプリ';
     var br = /EdgA?\//.test(ua) ? 'Edge' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /FxiOS|Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'ブラウザ';
     return dev+'の '+br;
+  }
+  // ファイル名用の短い環境名（例：iPhone-Safari／iPhone-HomeApp／Mac-Chrome）
+  function placeSlug(){
+    var ua = navigator.userAgent || '';
+    var dev = /iPhone/.test(ua) ? 'iPhone' : (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Macintosh/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'PC';
+    if(isStandaloneApp()) return dev+'-HomeApp';
+    var br = /EdgA?\//.test(ua) ? 'Edge' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /FxiOS|Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
+    return dev+'-'+br;
   }
   function dataPlaceHtml(){
     return '<div class="data-place">'+
@@ -1251,6 +1262,7 @@
       schemaVersion: SCHEMA_VERSION,
       appVersion: APP_VERSION,
       exportedAt: new Date().toISOString(),
+      place: currentPlaceLabel(),
       theme: theme,
       tabOrder: tabOrder.slice(),
       data: state
@@ -1269,6 +1281,7 @@
       obj: obj,
       exportedAt: obj.exportedAt || '',
       appVersion: obj.appVersion || '',
+      place: obj.place || '',
       studios: count(d.studios), lives: count(d.lives), recordings: count(d.recordings),
       items: d.items.filter(function(it){ return !it.local; }).length
     };
@@ -1885,7 +1898,7 @@
       } else {
         var when = bp.exportedAt ? new Date(bp.exportedAt) : null;
         var whenStr = (when && !isNaN(when.getTime())) ? (when.getFullYear()+'/'+(when.getMonth()+1)+'/'+when.getDate()+' '+('0'+when.getHours()).slice(-2)+':'+('0'+when.getMinutes()).slice(-2)) : '不明';
-        html += '<p class="hint" style="color:var(--cream);"><b>このバックアップを復元しますか？</b><br>作成日時：'+esc(whenStr)+(bp.appVersion?'（v'+esc(bp.appVersion)+'）':'')+'<br>内容：スタジオ'+bp.studios+'件・ライブ'+bp.lives+'件・レコ'+bp.recordings+'件・持ち物マスタ'+bp.items+'件</p>';
+        html += '<p class="hint" style="color:var(--cream);"><b>このバックアップを復元しますか？</b><br>作成日時：'+esc(whenStr)+(bp.appVersion?'（v'+esc(bp.appVersion)+'）':'')+(bp.place?'<br>作成場所：'+esc(bp.place):'')+'<br>内容：スタジオ'+bp.studios+'件・ライブ'+bp.lives+'件・レコ'+bp.recordings+'件・持ち物マスタ'+bp.items+'件</p>';
         html += '<p class="hint" style="color:var(--red);">今このブラウザにあるデータ（スタジオ'+state.studios.length+'件・ライブ'+state.lives.length+'件・レコ'+state.recordings.length+'件・持ち物マスタ'+masterItems().length+'件）は、すべてバックアップの内容に置き換わります。</p>';
         html += '<div class="row-between" style="margin-bottom:0;">';
         html += '<button class="btn ghost" id="backup-cancel-btn" style="flex:1;margin-right:8px;">キャンセル</button>';
@@ -2829,8 +2842,9 @@
     var backupExportBtn = document.getElementById('backup-export-btn');
     if(backupExportBtn){
       backupExportBtn.onclick = function(){
-        downloadText(tsName('mochimono-backup-', '.json'), buildBackup(), 'application/json');
-        view.backupDone = 'バックアップファイルを保存しました（ファイル名：mochimono-backup-日付.json）。';
+        var bkName = tsName('mochimono-backup_'+placeSlug()+'_', '_v'+APP_VERSION+'.json');
+        downloadText(bkName, buildBackup(), 'application/json');
+        view.backupDone = 'バックアップファイルを保存しました（ファイル名：'+bkName+'）。';
         render();
       };
     }
