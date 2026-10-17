@@ -407,7 +407,12 @@
   .entry-card.st-card-past .name, .entry-card.st-card-past .progress{opacity:.6;}
   .entry-card.entry-pinned{border-color:var(--amber);}
   .pin-mark{margin-right:4px;}
-  .filter-row{display:flex;align-items:center;gap:6px;margin:0 0 8px;}
+  .filter-row{display:flex;align-items:center;gap:6px;margin:0 0 8px;flex-wrap:wrap;}
+  .filter-check{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--cream-dim);margin-left:4px;cursor:pointer;white-space:nowrap;}
+  .filter-check input{width:auto;margin:0;}
+  .hidden-row .check-label{color:var(--cream-dim);opacity:.7;}
+  .hidden-tag{font-size:10px;border:1px dashed var(--seam);border-radius:4px;padding:0 5px;margin-left:4px;white-space:nowrap;}
+  .restore-btn{color:var(--teal);border-color:var(--teal);}
   .filter-row .chip{margin:0;}
   .sort-row{display:flex;align-items:center;gap:6px;margin:-2px 0 8px;}
   .sort-label{font-size:12px;color:var(--cream-dim);margin-right:2px;}
@@ -549,11 +554,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.14.0';
+  var APP_VERSION = '1.15.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.15.0': [
+      'チェックリストの「表示」に「非表示も表示」チェックを追加。非表示にした持ち物を薄く表示し、目のアイコンでその場で戻せます'
+    ],
     '1.14.0': [
       'スマホ横向きのイベント一覧は、左に登録欄・右にイベントの2列表示に',
       'イベント画面の情報カードを右スワイプで📌ピン留めのオン／オフ',
@@ -1068,6 +1076,9 @@
     var asc = ka < kb ? -1 : 1;
     return sa==='past' ? -asc : asc;
   }
+  var SHOW_HIDDEN_KEY = 'gp-show-hidden-list-v1';
+  var showHiddenList = false;
+  try{ showHiddenList = localStorage.getItem(SHOW_HIDDEN_KEY)==='1'; }catch(e){}
   var UNCHECKED_KEY = 'gp-unchecked-only-v1';
   var uncheckedOnly = false;
   try{ uncheckedOnly = localStorage.getItem(UNCHECKED_KEY)==='1'; }catch(e){}
@@ -1622,6 +1633,14 @@
     }
     var nvReload = document.getElementById('newver-reload-btn');
     if(nvReload){ nvReload.onclick = function(){ location.reload(); }; }
+    var showHiddenListEl = document.getElementById('show-hidden-list');
+    if(showHiddenListEl){
+      showHiddenListEl.onchange = function(){
+        showHiddenList = showHiddenListEl.checked;
+        try{ localStorage.setItem(SHOW_HIDDEN_KEY, showHiddenList?'1':'0'); }catch(e){}
+        render();
+      };
+    }
     document.querySelectorAll('[data-check-filter]').forEach(function(c){
       c.onclick = function(){
         uncheckedOnly = c.dataset.checkFilter==='unchecked';
@@ -1831,27 +1850,46 @@
     } else {
       var visibleItems = items.filter(function(it){ return !isHiddenForEntry(it, entry); });
       var allVisibleCount = visibleItems.length;
-      if(items.length>0 && allVisibleCount>0){
+      var hiddenList = items.filter(function(it){ return isHiddenForEntry(it, entry); });
+      if(items.length>0){
         html += '<div class="filter-row"><span class="sort-label">表示</span>';
         html += '<span class="chip'+(!uncheckedOnly?' on':'')+'" data-check-filter="all">すべて</span>';
         html += '<span class="chip'+(uncheckedOnly?' on':'')+'" data-check-filter="unchecked">未チェックだけ（'+(bringItems.length-done)+'）</span>';
+        if(hiddenList.length){
+          html += '<label class="filter-check"><input type="checkbox" id="show-hidden-list"'+(showHiddenList?' checked':'')+'> 非表示も表示（'+hiddenList.length+'）</label>';
+        }
         html += '</div>';
       }
       // 未チェックだけ：チェック済みとレンタル（チェック不要）を隠す
       if(uncheckedOnly){ visibleItems = visibleItems.filter(function(it){ return isBringForEntry(it, entry) && !ck[it.id]; }); }
+      // 非表示も表示：非表示の持ち物も元の位置に並べる（薄く表示・目のアイコンで復活）
+      if(showHiddenList && hiddenList.length){
+        var keep = {};
+        visibleItems.forEach(function(it){ keep[it.id] = true; });
+        hiddenList.forEach(function(it){ keep[it.id] = true; });
+        visibleItems = items.filter(function(it){ return keep[it.id]; });
+      }
       html += '<div class="panel checklist-panel">';
       if(items.length===0){
         html += '<div class="empty">まだ持ち物がありません。「持ち物を編集」から追加してください。</div>';
       } else if(uncheckedOnly && allVisibleCount>0 && visibleItems.length===0){
         html += '<div class="empty">未チェックの持ち物はありません 🎉<br>「すべて」に切り替えると、チェック済みの持ち物も表示します。</div>';
       } else if(visibleItems.length===0){
-        html += '<div class="empty">表示できる持ち物がありません（全て非表示中）。「持ち物を編集」から表示を戻してください。</div>';
+        html += '<div class="empty">表示できる持ち物がありません（全て非表示中）。上の「非表示も表示」から戻せます。</div>';
       } else {
         var pinnedIds = entry.pinnedIds || [];
         var pinnedItems = visibleItems.filter(function(it){ return pinnedIds.indexOf(it.id)!==-1; });
         var restItems = visibleItems.filter(function(it){ return pinnedIds.indexOf(it.id)===-1; });
         function renderCheckRow(it){
           var isPinned = pinnedIds.indexOf(it.id)!==-1;
+          if(isHiddenForEntry(it, entry)){
+            html += '<div class="swipe-wrap"><div class="check-row hidden-row">';
+            html += '<div style="width:24px;flex-shrink:0;"></div>';
+            html += '<div class="check-label">'+esc(effectiveItemName(it, entry))+' <span class="hidden-tag">非表示中</span></div>';
+            html += '<button class="icon-btn restore-btn" data-toggle-entry-visible="'+it.id+'" aria-label="表示に戻す" title="表示に戻す">'+EYE_SVG+'</button>';
+            html += '</div></div>';
+            return;
+          }
           var bringNow = isBringForEntry(it, entry);
           html += '<div class="swipe-wrap"><div class="swipe-bg hide">非表示</div><div class="swipe-bg pin">'+(isPinned?'📌 解除':'📌 ピン留め')+'</div><div class="check-row swipe-row'+(isPinned?' pinned':'')+'" data-swipe-row="'+it.id+'" data-swipe-kind="hide" data-swipe-right="pin"'+(bringNow?'':' data-rental="1"')+'>';
           if(bringNow){
