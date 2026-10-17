@@ -9,6 +9,11 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.9.0] - 2026-10-17
+
+### 変更
+- 設定画面をアコーディオン形式に。各項目（表示設定・持ち物を追加・登録済みの持ち物・一括管理・パート・データ管理・ご意見）の見出しを押して開閉。取り込みや復元の確認中は該当項目を自動で開く
+
 ## [1.8.2] - 2026-10-17
 
 ### 変更
@@ -150,6 +155,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.9.0]: https://github.com/sunatrux/band-mochimono/compare/v1.8.2...v1.9.0
 [1.8.2]: https://github.com/sunatrux/band-mochimono/compare/v1.8.1...v1.8.2
 [1.8.1]: https://github.com/sunatrux/band-mochimono/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/sunatrux/band-mochimono/compare/v1.7.2...v1.8.0
