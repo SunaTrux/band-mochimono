@@ -9,6 +9,12 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.9.2] - 2026-10-17
+
+### 修正
+- イベント画面の日付・時間の入力で、値を選ぶたびに画面全体が描き直され、ピッカーが閉じたりずれたりする問題。入力中は値の保存と情報カード・曜日の更新だけを行うように
+- スマホでは、日付を選んだらカレンダーを自動で閉じる（イベント画面・登録欄とも）
+
 ## [1.9.1] - 2026-10-17
 
 ### 削除
@@ -160,6 +166,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.9.2]: https://github.com/sunatrux/band-mochimono/compare/v1.9.1...v1.9.2
 [1.9.1]: https://github.com/sunatrux/band-mochimono/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/sunatrux/band-mochimono/compare/v1.8.2...v1.9.0
 [1.8.2]: https://github.com/sunatrux/band-mochimono/compare/v1.8.1...v1.8.2

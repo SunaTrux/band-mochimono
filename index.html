@@ -479,10 +479,13 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.9.1';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
+  var APP_VERSION = '1.9.2';        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-17';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.9.2': [
+      'イベント画面の日付・時間の入力を改善：選んだ値がすぐ反映され、入力の途中でピッカーが閉じたりずれたりしないように。スマホでは日付を選ぶとカレンダーが閉じます'
+    ],
     '1.9.1': [
       'イベント画面（持ち物リスト）にあったイベントの📌ボタンを削除。イベントのピン留めは一覧の右スワイプで行います'
     ],
@@ -2008,6 +2011,11 @@
         view.newEntryDate = entryDateEl.value;
         entryDateWeekdayEl.textContent = dowShort(entryDateEl.value);
       };
+      entryDateEl.onchange = function(){
+        view.newEntryDate = entryDateEl.value;
+        entryDateWeekdayEl.textContent = dowShort(entryDateEl.value);
+        if(window.matchMedia && window.matchMedia('(pointer:coarse)').matches){ setTimeout(function(){ entryDateEl.blur(); }, 0); }   // スマホでは日付を選んだら閉じる
+      };
     }
 
     var entryTimeEl = document.getElementById('entry-time');
@@ -2443,18 +2451,38 @@
       };
     }
 
-    var detailDateInput = document.getElementById('detail-date-input');
-    if(detailDateInput){
-      detailDateInput.onchange = function(){
-        var list = listForMode(view.mode);
-        var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
-        if(!entry) return;
-        entry.date = detailDateInput.value;
-        entry.updatedAt = Date.now();
-        saveState();
-        render();
-      };
+    // イベント詳細の日付・時間入力：入力中に画面全体を描き直さない（ピッカーが勝手に閉じる・ずれるのを防ぐ）
+    // 値はその場で保存し、情報カードと曜日だけ差し替える。スマホでは日付を選んだらカレンダーを閉じる。
+    var isTouch = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches);
+    function refreshInfoCard(){
+      var tmp = document.createElement('div');
+      tmp.innerHTML = renderDetailView(view.mode, view.selectedByMode[view.mode]);
+      var oldCard = document.querySelector('#app .info-card'), newCard = tmp.querySelector('.info-card');
+      if(oldCard && newCard){
+        oldCard.replaceWith(newCard);
+        var tb = document.getElementById('info-toggle-btn');
+        if(tb){ tb.onclick = function(){ view.infoOpen = !view.infoOpen; render(); }; }
+      }
+      var oldDow = document.querySelector('#app .info-edit .dow-badge'), newDow = tmp.querySelector('.info-edit .dow-badge');
+      if(oldDow && newDow){ oldDow.textContent = newDow.textContent; }
     }
+    [['detail-date-input','date',true],['detail-time-input','time',false],['detail-endtime-input','endTime',false]].forEach(function(cfg){
+      var el = document.getElementById(cfg[0]);
+      if(!el) return;
+      function apply(){
+        var en = listForMode(view.mode).filter(function(e){ return e.id===view.selectedByMode[view.mode]; })[0];
+        if(!en || (en[cfg[1]]||'')===el.value) return;
+        en[cfg[1]] = el.value;
+        en.updatedAt = Date.now();
+        saveState();
+        refreshInfoCard();
+      }
+      el.oninput = apply;
+      el.onchange = function(){
+        apply();
+        if(cfg[2] && isTouch){ setTimeout(function(){ el.blur(); }, 0); }   // 日付を選んだら閉じる
+      };
+    });
 
     function currentEntry(){
       return listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
@@ -2638,31 +2666,6 @@
         if(row._swiped){ ev.stopPropagation(); ev.preventDefault(); }
       }, true);
     });
-
-    var detailEndTimeInput = document.getElementById('detail-endtime-input');
-    if(detailEndTimeInput){
-      detailEndTimeInput.onchange = function(){
-        var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
-        if(!entry) return;
-        entry.endTime = detailEndTimeInput.value;
-        entry.updatedAt = Date.now();
-        saveState();
-        render();
-      };
-    }
-
-    var detailTimeInput = document.getElementById('detail-time-input');
-    if(detailTimeInput){
-      detailTimeInput.onchange = function(){
-        var list = listForMode(view.mode);
-        var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
-        if(!entry) return;
-        entry.time = detailTimeInput.value;
-        entry.updatedAt = Date.now();
-        saveState();
-        render();
-      };
-    }
 
     document.querySelectorAll('[data-scope-item]').forEach(function(c){
       c.onclick = function(){
