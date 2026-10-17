@@ -9,6 +9,12 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.7.2] - 2026-10-17
+
+### 変更
+- イベント登録欄の見出しを「パートを選んで○○を登録」に。文字を少し大きく・太くし、上の余白を詰めた
+- 登録ボタンを「+ 登録して持ち物をセット」に名前変更
+
 ## [1.7.1] - 2026-10-17
 
 ### 変更
@@ -125,6 +131,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.7.2]: https://github.com/sunatrux/band-mochimono/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/sunatrux/band-mochimono/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/sunatrux/band-mochimono/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/sunatrux/band-mochimono/compare/v1.5.2...v1.6.0
