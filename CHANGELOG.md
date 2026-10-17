@@ -9,6 +9,11 @@
 
 アプリ内では「設定」タブの一番下に、現在のバージョンとリリース日が表示されます。
 
+## [1.8.1] - 2026-10-17
+
+### 変更
+- 「設定」→「データ管理」の説明を整理：今のデータの保存場所（端末とブラウザ、またはホーム画面のアプリ）を表示し、ブラウザごと・ホーム画面のアプリごとにデータが別になることと、バックアップ→復元での移し方を箇条書きで説明
+
 ## [1.8.0] - 2026-10-17
 
 ### 追加
@@ -139,6 +144,7 @@
 - CSV出力・取り込み、持ち物マスタの一括出力・一括取り込み
 - ダーク／ライトのテーマ切り替え
 
+[1.8.1]: https://github.com/sunatrux/band-mochimono/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/sunatrux/band-mochimono/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/sunatrux/band-mochimono/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/sunatrux/band-mochimono/compare/v1.7.0...v1.7.1
