@@ -429,6 +429,12 @@
   .meter-msg{font-size:13px;font-weight:700;color:var(--cream);}
   .meter-num{font-size:12.5px;color:var(--cream-dim);font-variant-numeric:tabular-nums;white-space:nowrap;}
   .meter-num b{font-size:16px;color:var(--cream);}
+  .meter-hand{margin-left:8px;font-size:11.5px;font-weight:700;color:#7a5ea8;border:1px solid #7a5ea8;border-radius:999px;padding:0 7px;}
+  .meter-hand.ok{color:#2e9e6b;border-color:#2e9e6b;}
+  .hand-btn{flex-shrink:0;font-family:inherit;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;border:1px dashed #7a5ea8;background:transparent;color:#7a5ea8;cursor:pointer;white-space:nowrap;}
+  .hand-btn.on{border-style:solid;background:#7a5ea8;color:#fff;}
+  .check-row.handed-row .check-label{color:var(--cream-dim);}
+  .forgot-badge{display:inline-block;font-size:10.5px;font-weight:700;color:#fff;background:var(--red);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:2px;font-family:var(--font-jp);}
   .meter-track{height:12px;border-radius:999px;background:var(--field-bg);border:1px solid var(--seam);overflow:hidden;}
   .meter-fill{height:100%;border-radius:999px;transition:width .35s ease, background .35s ease;}
   .meter.complete{border-color:#2e9e6b;background:linear-gradient(180deg, rgba(46,158,107,.14), var(--panel));}
@@ -559,11 +565,16 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.16.0';
+  var APP_VERSION = '1.17.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-18';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.17.0': [
+      '持ち物に「渡す」を追加（持込 → レンタル → 渡す で切り替え）。返す物・あげる物は「持った」チェックに加えて「渡した」もチェックできます',
+      'メーターに「渡す ○/○」、日付が過ぎて渡していない物があると一覧に「渡し忘れ」を表示',
+      'この予定だけの持ち物を追加するときに「人に渡すもの」を選べるように'
+    ],
     '1.16.0': [
       '「ライブ」タブを「イベント」に名前変更。ライブだけでなく、セッションや楽器を持ち寄る集まりなどにも使えます',
       'スタジオ・イベント・レコーディングをまとめて指す言葉は「予定」に（例：「この予定専用」「予定の操作」）'
@@ -969,6 +980,7 @@
     showHiddenInEdit: false,
     openGroups: {},
     newCustomMaster: false,
+    newCustomHand: false,
     editMode: false,
     confirmReset: false,
     confirmDeleteEntry: false,
@@ -1106,12 +1118,30 @@
     if(pct>=34) return 'var(--amber)';
     return 'var(--red)';
   }
-  function renderMeter(done, total){
+  // ---------- 「渡す」持ち物（持っていって人に渡す／返すもの） ----------
+  // entry.handIds：この予定で「渡す」にした持ち物。渡した印は checks の 'h:'+id に保存（チェックのリセットで一緒に消える）
+  function isHandForEntry(it, entry){
+    return !!(entry && entry.handIds && entry.handIds.indexOf(it.id)!==-1 && isBringForEntry(it, entry));
+  }
+  function handedKey(id){ return 'h:'+id; }
+  function handProgress(mode, entry){
+    var ck = state.checks[checkKey(mode, entry.id)] || {};
+    var items = itemsForEntry(mode, entry).filter(function(it){ return isHandForEntry(it, entry) && !isHiddenForEntry(it, entry); });
+    var done = items.filter(function(it){ return ck[handedKey(it.id)]; }).length;
+    return {done:done, total:items.length};
+  }
+  function bringLabel(it, entry){
+    if(isHandForEntry(it, entry)) return {text:'渡す', style:'color:#7a5ea8;border-color:#7a5ea8;'};
+    if(isBringForEntry(it, entry)) return {text:'持込', style:''};
+    return {text:'レンタル', style:'color:var(--amber);border-color:var(--amber);'};
+  }
+
+  function renderMeter(done, total, hand){
     var pct = total ? Math.round(done/total*100) : 0;
     var complete = total>0 && done>=total;
     var msg = complete ? '準備完了！忘れ物ゼロ 🎉' : (pct>=67 ? 'あと少し！' : (pct>=34 ? 'いい調子' : (done>0 ? 'スタート！' : 'チェックしていこう')));
     var h = '<div class="meter'+(complete?' complete':'')+'">';
-    h += '<div class="meter-top"><span class="meter-msg">'+esc(msg)+'</span><span class="meter-num"><b>'+done+'</b> / '+total+'（'+pct+'%）</span></div>';
+    h += '<div class="meter-top"><span class="meter-msg">'+esc(msg)+'</span><span class="meter-num"><b>'+done+'</b> / '+total+'（'+pct+'%）'+(hand && hand.total ? '<span class="meter-hand'+(hand.done>=hand.total?' ok':'')+'">渡す '+hand.done+'/'+hand.total+'</span>' : '')+'</span></div>';
     h += '<div class="meter-track"><div class="meter-fill" style="width:'+pct+'%;background:'+meterColor(pct)+';"></div></div>';
     h += '</div>';
     return h;
@@ -1223,7 +1253,7 @@
         effectiveItemName(it, entry),
         (it.roles||[]).join(';'),
         (it.scope||[]).join(';'),
-        (isBringForEntry(it, entry)?'yes':'no'),
+        (isHandForEntry(it, entry)?'hand':(isBringForEntry(it, entry)?'yes':'no')),
         (ck[it.id]?'true':'false')
       ]);
     });
@@ -1411,6 +1441,7 @@
       if(bringIdx!==-1){
         var bringVal = (row[bringIdx]||'').trim().toLowerCase();
         var bringBool = !(bringVal==='no' || bringVal==='rental' || bringVal==='false');
+        if(bringVal==='hand'){ if(!entry.handIds) entry.handIds = []; if(entry.handIds.indexOf(item.id)===-1) entry.handIds.push(item.id); }
         if(isNewItem){
           if(!bringBool) item.bring = false;
         } else {
@@ -1758,7 +1789,9 @@
         var p = progressFor(mode, e);
         var st = dateStatus(e);
         html += '<div class="swipe-wrap entry-wrap"><button class="swipe-bg del" data-entry-del="'+e.id+'">削除</button><div class="swipe-bg pin">'+(e.pinned?'📌 解除':'📌 ピン留め')+'</div><div class="entry-card swipe-row st-card-'+st.kind+(e.pinned?' entry-pinned':'')+'" data-entry="'+e.id+'" data-swipe-row="entry-'+e.id+'" data-swipe-kind="del" data-swipe-right="pin-entry">';
-        html += '<div><div class="name">'+(e.pinned?'<span class="pin-mark">📌</span>':'')+statusBadge(st)+esc(e.name)+'</div>';
+        var hp = handProgress(mode, e);
+        var forgot = (st.kind==='past' && hp.total>hp.done) ? '<span class="forgot-badge">渡し忘れ '+(hp.total-hp.done)+'</span>' : '';
+        html += '<div><div class="name">'+(e.pinned?'<span class="pin-mark">📌</span>':'')+statusBadge(st)+esc(e.name)+forgot+'</div>';
         if(e.date){
           var wd = weekdayJa(e.date);
           var dateLine = e.date + (wd? '('+wd.charAt(0)+')' : '') + (timeRange(e)? ' '+timeRange(e) : '');
@@ -1856,7 +1889,7 @@
     html += '<div class="step-head" style="margin-bottom:0;"><span class="step-num step-icon">'+(view.editMode?'✎':'✓')+'</span>'+(view.editMode?'含める持ち物を選ぶ':'持ち物チェックリスト')+'</div>';
     html += '<button class="btn ghost" id="toggle-edit-btn">'+(view.editMode?'完了':'持ち物を編集')+'</button>';
     html += '</div>';
-    if(!view.editMode && bringItems.length){ html += renderMeter(done, bringItems.length); }
+    if(!view.editMode && bringItems.length){ html += renderMeter(done, bringItems.length, handProgress(mode, entry)); }
 
     if(view.editMode){
       html += renderEditItemsPanel(mode, entry);
@@ -1874,7 +1907,7 @@
         html += '</div>';
       }
       // 未チェックだけ：チェック済みとレンタル（チェック不要）を隠す
-      if(uncheckedOnly){ visibleItems = visibleItems.filter(function(it){ return isBringForEntry(it, entry) && !ck[it.id]; }); }
+      if(uncheckedOnly){ visibleItems = visibleItems.filter(function(it){ return isBringForEntry(it, entry) && (!ck[it.id] || (isHandForEntry(it, entry) && !ck[handedKey(it.id)])); }); }
       // 非表示も表示：非表示の持ち物も元の位置に並べる（薄く表示・目のアイコンで復活）
       if(showHiddenList && hiddenList.length){
         var keep = {};
@@ -1904,7 +1937,7 @@
             return;
           }
           var bringNow = isBringForEntry(it, entry);
-          html += '<div class="swipe-wrap"><div class="swipe-bg hide">非表示</div><div class="swipe-bg pin">'+(isPinned?'📌 解除':'📌 ピン留め')+'</div><div class="check-row swipe-row'+(isPinned?' pinned':'')+'" data-swipe-row="'+it.id+'" data-swipe-kind="hide" data-swipe-right="pin"'+(bringNow?'':' data-rental="1"')+'>';
+          html += '<div class="swipe-wrap"><div class="swipe-bg hide">非表示</div><div class="swipe-bg pin">'+(isPinned?'📌 解除':'📌 ピン留め')+'</div><div class="check-row swipe-row'+(isPinned?' pinned':'')+(isHandForEntry(it, entry) && ck[handedKey(it.id)]?' handed-row':'')+'" data-swipe-row="'+it.id+'" data-swipe-kind="hide" data-swipe-right="pin"'+(bringNow?'':' data-rental="1"')+'>';
           if(bringNow){
             var on = !!ck[it.id];
             html += '<div class="toggle'+(on?' on':'')+'" data-item="'+it.id+'"><div class="knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>';
@@ -1913,7 +1946,12 @@
             html += '<div style="width:24px;flex-shrink:0;"></div>';
             html += '<div class="check-label">'+esc(effectiveItemName(it, entry))+'</div>';
           }
-          html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:3px 7px;font-size:10px;flex-shrink:0;'+(bringNow?'':'color:var(--amber);border-color:var(--amber);')+'">'+(bringNow?'持込':'レンタル')+'</button>';
+          var bl = bringLabel(it, entry);
+          if(isHandForEntry(it, entry)){
+            var handed = !!ck[handedKey(it.id)];
+            html += '<button class="hand-btn'+(handed?' on':'')+'" data-hand-item="'+it.id+'">'+(handed?'渡した ✓':'渡した？')+'</button>';
+          }
+          html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:3px 7px;font-size:10px;flex-shrink:0;'+bl.style+'">'+bl.text+'</button>';
           html += '<button class="icon-btn" data-hide-item="'+it.id+'" aria-label="非表示にする" title="非表示にする"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg></button>';
           html += '</div></div>';
         }
@@ -2012,6 +2050,7 @@
     html += '<button class="btn" id="custom-item-add-btn">追加</button>';
     html += '</div>';
     html += '<div id="custom-item-suggest" class="suggest"></div>';
+    html += '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer;"><input type="checkbox" id="custom-item-hand"'+(view.newCustomHand?' checked':'')+' style="width:auto;margin:0;"> 人に渡すもの（返す・あげる）</label>';
     html += '<label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer;"><input type="checkbox" id="custom-item-master"'+(view.newCustomMaster?' checked':'')+' style="width:auto;margin:0;"> 持ち物マスタにも登録する</label>';
     html += '</div>';
     return html;
@@ -2038,7 +2077,8 @@
         if(it.local){ html += '<div class="item-meta"><span class="local-tag">この'+modeLabel(mode)+'だけ</span> <button class="btn ghost" data-promote-item="'+it.id+'" style="padding:2px 7px;font-size:10px;">マスタに登録</button></div>'; }
         html += '</div>';
         html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:52%;">';
-        html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+(isBringForEntry(it,entry)?'':'color:var(--amber);border-color:var(--amber);')+'">'+(isBringForEntry(it,entry)?'持込':'レンタル')+'</button>';
+        var blE = bringLabel(it, entry);
+        html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+blE.style+'">'+blE.text+'</button>';
         var pinnedNow = (entry.pinnedIds||[]).indexOf(it.id)!==-1;
         html += '<button class="btn ghost" data-toggle-pin="'+it.id+'" style="padding:4px 8px;font-size:12px;line-height:1.2;'+(pinnedNow?'border-color:var(--amber);background:var(--amber-dim);':'opacity:.55;')+'" aria-label="'+(pinnedNow?'ピン留め中（押すと解除）':'ピン留めする')+'" title="'+(pinnedNow?'ピン留め中（押すと解除）':'ピン留めする')+'">📌</button>';
         html += '<button class="btn ghost" data-toggle-entry-visible="'+it.id+'" style="padding:5px 9px;line-height:0;'+(hiddenNow?'color:var(--amber);border-color:var(--amber);':'')+'" aria-label="'+(hiddenNow?'非表示中（押すと表示）':'表示中（押すと非表示）')+'" title="'+(hiddenNow?'非表示中（押すと表示）':'表示中（押すと非表示）')+'">'+(hiddenNow?EYE_OFF_SVG:EYE_SVG)+'</button>';
@@ -2409,6 +2449,7 @@
         if(idx!==-1) entry.itemIds.splice(idx,1);
         state.items = state.items.filter(function(it){ return !(it.local && it.id===b.dataset.removeItem); });
         if(entry.pinnedIds){ entry.pinnedIds = entry.pinnedIds.filter(function(id){ return id!==b.dataset.removeItem; }); }
+        if(entry.handIds){ entry.handIds = entry.handIds.filter(function(id){ return id!==b.dataset.removeItem; }); }
         var key = checkKey(view.mode, entry.id);
         if(state.checks[key]) delete state.checks[key][b.dataset.removeItem];
         if(entry.bringOverride) delete entry.bringOverride[b.dataset.removeItem];
@@ -2423,6 +2464,20 @@
       };
     });
 
+    document.querySelectorAll('[data-hand-item]').forEach(function(b){
+      b.onclick = function(){
+        var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
+        if(!entry) return;
+        var key = checkKey(view.mode, entry.id);
+        if(!state.checks[key]) state.checks[key] = {};
+        var hk = handedKey(b.dataset.handItem);
+        state.checks[key][hk] = !state.checks[key][hk];
+        entry.updatedAt = Date.now();
+        saveState();
+        render();
+      };
+    });
+
     document.querySelectorAll('[data-toggle-entry-bring]').forEach(function(b){
       b.onclick = function(){
         var list = listForMode(view.mode);
@@ -2430,8 +2485,19 @@
         if(!entry) return;
         var item = state.items.filter(function(it){return it.id===b.dataset.toggleEntryBring;})[0];
         if(!item) return;
+        // 持込 → レンタル → 渡す → 持込 … の順に切り替え
         if(!entry.bringOverride) entry.bringOverride = {};
-        entry.bringOverride[item.id] = !isBringForEntry(item, entry);
+        if(!entry.handIds) entry.handIds = [];
+        var hi = entry.handIds.indexOf(item.id);
+        if(isHandForEntry(item, entry)){
+          entry.handIds.splice(hi,1);                 // 渡す → 持込
+          entry.bringOverride[item.id] = true;
+        } else if(isBringForEntry(item, entry)){
+          entry.bringOverride[item.id] = false;       // 持込 → レンタル
+        } else {
+          entry.bringOverride[item.id] = true;        // レンタル → 渡す
+          if(hi===-1) entry.handIds.push(item.id);
+        }
         entry.updatedAt = Date.now();
         saveState();
         render();
@@ -2643,6 +2709,7 @@
         if(entry.nameOverride){ copyEntry.nameOverride = mapKeys(entry.nameOverride); }
         if(entry.hiddenIds){ copyEntry.hiddenIds = entry.hiddenIds.map(function(id){ return idMap[id] || id; }); }
         if(entry.pinnedIds){ copyEntry.pinnedIds = entry.pinnedIds.map(function(id){ return idMap[id] || id; }); }
+        if(entry.handIds){ copyEntry.handIds = entry.handIds.map(function(id){ return idMap[id] || id; }); }
         list.push(copyEntry);
         view.selectedByMode[view.mode] = copyEntry.id;
         view.editMode = false;
@@ -2800,10 +2867,13 @@
       }
       state.items.push(item);
       entry.itemIds.push(item.id);
+      if(view.newCustomHand){ if(!entry.handIds) entry.handIds = []; entry.handIds.push(item.id); }
       entry.updatedAt = Date.now();
       saveState();
       render();
     }
+    var customHandEl = document.getElementById('custom-item-hand');
+    if(customHandEl){ customHandEl.onchange = function(){ view.newCustomHand = customHandEl.checked; }; }
     function updateSuggest(){
       var box = document.getElementById('custom-item-suggest');
       var entry = currentEntry();
