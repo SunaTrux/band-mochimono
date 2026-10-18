@@ -565,11 +565,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.17.0';
+  var APP_VERSION = '1.17.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-18';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.17.1': [
+      '設定の「持ち物を追加」の初期状態で「渡す」を選べるようにしました。持ち物マスタのボタンも 持込 → レンタル → 渡す で切り替わります'
+    ],
     '1.17.0': [
       '持ち物に「渡す」を追加（持込 → レンタル → 渡す で切り替え）。返す物・あげる物は「持った」チェックに加えて「渡した」もチェックできます',
       'メーターに「渡す ○/○」、日付が過ぎて渡していない物があると一覧に「渡し忘れ」を表示',
@@ -970,7 +973,7 @@
     selectedByMode: {studio:null, live:null, recording:null},
     newItemScope: ['studio','live','recording'],
     newItemRoles: [],
-    newItemBring: true,
+    newItemBring: 'bring',
     newEntryRoles: defaultEntryRoles(),
     newEntryName: null,
     newEntryDate: '',
@@ -1120,8 +1123,21 @@
   }
   // ---------- 「渡す」持ち物（持っていって人に渡す／返すもの） ----------
   // entry.handIds：この予定で「渡す」にした持ち物。渡した印は checks の 'h:'+id に保存（チェックのリセットで一緒に消える）
+  // item.hand：持ち物マスタでの初期状態が「渡す」。予定ごとに entry.handOff で外せる。
+  function isHandMaster(it){ return !!(it && it.hand && isBring(it)); }
   function isHandForEntry(it, entry){
-    return !!(entry && entry.handIds && entry.handIds.indexOf(it.id)!==-1 && isBringForEntry(it, entry));
+    if(!entry || !isBringForEntry(it, entry)) return false;
+    if(entry.handOff && entry.handOff.indexOf(it.id)!==-1) return false;
+    if(entry.handIds && entry.handIds.indexOf(it.id)!==-1) return true;
+    return !!it.hand;
+  }
+  function setHandForEntry(entry, it, on){
+    if(!entry.handIds) entry.handIds = [];
+    if(!entry.handOff) entry.handOff = [];
+    entry.handIds = entry.handIds.filter(function(id){ return id!==it.id; });
+    entry.handOff = entry.handOff.filter(function(id){ return id!==it.id; });
+    if(on && !it.hand) entry.handIds.push(it.id);
+    if(!on && it.hand) entry.handOff.push(it.id);
   }
   function handedKey(id){ return 'h:'+id; }
   function handProgress(mode, entry){
@@ -1131,7 +1147,7 @@
     return {done:done, total:items.length};
   }
   function bringLabel(it, entry){
-    if(isHandForEntry(it, entry)) return {text:'渡す', style:'color:#7a5ea8;border-color:#7a5ea8;'};
+    if(entry ? isHandForEntry(it, entry) : isHandMaster(it)) return {text:'渡す', style:'color:#7a5ea8;border-color:#7a5ea8;'};
     if(isBringForEntry(it, entry)) return {text:'持込', style:''};
     return {text:'レンタル', style:'color:var(--amber);border-color:var(--amber);'};
   }
@@ -1267,7 +1283,7 @@
         it.name,
         (it.scope||[]).join(';'),
         (it.roles||[]).join(';'),
-        (isBring(it)?'yes':'no')
+        (isHandMaster(it)?'hand':(isBring(it)?'yes':'no'))
       ]);
     });
     return rows.map(function(r){ return r.map(csvEscape).join(','); }).join('\r\n');
@@ -1296,7 +1312,7 @@
       var rolesField = rolesIdx!==-1 && row[rolesIdx] ? row[rolesIdx].split(';').map(function(s){return s.trim();}).filter(Boolean) : [];
       var bringVal = bringIdx!==-1 ? (row[bringIdx]||'').trim().toLowerCase() : 'yes';
       var bringBool = !(bringVal==='no' || bringVal==='rental' || bringVal==='false');
-      parsed.push({name:name, scope:scopeField, roles:rolesField, bring:bringBool});
+      parsed.push({name:name, scope:scopeField, roles:rolesField, bring:bringBool, hand:(bringVal==='hand')});
     });
 
     var updated = 0, created = 0, updatedNames = [], createdNames = [];
@@ -1328,8 +1344,11 @@
         existing.scope = p.scope;
         existing.roles = p.roles;
         existing.bring = p.bring;
+        if(p.hand) existing.hand = true; else delete existing.hand;
       } else {
-        state.items.push({id:uid(), name:p.name, scope:p.scope, roles:p.roles, bring:p.bring});
+        var ni = {id:uid(), name:p.name, scope:p.scope, roles:p.roles, bring:p.bring};
+        if(p.hand) ni.hand = true;
+        state.items.push(ni);
       }
     });
     var toRemoveIds = plan.removedItems.map(function(it){ return it.id; });
@@ -1441,7 +1460,8 @@
       if(bringIdx!==-1){
         var bringVal = (row[bringIdx]||'').trim().toLowerCase();
         var bringBool = !(bringVal==='no' || bringVal==='rental' || bringVal==='false');
-        if(bringVal==='hand'){ if(!entry.handIds) entry.handIds = []; if(entry.handIds.indexOf(item.id)===-1) entry.handIds.push(item.id); }
+        if(bringVal==='hand'){ setHandForEntry(entry, item, true); }
+        else if(item.hand){ setHandForEntry(entry, item, false); }
         if(isNewItem){
           if(!bringBool) item.bring = false;
         } else {
@@ -2151,8 +2171,9 @@
     html += '<p class="hint">選んだ用途のシーンで新規リストに自動で入ります。パート指定ありの持ち物は、既存のスタジオ/イベント/レコーディングには自動追加されないので「持ち物を編集」から個別に追加してください。</p>';
     html += '<label class="small">初期状態</label>';
     html += '<div class="chip-wrap">';
-    html += '<span class="chip'+(view.newItemBring?' on':'')+'" data-bring-new="bring">持込</span>';
-    html += '<span class="chip'+(!view.newItemBring?' on':'')+'" data-bring-new="rental">レンタル</span>';
+    html += '<span class="chip'+(view.newItemBring==='bring'?' on':'')+'" data-bring-new="bring">持込</span>';
+    html += '<span class="chip'+(view.newItemBring==='rental'?' on':'')+'" data-bring-new="rental">レンタル</span>';
+    html += '<span class="chip'+(view.newItemBring==='hand'?' on':'')+'" data-bring-new="hand">渡す</span>';
     html += '</div>';
     html += '<p class="hint">「レンタル」にすると、チェックリスト上でグレー表示になり、チェック対象・進捗カウントから外れます。各持ち物ごと、あとで一覧から切り替えられます。</p>';
     html += '<button class="btn block" id="add-item-btn">+ 持ち物を追加</button>';
@@ -2178,7 +2199,8 @@
         html += '<input type="text" class="item-name-input" data-item-master-rename="'+it.id+'" value="'+esc(it.name)+'">';
         html += '<div class="item-meta">'+scopeArrayLabel(it.scope)+(it.roles&&it.roles.length? ' ・ '+it.roles.map(esc).join(' / ') : ' ・ 全パート共通')+'</div></div>';
         html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;margin-top:2px;">';
-        html += '<button class="btn ghost" data-toggle-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+(isBring(it)?'':'color:var(--amber);border-color:var(--amber);')+'">'+(isBring(it)?'持込':'レンタル')+'</button>';
+        var mbl = bringLabel(it, null);
+        html += '<button class="btn ghost" data-toggle-bring="'+it.id+'" title="タップで 持込→レンタル→渡す を切り替え" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+mbl.style+'">'+mbl.text+'</button>';
         html += '<button class="del-x" data-item-del="'+it.id+'" aria-label="削除" title="削除">×</button>';
         html += '</div>';
         html += '</div></div>';
@@ -2450,6 +2472,7 @@
         state.items = state.items.filter(function(it){ return !(it.local && it.id===b.dataset.removeItem); });
         if(entry.pinnedIds){ entry.pinnedIds = entry.pinnedIds.filter(function(id){ return id!==b.dataset.removeItem; }); }
         if(entry.handIds){ entry.handIds = entry.handIds.filter(function(id){ return id!==b.dataset.removeItem; }); }
+        if(entry.handOff){ entry.handOff = entry.handOff.filter(function(id){ return id!==b.dataset.removeItem; }); }
         var key = checkKey(view.mode, entry.id);
         if(state.checks[key]) delete state.checks[key][b.dataset.removeItem];
         if(entry.bringOverride) delete entry.bringOverride[b.dataset.removeItem];
@@ -2487,16 +2510,14 @@
         if(!item) return;
         // 持込 → レンタル → 渡す → 持込 … の順に切り替え
         if(!entry.bringOverride) entry.bringOverride = {};
-        if(!entry.handIds) entry.handIds = [];
-        var hi = entry.handIds.indexOf(item.id);
         if(isHandForEntry(item, entry)){
-          entry.handIds.splice(hi,1);                 // 渡す → 持込
+          setHandForEntry(entry, item, false);        // 渡す → 持込
           entry.bringOverride[item.id] = true;
         } else if(isBringForEntry(item, entry)){
           entry.bringOverride[item.id] = false;       // 持込 → レンタル
         } else {
           entry.bringOverride[item.id] = true;        // レンタル → 渡す
-          if(hi===-1) entry.handIds.push(item.id);
+          setHandForEntry(entry, item, true);
         }
         entry.updatedAt = Date.now();
         saveState();
@@ -2710,6 +2731,7 @@
         if(entry.hiddenIds){ copyEntry.hiddenIds = entry.hiddenIds.map(function(id){ return idMap[id] || id; }); }
         if(entry.pinnedIds){ copyEntry.pinnedIds = entry.pinnedIds.map(function(id){ return idMap[id] || id; }); }
         if(entry.handIds){ copyEntry.handIds = entry.handIds.map(function(id){ return idMap[id] || id; }); }
+        if(entry.handOff){ copyEntry.handOff = entry.handOff.map(function(id){ return idMap[id] || id; }); }
         list.push(copyEntry);
         view.selectedByMode[view.mode] = copyEntry.id;
         view.editMode = false;
@@ -2867,7 +2889,7 @@
       }
       state.items.push(item);
       entry.itemIds.push(item.id);
-      if(view.newCustomHand){ if(!entry.handIds) entry.handIds = []; entry.handIds.push(item.id); }
+      if(view.newCustomHand){ setHandForEntry(entry, item, true); }
       entry.updatedAt = Date.now();
       saveState();
       render();
@@ -3052,7 +3074,7 @@
 
     document.querySelectorAll('[data-bring-new]').forEach(function(c){
       c.onclick = function(){
-        view.newItemBring = (c.dataset.bringNew === 'bring');
+        view.newItemBring = c.dataset.bringNew;
         render();
       };
     });
@@ -3063,7 +3085,8 @@
         var nameEl = document.getElementById('item-name');
         var name = nameEl.value.trim();
         if(!name){ nameEl.focus(); return; }
-        var newItem = {id:uid(), name:name, scope:view.newItemScope.slice(), roles:view.newItemRoles.slice(), bring:view.newItemBring};
+        var newItem = {id:uid(), name:name, scope:view.newItemScope.slice(), roles:view.newItemRoles.slice(), bring:view.newItemBring!=='rental'};
+        if(view.newItemBring==='hand') newItem.hand = true;
         state.items.push(newItem);
         if(newItem.roles.length===0){
           MODES.forEach(function(mode){
@@ -3073,7 +3096,7 @@
         }
         view.newItemScope = ['studio','live','recording'];
         view.newItemRoles = [];
-        view.newItemBring = true;
+        view.newItemBring = 'bring';
         saveState();
         render();
       };
@@ -3083,7 +3106,10 @@
       b.onclick = function(){
         var item = state.items.filter(function(it){return it.id===b.dataset.toggleBring;})[0];
         if(!item) return;
-        item.bring = !isBring(item);
+        // 持込 → レンタル → 渡す → 持込
+        if(isHandMaster(item)){ delete item.hand; item.bring = true; }
+        else if(isBring(item)){ item.bring = false; delete item.hand; }
+        else { item.bring = true; item.hand = true; }
         saveState();
         render();
       };
