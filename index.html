@@ -542,13 +542,13 @@
 <div class="header">
   <div class="led"></div>
   <h1>バンドマン持ち物リスト</h1>
-  <p>パート・スタジオ・ライブ・レコーディングごとに、忘れ物ゼロへ</p>
+  <p>パート・スタジオ・イベント・レコーディングごとに、忘れ物ゼロへ</p>
 </div>
 
 <div id="pin-bar"></div>
 <div class="nav">
   <button data-mode="studio">スタジオ</button>
-  <button data-mode="live">ライブ</button>
+  <button data-mode="live">イベント</button>
   <button data-mode="recording">レコ</button>
   <button data-mode="items">設定</button>
 </div>
@@ -559,11 +559,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.15.1';
+  var APP_VERSION = '1.16.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-18';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.16.0': [
+      '「ライブ」タブを「イベント」に名前変更。ライブだけでなく、セッションや楽器を持ち寄る集まりなどにも使えます',
+      'スタジオ・イベント・レコーディングをまとめて指す言葉は「予定」に（例：「この予定専用」「予定の操作」）'
+    ],
     '1.15.1': [
       'イベント一覧の見出しを「1. パートを選んで○○を登録」「2. ○○を選んで持ち物をチェック」に変更し、やることが分かるように',
       'イベント画面の「持ち物チェックリスト」の見出しも同じデザインに'
@@ -789,7 +793,7 @@
         {id:uid(), name:'サンプルスタジオ', roles:['ギター'], itemIds: computeAutoItemIds('studio', ['ギター'], items), updatedAt:Date.now()}
       ],
       lives: [
-        {id:uid(), name:'サンプルライブ', roles:['ドラム'], itemIds: computeAutoItemIds('live', ['ドラム'], items), updatedAt:Date.now()}
+        {id:uid(), name:'サンプルイベント', roles:['ドラム'], itemIds: computeAutoItemIds('live', ['ドラム'], items), updatedAt:Date.now()}
       ],
       recordings: [
         {id:uid(), name:'サンプルレコーディング', roles:['ボーカル'], itemIds: computeAutoItemIds('recording', ['ボーカル'], items), updatedAt:Date.now()}
@@ -799,7 +803,7 @@
   }
 
   var MODES = ['studio','live','recording'];
-  var MODE_LABELS = {studio:'スタジオ', live:'ライブ', recording:'レコーディング'};
+  var MODE_LABELS = {studio:'スタジオ', live:'イベント', recording:'レコーディング'};  // live＝ライブ・セッション・集まりなど（内部名は live のまま）
 
   function modeLabel(m){ return MODE_LABELS[m] || m; }
 
@@ -809,7 +813,7 @@
     return state.recordings;
   }
 
-  // 新規スタジオ/ライブ/レコーディングを作った瞬間の「初期の持ち物リスト」。
+  // 新規スタジオ/イベント/レコーディングを作った瞬間の「初期の持ち物リスト」。
   // 用途(該当モードを含むか)が合う持ち物のうち、
   // ・パートを何も選ばなかった場合 → とりあえず全部入れる
   // ・パートを選んだ場合 → 共通アイテム + そのパートに該当するアイテムだけを自動採用
@@ -1684,7 +1688,7 @@
     var label = modeLabel(mode);
     var placeholders = {
       studio: '例: いつものスタジオ',
-      live: '例: 対バンライブ',
+      live: '例: 対バンライブ／セッション／持ち寄り会',
       recording: '例: 新曲レコーディング'
     };
 
@@ -1707,7 +1711,7 @@
     html += '<div style="height:10px;"></div>';
     var defaultNames = {
       studio: 'いつものスタジオ',
-      live: '次のライブ',
+      live: '次のイベント',
       recording: '次のレコーディング'
     };
     var nameValue = (view.newEntryName===null) ? (defaultNames[mode]||'') : view.newEntryName;
@@ -1955,7 +1959,7 @@
       html += '<div class="panel-label">CSV取込の確認</div>';
       if(eplan.fileName){ html += '<p class="hint" style="margin-top:0;color:var(--cream);">'+describeFileName(eplan.fileName)+'</p>'; }
       if(eplan.looksMaster && total>0){
-        html += '<p class="hint" style="margin-top:0;color:var(--red);font-weight:700;">⚠ これは「持ち物マスタの一括出力」ファイルのようです。取り込むと、この'+modeLabel(mode)+'に、マスタ全体の持ち物'+total+'件が対象として入ります（うち新しく追加'+(eplan.fromMaster.length+eplan.created.length)+'件）。イベントのCSVを取り込むつもりなら、キャンセルしてファイルを確認してください。</p>';
+        html += '<p class="hint" style="margin-top:0;color:var(--red);font-weight:700;">⚠ これは「持ち物マスタの一括出力」ファイルのようです。取り込むと、この'+modeLabel(mode)+'に、マスタ全体の持ち物'+total+'件が対象として入ります（うち新しく追加'+(eplan.fromMaster.length+eplan.created.length)+'件）。予定のCSVを取り込むつもりなら、キャンセルしてファイルを確認してください。</p>';
       }
       if(total===0){
         html += '<p class="hint" style="margin-top:0;">取り込める持ち物が見つかりませんでした。</p>';
@@ -1978,7 +1982,7 @@
     html += '</div>';
     html += '<input type="file" id="csv-import-input" accept=".csv,text/csv" style="display:none;">';
 
-    html += '<div class="op-label">イベント操作</div>';
+    html += '<div class="op-label">予定の操作</div>';
     if(view.confirmDeleteEntry){
       html += '<div class="panel">';
       html += '<p class="hint" style="color:var(--red);">本当にこの'+modeLabel(mode)+'を削除しますか？この操作は取り消せません。</p>';
@@ -2020,7 +2024,7 @@
 
     html += '<div class="panel">';
     html += '<div class="panel-label">このリストに含まれている</div>';
-    html += '<p class="hint">持ち物名の変更・「持込／レンタル」・表示/非表示は、この'+modeLabel(mode)+'だけの設定です（他のイベントや「設定」タブの持ち物一覧には影響しません）。いずれもトグルになってます。チェックリストで「非表示にする」を押した持ち物は、ここの「表示」ボタンで元に戻せます。</p>';
+    html += '<p class="hint">持ち物名の変更・「持込／レンタル」・表示/非表示は、この'+modeLabel(mode)+'だけの設定です（他の予定や「設定」タブの持ち物一覧には影響しません）。いずれもトグルになってます。チェックリストで「非表示にする」を押した持ち物は、ここの「表示」ボタンで元に戻せます。</p>';
     var hiddenCount = included.filter(function(it){ return isHiddenForEntry(it, entry); }).length;
     html += '<label style="display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:13px;cursor:pointer;"><input type="checkbox" id="show-hidden-toggle"'+(view.showHiddenInEdit?' checked':'')+' style="width:auto;margin:0;"> 非表示の持ち物も表示する（'+hiddenCount+'件）</label>';
     if(included.length===0){
@@ -2104,7 +2108,7 @@
       html += '<span class="chip'+(on?' on':'')+'" data-role-item="'+esc(r)+'">'+esc(r)+'</span>';
     });
     html += '</div>';
-    html += '<p class="hint">選んだ用途のシーンで新規リストに自動で入ります。パート指定ありの持ち物は、既存のスタジオ/ライブ/レコーディングには自動追加されないので「持ち物を編集」から個別に追加してください。</p>';
+    html += '<p class="hint">選んだ用途のシーンで新規リストに自動で入ります。パート指定ありの持ち物は、既存のスタジオ/イベント/レコーディングには自動追加されないので「持ち物を編集」から個別に追加してください。</p>';
     html += '<label class="small">初期状態</label>';
     html += '<div class="chip-wrap">';
     html += '<span class="chip'+(view.newItemBring?' on':'')+'" data-bring-new="bring">持込</span>';
@@ -2116,7 +2120,7 @@
 
     html += '<div class="panel">';
     html += '<div class="panel-label">登録済みの持ち物（'+masterItems().length+'）</div>';
-    html += '<p class="hint">ここでの変更はマスターデータです。次回以降、新しいスタジオ/ライブ/レコーディングを登録した時の初期値になります（既存のイベントには影響しません）。イベントごとの名前変更は、各イベントの「持ち物を編集」から行えます。</p>';
+    html += '<p class="hint">ここでの変更はマスターデータです。次回以降、新しいスタジオ/イベント/レコーディングを登録した時の初期値になります（既存のイベントには影響しません）。イベントごとの名前変更は、各イベントの「持ち物を編集」から行えます。</p>';
     if(masterItems().length===0){
       html += '<div class="empty">持ち物が登録されていません</div>';
     } else {
@@ -2148,14 +2152,14 @@
     if(view.itemsImportPlan){
       var plan = view.itemsImportPlan;
       if(plan.looksEntry){
-        html += '<p class="hint" style="color:var(--red);font-weight:700;">⚠ これは「イベントのCSV出力」ファイルのようです。取り込むと、このファイルに無い持ち物'+plan.removedItems.length+'件が持ち物マスタから削除され、登録済みのイベントからも外れます。イベントに取り込むつもりなら、キャンセルしてイベント画面の「CSV取込」を使ってください。</p>';
+        html += '<p class="hint" style="color:var(--red);font-weight:700;">⚠ これは「予定のCSV出力」ファイルのようです。取り込むと、このファイルに無い持ち物'+plan.removedItems.length+'件が持ち物マスタから削除され、登録済みの予定からも外れます。予定に取り込むつもりなら、キャンセルして予定の画面の「CSV取込」を使ってください。</p>';
       }
       if(plan.fileName){ html += '<p class="hint" style="color:var(--cream);">'+describeFileName(plan.fileName)+'</p>'; }
       html += '<p class="hint" style="color:var(--red);">更新 '+plan.updated+'件 ／ 新規追加 '+plan.created+'件 ／ 削除 '+plan.removedItems.length+'件 になります。この内容で取り込みますか？</p>';
       if(plan.createdNames && plan.createdNames.length){ html += '<p class="hint"><b style="color:var(--amber);">新しく追加される持ち物</b>：'+namesPreviewList(plan.createdNames)+'</p>'; }
       if(plan.updatedNames && plan.updatedNames.length){ html += '<p class="hint"><b>用途・パート・持込/レンタルがCSVの内容で上書きされる持ち物</b>：'+namesPreviewList(plan.updatedNames)+'</p>'; }
       if(plan.removedItems.length>0){
-        html += '<p class="hint">削除される持ち物：'+plan.removedItems.map(function(it){ return esc(it.name); }).join('、')+'（登録済みのイベントからも外れます）</p>';
+        html += '<p class="hint">削除される持ち物：'+plan.removedItems.map(function(it){ return esc(it.name); }).join('、')+'（登録済みの予定からも外れます）</p>';
       }
       if(plan.newRoles && plan.newRoles.length>0){
         html += '<p class="hint">新しく追加されるパート：'+plan.newRoles.map(esc).join('、')+'</p>';
@@ -2178,7 +2182,7 @@
     html += '<div class="panel-label">パートを管理</div>';
     if(state.roles.length>0){
       var defs = state.defaultRoles || [];
-      html += '<label class="small">いつものパート（イベント登録時に最初から選んでおく・複数可）</label>';
+      html += '<label class="small">いつものパート（予定の登録時に最初から選んでおく・複数可）</label>';
       html += '<div class="chip-wrap">';
       state.roles.forEach(function(r){
         var on = defs.indexOf(r)!==-1;
@@ -2225,8 +2229,8 @@
         var when = bp.exportedAt ? new Date(bp.exportedAt) : null;
         var whenStr = (when && !isNaN(when.getTime())) ? (when.getFullYear()+'/'+(when.getMonth()+1)+'/'+when.getDate()+' '+('0'+when.getHours()).slice(-2)+':'+('0'+when.getMinutes()).slice(-2)) : '不明';
         if(bp.fileName){ html += '<p class="hint" style="color:var(--cream);margin-bottom:4px;">ファイル：'+esc(bp.fileName)+'</p>'; }
-        html += '<p class="hint" style="color:var(--cream);"><b>このバックアップを復元しますか？</b><br>作成日時：'+esc(whenStr)+(bp.appVersion?'（v'+esc(bp.appVersion)+'）':'')+(bp.place?'<br>作成場所：'+esc(bp.place):'')+'<br>内容：スタジオ'+bp.studios+'件・ライブ'+bp.lives+'件・レコ'+bp.recordings+'件・持ち物マスタ'+bp.items+'件</p>';
-        html += '<p class="hint" style="color:var(--red);">今このブラウザにあるデータ（スタジオ'+state.studios.length+'件・ライブ'+state.lives.length+'件・レコ'+state.recordings.length+'件・持ち物マスタ'+masterItems().length+'件）は、すべてバックアップの内容に置き換わります。</p>';
+        html += '<p class="hint" style="color:var(--cream);"><b>このバックアップを復元しますか？</b><br>作成日時：'+esc(whenStr)+(bp.appVersion?'（v'+esc(bp.appVersion)+'）':'')+(bp.place?'<br>作成場所：'+esc(bp.place):'')+'<br>内容：スタジオ'+bp.studios+'件・イベント'+bp.lives+'件・レコ'+bp.recordings+'件・持ち物マスタ'+bp.items+'件</p>';
+        html += '<p class="hint" style="color:var(--red);">今このブラウザにあるデータ（スタジオ'+state.studios.length+'件・イベント'+state.lives.length+'件・レコ'+state.recordings.length+'件・持ち物マスタ'+masterItems().length+'件）は、すべてバックアップの内容に置き換わります。</p>';
         html += '<div class="row-between" style="margin-bottom:0;">';
         html += '<button class="btn ghost" id="backup-cancel-btn" style="flex:1;margin-right:8px;">キャンセル</button>';
         html += '<button class="btn danger" id="backup-restore-confirm" style="flex:1;">復元する</button>';
@@ -2241,7 +2245,7 @@
     html += '<input type="file" id="backup-import-input" accept=".json,application/json" style="display:none;">';
     if(view.backupDone){ html += '<p class="hint" style="color:var(--teal);margin-top:0;">'+esc(view.backupDone)+'</p>'; }
     if(view.confirmReset){
-      html += '<p class="hint" style="color:var(--red);">本当に全ての持ち物・スタジオ・ライブ・レコーディング・チェック状態を削除しますか？この操作は取り消せません。</p>';
+      html += '<p class="hint" style="color:var(--red);">本当に全ての持ち物・スタジオ・イベント・レコーディング・チェック状態を削除しますか？この操作は取り消せません。</p>';
       html += '<div class="row-between" style="margin-bottom:0;">';
       html += '<button class="btn ghost" id="reset-cancel-btn" style="flex:1;margin-right:8px;">キャンセル</button>';
       html += '<button class="btn danger" id="reset-confirm-btn" style="flex:1;">削除する</button>';
@@ -2644,7 +2648,7 @@
         view.editMode = false;
         view.confirmDeleteEntry = false;
         view.infoOpen = true;   // コピー後すぐ名前・日時を書き換えられるように編集欄を開く
-        showToast('「'+entry.name+'」の内容で新しいイベントを作りました。名前や日時を変えてください');
+        showToast('「'+entry.name+'」の内容で新しい予定を作りました。名前や日時を変えてください');
         saveState();
         render();
         window.scrollTo(0, 0);
@@ -2826,7 +2830,7 @@
       found.slice(0,5).forEach(function(it){
         var here = !!inEntry[it.id];
         h += '<div class="suggest-row"><div class="nm">'+esc(effectiveItemName(it, entry))+'</div>';
-        h += '<span class="suggest-tag">'+(it.local ? 'このイベント専用' : 'マスタ')+(here?'・追加済み':'')+'</span>';
+        h += '<span class="suggest-tag">'+(it.local ? 'この予定専用' : 'マスタ')+(here?'・追加済み':'')+'</span>';
         if(!here){ h += '<button class="btn ghost" data-suggest-add="'+it.id+'" style="padding:3px 9px;font-size:11px;">これを追加</button>'; }
         h += '</div>';
       });
