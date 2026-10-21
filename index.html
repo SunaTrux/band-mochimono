@@ -11,6 +11,8 @@
 <!-- アプリ側でライト／ダークを切り替えるので、ブラウザの強制ダーク（Brave のナイトモード等）をかけない -->
 <meta name="color-scheme" content="light dark">
 <meta name="darkreader-lock">
+<!-- 公開版（github.io）では、通信先を自分のサイトとGoogleフォントだけに制限する（万一おかしな文字列が混ざっても、データを外部へ送れないようにする） -->
+<script>(function(){var h=location.hostname;if(/\.github\.io$/.test(h)||h==='localhost'||h==='127.0.0.1'){var m=document.createElement('meta');m.httpEquiv='Content-Security-Policy';m.content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self' data:; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'";document.head.appendChild(m);}})();</script>
 <script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("gp-theme-v1")||"light");}catch(e){document.documentElement.setAttribute("data-theme","light");}</script>
 <link rel="apple-touch-icon" href="data:image/png;base64,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">
 <title>バンドマン持ち物リスト</title>
@@ -574,11 +576,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.18.1';
+  var APP_VERSION = '1.18.2';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
-  var APP_RELEASE_DATE = '2026-10-21';
+  var APP_RELEASE_DATE = '2026-10-22';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.18.2': [
+      'セキュリティを強化しました。入力欄やCSV・バックアップの取り込みに悪意のある文字列が含まれていても、画面が乗っ取られたりデータが外部に送られたりしないようにしています'
+    ],
     '1.18.1': [
       'スマホ横向き・タブレットで、設定画面も他のタブと同じ横幅で表示するように（閉じた項目は2列、開いた項目は横幅いっぱいで表示）'
     ],
@@ -880,12 +885,113 @@
     return e;
   }
 
+  // ---------- データの検査（バックアップ復元・保存データ読み込み時） ----------
+  // 悪意のあるファイルを読み込んでも、決まった形・長さ・文字種の値だけを残し、それ以外は捨てる。
+  var ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
+  var MAX_TEXT = 200, MAX_LIST = 5000;
+  function cleanText(v, max){
+    if(typeof v!=='string') return '';
+    // 制御文字（改行・タブ以外）を除き、長さを制限
+    return v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g,'').slice(0, max||MAX_TEXT);
+  }
+  function cleanId(v){ return (typeof v==='string' && ID_RE.test(v)) ? v : null; }
+  function cleanIdList(a){
+    if(!Array.isArray(a)) return [];
+    var out = [], seen = Object.create(null);
+    a.slice(0, MAX_LIST).forEach(function(v){ var id = cleanId(v); if(id && !seen[id]){ seen[id] = true; out.push(id); } });
+    return out;
+  }
+  function cleanTextList(a, max){
+    if(!Array.isArray(a)) return [];
+    var out = [];
+    a.slice(0, 200).forEach(function(v){ var t = cleanText(v, max||40).trim(); if(t && out.indexOf(t)===-1) out.push(t); });
+    return out;
+  }
+  function cleanIdMap(o, fn){
+    var out = {};
+    if(!o || typeof o!=='object' || Array.isArray(o)) return out;
+    Object.keys(o).slice(0, MAX_LIST).forEach(function(k){
+      if(!ID_RE.test(k)) return;              // __proto__ などの危険なキーもここで落ちる
+      var v = fn(o[k]);
+      if(v!==undefined) out[k] = v;
+    });
+    return out;
+  }
+  function cleanDate(v){ return (typeof v==='string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) ? v : ''; }
+  function cleanTime(v){ return (typeof v==='string' && /^\d{2}:\d{2}(:\d{2})?$/.test(v)) ? v : ''; }
+  function sanitizeState(p){
+    if(!p || typeof p!=='object' || !Array.isArray(p.items)) return null;
+    var out = {};
+    out.schemaVersion = (typeof p.schemaVersion==='number' && p.schemaVersion>0) ? Math.floor(p.schemaVersion) : 1;
+    out.roles = Array.isArray(p.roles) ? cleanTextList(p.roles) : defaultRoles();
+    out.defaultRoles = cleanTextList(p.defaultRoles);
+    if(typeof p.tagline==='string') out.tagline = cleanText(p.tagline, 60);
+    var itemIds = Object.create(null);
+    out.items = [];
+    p.items.slice(0, MAX_LIST).forEach(function(it){
+      if(!it || typeof it!=='object') return;
+      var id = cleanId(it.id) || uid();
+      if(itemIds[id]) return;
+      var name = cleanText(it.name).trim() || '（名称なし）';
+      itemIds[id] = true;
+      var o = {id:id, name:name, scope:migrateScope(Array.isArray(it.scope) ? it.scope.filter(function(m){ return MODES.indexOf(m)!==-1; }) : it.scope), roles:cleanTextList(it.roles)};
+      if(o.scope.length===0) o.scope = ['studio','live','recording'];
+      if(it.bring===false) o.bring = false; else if(it.bring===true) o.bring = true;
+      if(it.hand===true) o.hand = true;
+      if(it.local===true){ o.local = true; var ow = cleanId(it.ownerId); if(ow) o.ownerId = ow; }
+      out.items.push(o);
+    });
+    function cleanEntries(list){
+      if(!Array.isArray(list)) return [];
+      var seen = Object.create(null), res = [];
+      list.slice(0, MAX_LIST).forEach(function(e){
+        if(!e || typeof e!=='object') return;
+        var id = cleanId(e.id) || uid();
+        if(seen[id]) return;
+        seen[id] = true;
+        var o = {
+          id:id, name:cleanText(e.name), date:cleanDate(e.date), time:cleanTime(e.time), endTime:cleanTime(e.endTime),
+          artist:cleanText(e.artist), roles:cleanTextList(e.roles),
+          itemIds:Array.isArray(e.itemIds) ? cleanIdList(e.itemIds) : undefined,
+          bringOverride:cleanIdMap(e.bringOverride, function(v){ return typeof v==='boolean' ? v : undefined; }),
+          nameOverride:cleanIdMap(e.nameOverride, function(v){ var t = cleanText(v).trim(); return t ? t : undefined; }),
+          hiddenIds:cleanIdList(e.hiddenIds), pinnedIds:cleanIdList(e.pinnedIds),
+          handIds:cleanIdList(e.handIds), handOff:cleanIdList(e.handOff),
+          pinned:e.pinned===true,
+          updatedAt:(typeof e.updatedAt==='number' && isFinite(e.updatedAt)) ? e.updatedAt : 0
+        };
+        if(!o.itemIds) delete o.itemIds;
+        res.push(o);
+      });
+      return res;
+    }
+    out.studios = cleanEntries(p.studios);
+    out.lives = cleanEntries(p.lives);
+    out.recordings = cleanEntries(p.recordings);
+    out.checks = {};
+    if(p.checks && typeof p.checks==='object' && !Array.isArray(p.checks)){
+      Object.keys(p.checks).slice(0, MAX_LIST).forEach(function(k){
+        var m = /^(studio|live|recording):([A-Za-z0-9_-]{1,40})$/.exec(k);
+        var v = p.checks[k];
+        if(!m || !v || typeof v!=='object' || Array.isArray(v)) return;
+        var c = {};
+        Object.keys(v).slice(0, MAX_LIST).forEach(function(ik){
+          if(!/^(h:)?[A-Za-z0-9_-]{1,40}$/.test(ik)) return;
+          if(typeof v[ik]==='boolean') c[ik] = v[ik];
+        });
+        out.checks[k] = c;
+      });
+    }
+    return out;
+  }
+
   function loadState(){
+    var raw = null;
     try{
-      var raw = localStorage.getItem(STORAGE_KEY);
+      raw = localStorage.getItem(STORAGE_KEY);
       if(!raw) return defaultState();
-      var parsed = JSON.parse(raw);
-      if(!parsed.items) return defaultState();
+      var parsed = sanitizeState(JSON.parse(raw));
+      if(!parsed) return defaultState();
       if(!parsed.studios) parsed.studios = [];
       if(!parsed.lives) parsed.lives = [];
       if(!parsed.recordings) parsed.recordings = [];
@@ -897,7 +1003,11 @@
       parsed.lives.forEach(function(e){ migrateEntry('live', e); });
       parsed.recordings.forEach(function(e){ migrateEntry('recording', e); });
       return parsed;
-    }catch(e){ return defaultState(); }
+    }catch(e){
+      // 読めなかったデータは消さずに別名で残しておく（上書きで失わないように）
+      try{ if(raw) localStorage.setItem(STORAGE_KEY+'-unreadable', raw); }catch(_){}
+      return defaultState();
+    }
   }
 
   function saveState(){
@@ -1265,15 +1375,18 @@
       '<p class="data-place-warn">ブラウザの履歴・データを消去したり、機種変更したりすると消えてしまうので、ときどきバックアップしておくと安心です。</p>'+
     '</div>';
   }
+  // 画面に出す文字は必ずここを通す（< > & " ' を無害な表記に変える）。属性値の中に入れても安全。
   function esc(s){
-    var d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
+    return String(s==null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
   // ---------- CSV ----------
   function csvEscape(s){
     s = String(s==null?'':s);
+    // Excel等で開いたときに「=」「+」「-」「@」で始まる値が数式として実行されないよう、先頭に ' を付ける（取込時に外す）
+    if(/^[=+\-@\t\r]/.test(s)) s = "'" + s;
     if(/[",\r\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
     return s;
   }
@@ -1412,8 +1525,15 @@
   }
 
   function parseCSV(text){
-    var lines = text.replace(/^\uFEFF/,'').split(/\r\n|\n|\r/).filter(function(l){ return l.trim().length>0; });
-    return lines.map(parseCSVLine);
+    text = String(text||'').slice(0, MAX_IMPORT_BYTES);           // 巨大ファイル対策
+    var lines = text.replace(/^\uFEFF/,'').split(/\r\n|\n|\r/).filter(function(l){ return l.trim().length>0; }).slice(0, MAX_LIST);
+    return lines.map(function(l){
+      return parseCSVLine(l).slice(0, 20).map(function(cell){
+        cell = cleanText(cell, MAX_TEXT);                          // 制御文字の除去と長さ制限
+        if(/^'[=+\-@]/.test(cell)) cell = cell.slice(1);          // 書き出し時に付けた ' を外す
+        return cell;
+      });
+    });
   }
 
   // イベントCSV取込の事前確認用
@@ -1534,19 +1654,21 @@
     }, null, 1);
   }
 
+  var MAX_IMPORT_BYTES = 5*1024*1024;   // 取り込めるファイルは5MBまで（巨大ファイルでアプリが固まるのを防ぐ）
   function parseBackup(text){
+    if(text.length > MAX_IMPORT_BYTES) return {error:'ファイルが大きすぎます（5MBまで）。'};
     var obj;
     try{ obj = JSON.parse(text); }catch(e){ return {error:'バックアップファイルを読み込めませんでした（JSON形式ではありません）。'}; }
-    if(!obj || obj.app!=='band-mochimono' || !obj.data){ return {error:'このアプリのバックアップファイルではないようです。'}; }
+    if(!obj || typeof obj!=='object' || obj.app!=='band-mochimono' || !obj.data || typeof obj.data!=='object'){ return {error:'このアプリのバックアップファイルではないようです。'}; }
     var d = obj.data;
     if(!Array.isArray(d.items)){ return {error:'バックアップファイルの中身が壊れているようです。'}; }
     if((d.schemaVersion||1) > SCHEMA_VERSION){ return {error:'新しいバージョンのアプリで作られたバックアップです。アプリを最新にしてから復元してください。'}; }
     var count = function(a){ return Array.isArray(a) ? a.length : 0; };
     return {
       obj: obj,
-      exportedAt: obj.exportedAt || '',
-      appVersion: obj.appVersion || '',
-      place: obj.place || '',
+      exportedAt: cleanText(obj.exportedAt, 40),
+      appVersion: cleanText(obj.appVersion, 20),
+      place: cleanText(obj.place, 60),
       studios: count(d.studios), lives: count(d.lives), recordings: count(d.recordings),
       items: d.items.filter(function(it){ return !it.local; }).length
     };
@@ -1554,11 +1676,14 @@
 
   function applyBackup(plan){
     var o = plan.obj;
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(o.data)); }catch(e){}
+    var clean = null;
+    try{ clean = sanitizeState(o.data); }catch(e){ clean = null; }
+    if(!clean){ showToast('バックアップの中身を読み込めなかったため、復元を中止しました'); return; }
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(clean)); }catch(e){}
     state = loadState();
     saveState();
     if(o.theme==='light' || o.theme==='dark'){ view.theme = o.theme; applyTheme(o.theme); }
-    if(Array.isArray(o.tabOrder) && o.tabOrder.length===3){ tabOrder = o.tabOrder.slice(); saveTabOrder(); }
+    if(Array.isArray(o.tabOrder) && o.tabOrder.length===3 && o.tabOrder.every(function(m){ return MODES.indexOf(m)!==-1; }) && o.tabOrder[0]!==o.tabOrder[1] && o.tabOrder[1]!==o.tabOrder[2] && o.tabOrder[0]!==o.tabOrder[2]){ tabOrder = o.tabOrder.slice(); saveTabOrder(); }
     MODES.forEach(function(m){ view.selectedByMode[m] = null; });
   }
 
