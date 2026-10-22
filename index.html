@@ -338,6 +338,8 @@
   .check-row.locked-row .toggle{opacity:.75;cursor:default;}
   .bring-tag{flex-shrink:0;font-size:10px;padding:3px 7px;border:1px solid var(--seam);border-radius:7px;color:var(--cream-dim);}
   .op-row.one{grid-template-columns:1fr;}
+  .swipe-bg.role-hide-bg{background:#2f7de1;}
+  .item-row.role-hidden .item-name{opacity:.5;}
   .chip.chip-edit{border-style:dashed;color:var(--cream-dim);}
   .step-arrow{display:inline-block;margin:0 .45em;color:var(--cream-dim);font-weight:400;opacity:.75;}
   .step-num{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--amber);color:#fff;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;letter-spacing:0;font-family:var(--font-jp);}
@@ -592,11 +594,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.21.0';
+  var APP_VERSION = '1.22.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-23';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.22.0': [
+      '設定の「パートを管理」で、パートを右スワイプすると非表示にできるように。非表示のパートは予定の登録時のパート選択に出なくなります（もう一度右スワイプか目のアイコンで戻せます）'
+    ],
     '1.21.0': [
       '予定の登録欄のパート選択の最後に「✎ 編集」を追加。押すと設定の「パートを管理」が開きます'
     ],
@@ -1033,6 +1038,7 @@
     out.schemaVersion = (typeof p.schemaVersion==='number' && p.schemaVersion>0) ? Math.floor(p.schemaVersion) : 1;
     out.roles = Array.isArray(p.roles) ? cleanTextList(p.roles) : defaultRoles();
     out.defaultRoles = cleanTextList(p.defaultRoles);
+    out.hiddenRoles = cleanTextList(p.hiddenRoles);
     if(typeof p.tagline==='string') out.tagline = cleanText(p.tagline, 60);
     var itemIds = Object.create(null);
     out.items = [];
@@ -1200,8 +1206,23 @@
 
   // 設定の「いつものパート」：イベント登録時に最初から選んでおくパート（初期値は選択なし）
   function defaultEntryRoles(){
-    return (state.defaultRoles||[]).filter(function(r){ return state.roles.indexOf(r)!==-1; });
+    return (state.defaultRoles||[]).filter(function(r){ return state.roles.indexOf(r)!==-1 && !isRoleHidden(r); });
   }
+  // 非表示にしたパート（予定の登録時のパート選択に出さない）
+  function toggleRoleHidden(r){
+    if(!r || state.roles.indexOf(r)===-1) return;
+    if(!state.hiddenRoles) state.hiddenRoles = [];
+    var i = state.hiddenRoles.indexOf(r);
+    if(i===-1){
+      state.hiddenRoles.push(r);
+      view.newEntryRoles = view.newEntryRoles.filter(function(x){ return x!==r; });
+    } else {
+      state.hiddenRoles.splice(i,1);
+    }
+    saveState();
+  }
+  function isRoleHidden(r){ return !!(state.hiddenRoles && state.hiddenRoles.indexOf(r)!==-1); }
+  function visibleRoles(){ return state.roles.filter(function(r){ return !isRoleHidden(r); }); }
 
   var view = {
     mode: 'studio',
@@ -2016,9 +2037,9 @@
     html += '<div style="height:10px;"></div>';
     if(true){
       html += '<div class="chip-wrap">';
-      state.roles.forEach(function(r){
+      visibleRoles().forEach(function(r){
         var on = view.newEntryRoles.indexOf(r)!==-1;
-        html += '<span class="chip'+(on?' on':'')+'" data-role-entry="'+esc(r)+'">'+esc(r)+'</span>';
+        html += '<span class="chip'+(on?' on':'')+'" data-role-entry=""'+esc(r)+'">'+esc(r)+'</span>';
       });
       html += '<span class="chip chip-edit" id="role-edit-chip" role="button" tabindex="0" title="設定のパート管理を開く">✎ 編集</span>';
       html += '</div>';
@@ -2544,7 +2565,7 @@
       var defs = state.defaultRoles || [];
       html += '<label class="small">いつものパート（予定の登録時に最初から選んでおく・複数可）</label>';
       html += '<div class="chip-wrap">';
-      state.roles.forEach(function(r){
+      visibleRoles().forEach(function(r){
         var on = defs.indexOf(r)!==-1;
         html += '<span class="chip'+(on?' on':'')+'" data-default-role="'+esc(r)+'">'+esc(r)+'</span>';
       });
@@ -2554,11 +2575,13 @@
     html += '<input type="text" id="role-name" placeholder="例: サポートキーボード">';
     html += '<button class="btn block" id="add-role-btn">+ パートを追加</button>';
     if(state.roles.length>0){
-      html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更できます。</p>';
+      html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更。右スワイプ → で非表示（予定の登録時のパート選択に出なくなります。もう一度右スワイプか目のアイコンで戻せます）。</p>';
       state.roles.forEach(function(r, i){
-        html += '<div class="swipe-wrap"><button class="swipe-bg del" data-role-del="'+esc(r)+'">削除</button><div class="item-row swipe-row" data-swipe-row="role-'+i+'" data-swipe-kind="del">';
-        html += '<div class="item-name">'+esc(r)+'</div>';
+        var hid = isRoleHidden(r);
+        html += '<div class="swipe-wrap"><button class="swipe-bg del" data-role-del="'+esc(r)+'">削除</button><div class="swipe-bg pin role-hide-bg">'+(hid?'表示に戻す':'非表示')+'</div><div class="item-row swipe-row'+(hid?' role-hidden':'')+'" data-swipe-row="role-'+i+'" data-swipe-kind="del" data-swipe-right="role-hide" data-role-name="'+esc(r)+'">';
+        html += '<div class="item-name">'+esc(r)+(hid?' <span class="hidden-tag">非表示中</span>':'')+'</div>';
         html += '<div style="display:flex;gap:4px;align-items:center;">';
+        if(hid) html += '<button class="icon-btn restore-btn" data-role-unhide="'+esc(r)+'" aria-label="表示に戻す" title="表示に戻す">'+EYE_SVG+'</button>';
         html += '<button class="btn ghost" data-role-up="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===0?' disabled':'')+'>▲</button>';
         html += '<button class="btn ghost" data-role-down="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===state.roles.length-1?' disabled':'')+'>▼</button>';
         html += '<button class="del-x" data-role-del="'+esc(r)+'" aria-label="削除">×</button>';
@@ -3351,7 +3374,11 @@
         tracking=false;
         row.classList.remove('swiping');
         if(moved){
-          if(canRight && dx > 90 && row.dataset.swipeRight==='pin-entry'){
+          if(canRight && dx > 90 && row.dataset.swipeRight==='role-hide'){
+            row.style.transform='';
+            toggleRoleHidden(row.dataset.roleName);
+            setTimeout(render, 120);
+          } else if(canRight && dx > 90 && row.dataset.swipeRight==='pin-entry'){
             row.style.transform='';
             var ev2 = listForMode(row.dataset.entryMode || view.mode).filter(function(x){ return x.id===row.dataset.entry; })[0];
             if(ev2){ ev2.pinned = !ev2.pinned; saveState(); }   // 並び順が変わらないよう updatedAt は更新しない
@@ -3591,6 +3618,10 @@
       };
     });
 
+    document.querySelectorAll('[data-role-unhide]').forEach(function(b){
+      b.onclick = function(){ toggleRoleHidden(b.dataset.roleUnhide); render(); };
+    });
+
     document.querySelectorAll('[data-role-del-confirm]').forEach(function(b){
       b.onclick = function(){
         var r = b.dataset.roleDelConfirm;
@@ -3604,6 +3635,7 @@
         var ri = view.newItemRoles.indexOf(r);
         if(ri!==-1) view.newItemRoles.splice(ri,1);
         if(state.defaultRoles){ state.defaultRoles = state.defaultRoles.filter(function(x){ return x!==r; }); }
+        if(state.hiddenRoles){ state.hiddenRoles = state.hiddenRoles.filter(function(x){ return x!==r; }); }
         view.newEntryRoles = view.newEntryRoles.filter(function(x){ return x!==r; });
         saveState();
         render();
