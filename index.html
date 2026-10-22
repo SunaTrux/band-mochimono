@@ -602,11 +602,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.23.1';
+  var APP_VERSION = '1.24.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-23';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.24.0': [
+      '「全データを初期化」したあとでも、設定 →「データ管理」の「初期化前に戻す」で元のデータに戻せるようになりました'
+    ],
     '1.23.1': [
       '予定の登録欄でパートを選べなくなっていた不具合を直しました（v1.22.0で発生）'
     ],
@@ -1139,6 +1142,19 @@
     }
   }
 
+  // 「全データを初期化」の直前のデータを1つだけ取っておく（「初期化前に戻す」用）
+  var BEFORE_RESET_KEY = STORAGE_KEY + '-before-reset';
+  function saveBeforeReset(){
+    try{ localStorage.setItem(BEFORE_RESET_KEY, JSON.stringify({at: Date.now(), data: state})); }catch(e){}
+  }
+  function loadBeforeReset(){
+    try{
+      var o = JSON.parse(localStorage.getItem(BEFORE_RESET_KEY) || 'null');
+      if(o && o.data && typeof o.at==='number') return o;
+    }catch(e){}
+    return null;
+  }
+
   function saveState(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
   }
@@ -1284,6 +1300,7 @@
     newCustomHand: false,
     editMode: false,
     confirmReset: false,
+    confirmUndoReset: false,
     confirmDeleteEntry: false,
     confirmRoleDel: null,
     confirmEntryDel: null,
@@ -1920,7 +1937,7 @@
       if(!label) return;
       var title = label.textContent.trim();
       var key = title.replace(/[（(].*$/, '').trim();
-      var forced = !!panel.querySelector('#items-import-cancel, #backup-cancel-btn, [data-role-del-confirm], #reset-confirm-btn, #csv-fallback-text');
+      var forced = !!panel.querySelector('#items-import-cancel, #backup-cancel-btn, [data-role-del-confirm], #reset-confirm-btn, #undo-reset-confirm, #csv-fallback-text');
       var open = forced || !!view.settingsOpen[key];
       panel.classList.add('acc');
       panel.classList.toggle('acc-open', open);
@@ -2674,13 +2691,27 @@
     html += '<input type="file" id="backup-import-input" accept=".json,application/json" style="display:none;">';
     if(view.backupDone){ html += '<p class="hint" style="color:var(--teal);margin-top:0;">'+esc(view.backupDone)+'</p>'; }
     if(view.confirmReset){
-      html += '<p class="hint" style="color:var(--red);">本当に全ての持ち物・スタジオ・イベント・レコーディング・チェック状態を削除しますか？この操作は取り消せません。</p>';
+      html += '<p class="hint" style="color:var(--red);">本当に全ての持ち物・スタジオ・イベント・レコーディング・チェック状態を削除しますか？（直後なら「初期化前に戻す」で元に戻せます）</p>';
       html += '<div class="row-between" style="margin-bottom:0;">';
       html += '<button class="btn ghost" id="reset-cancel-btn" style="flex:1;margin-right:8px;">キャンセル</button>';
       html += '<button class="btn danger" id="reset-confirm-btn" style="flex:1;">削除する</button>';
       html += '</div>';
     } else {
       html += '<button class="btn danger block" id="reset-all-btn">全データを初期化</button>';
+    }
+    var before = loadBeforeReset();
+    if(before){
+      var bd = new Date(before.at);
+      var bdStr = isNaN(bd.getTime()) ? '' : (bd.getFullYear()+'/'+(bd.getMonth()+1)+'/'+bd.getDate()+' '+('0'+bd.getHours()).slice(-2)+':'+('0'+bd.getMinutes()).slice(-2));
+      if(view.confirmUndoReset){
+        html += '<p class="hint" style="color:var(--amber);margin-top:12px;">初期化する前のデータ（'+esc(bdStr)+'に初期化）に戻しますか？初期化したあとに登録・チェックした内容は消えます。</p>';
+        html += '<div class="row-between" style="margin-bottom:0;">';
+        html += '<button class="btn ghost" id="undo-reset-cancel" style="flex:1;margin-right:8px;">キャンセル</button>';
+        html += '<button class="btn" id="undo-reset-confirm" style="flex:1;">元に戻す</button>';
+        html += '</div>';
+      } else {
+        html += '<button class="btn ghost block" id="undo-reset-btn" style="margin-top:10px;">↩ 初期化前に戻す（'+esc(bdStr)+'に初期化）</button>';
+      }
     }
     html += '</div>';
     }
@@ -3784,12 +3815,36 @@
     var resetConfirmBtn = document.getElementById('reset-confirm-btn');
     if(resetConfirmBtn){
       resetConfirmBtn.onclick = function(){
+        saveBeforeReset();
         state = defaultState();
         view.selectedByMode = {studio:null, live:null, recording:null};
         view.confirmReset = false;
         view.itemsImportPlan = null;
         saveState();
         render();
+        showToast('初期化しました。設定 →「データ管理」の「初期化前に戻す」で元に戻せます');
+      };
+    }
+    var undoResetBtn = document.getElementById('undo-reset-btn');
+    if(undoResetBtn){ undoResetBtn.onclick = function(){ view.confirmUndoReset = true; render(); }; }
+    var undoResetCancel = document.getElementById('undo-reset-cancel');
+    if(undoResetCancel){ undoResetCancel.onclick = function(){ view.confirmUndoReset = false; render(); }; }
+    var undoResetConfirm = document.getElementById('undo-reset-confirm');
+    if(undoResetConfirm){
+      undoResetConfirm.onclick = function(){
+        view.confirmUndoReset = false;
+        var b = loadBeforeReset();
+        var clean = null;
+        try{ clean = b ? sanitizeState(b.data) : null; }catch(e){ clean = null; }
+        if(!clean){ showToast('初期化前のデータを読み込めませんでした'); render(); return; }
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(clean)); }catch(e){}
+        state = loadState();
+        saveState();
+        try{ localStorage.removeItem(BEFORE_RESET_KEY); }catch(e){}
+        MODES.forEach(function(m){ view.selectedByMode[m] = null; });
+        view.newEntryRoles = defaultEntryRoles();
+        render();
+        showToast('↩ 初期化する前のデータに戻しました');
       };
     }
   }
