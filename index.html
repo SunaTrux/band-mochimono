@@ -318,7 +318,6 @@
   .update-notice a{color:var(--cream-dim);font-size:12px;}
   .update-close{position:absolute;top:6px;right:6px;width:32px;height:32px;border:none;background:none;color:var(--cream-dim);font-size:20px;cursor:pointer;}
   .panel.reg-panel{padding-top:8px;}
-  .panel.reg-panel.reg-closed{padding-bottom:8px;}
   .reg-title{font-size:15px;font-weight:700;color:var(--cream);letter-spacing:.02em;}
   .panel.acc{padding-top:8px;padding-bottom:8px;}
   .panel.acc.acc-open{padding-bottom:16px;}
@@ -582,13 +581,16 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.19.1';
+  var APP_VERSION = '1.19.2';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-23';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.19.2': [
+      '予定の登録欄で、パートのチップは閉じていても常に表示するように戻しました'
+    ],
     '1.19.1': [
-      '予定の登録欄はふだん閉じておき、タップで開くように（予定がまだ無いときは最初から開きます）。登録が終わると自動で閉じます',
+      '予定の登録欄は、パートのチップだけ表示して入力欄はふだん閉じておくように。パートを選ぶか見出しをタップすると開きます（予定がまだ無いときは最初から開きます）。登録が終わると自動で閉じます',
       '見出しを「1. パートを選ぶ → 予定を登録」「2. 予定を選ぶ → 持ち物チェック」に'
     ],
     '1.19.0': [
@@ -1987,11 +1989,10 @@
     };
 
     var html = '';
-    // ふだんは閉じておき、タップで開く。予定が1件もない・パートが未登録のときだけ最初から開く（∨で閉じたらそれを優先）
+    // パートのチップは常に表示。名前・日時などの入力欄はふだん閉じておき、パートを選ぶかタップで開く。予定が1件もない・パートが未登録のときだけ最初から開く（∨で閉じたらそれを優先）
     var regOpen = view.regOpen[mode]===true || (view.regOpen[mode]!=='closed' && (list.length===0 || state.roles.length===0));
-    html += '<div class="panel reg-panel'+(regOpen?'':' reg-closed')+'">';
+    html += '<div class="panel reg-panel">';
     html += '<button class="reg-toggle'+(regOpen?' open':'')+'" id="reg-toggle-btn"><span class="reg-title step-head"><span class="step-num">1</span><span>パートを選ぶ<span class="step-arrow">→</span>予定を登録</span></span><span class="reg-chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></button>';
-    if(regOpen){
     html += '<div style="height:10px;"></div>';
     if(state.roles.length>0){
       html += '<div class="chip-wrap">';
@@ -2023,7 +2024,6 @@
     html += '<label class="small" style="margin-top:8px;">アーティスト名(任意)</label>';
     html += '<input type="text" id="entry-artist" placeholder="例：バンド名" value="'+esc(view.newEntryArtist)+'">';
     html += '<button class="btn block" id="add-entry-btn">+ 登録して持ち物をセット</button>';
-    }
     }
     html += '</div>';
 
