@@ -144,6 +144,10 @@
     padding:10px 2px;
     cursor:pointer;
   }
+  .nav button{touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+  .nav button.tab-dragging{position:relative;z-index:5;transition:none;box-shadow:0 6px 16px rgba(0,0,0,.25);transform-origin:center;}
+  .nav button.tab-dragging{outline:2px solid var(--amber);outline-offset:1px;}
+  .nav.tab-drag-on button:not(.tab-dragging){transition:transform .12s;}
   .nav button.active{
     color:#1c1b19;
     background:var(--amber);
@@ -576,11 +580,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.18.2';
+  var APP_VERSION = '1.19.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
-  var APP_RELEASE_DATE = '2026-10-22';
+  var APP_RELEASE_DATE = '2026-10-23';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.19.0': [
+      'タブ（スタジオ・イベント・レコ）を長押ししてドラッグすると、並び順を入れ替えられるようになりました（「設定」は右端のまま）'
+    ],
     '1.18.2': [
       'セキュリティを強化しました。入力欄やCSV・バックアップの取り込みに悪意のある文字列が含まれていても、画面が乗っ取られたりデータが外部に送られたりしないようにしています'
     ],
@@ -732,7 +739,80 @@
   }
   var tabOrder = loadTabOrder();
   function saveTabOrder(){ try{ localStorage.setItem(TABORDER_KEY, JSON.stringify(tabOrder)); }catch(e){} }
+  // ---------- タブを長押し → ドラッグで並べ替え（「設定」は常に右端） ----------
+  var navDragJustEnded = false;
+  function setupTabDrag(){
+    var nav = document.querySelector('.nav');
+    if(!nav || nav._dragReady) return;
+    nav._dragReady = true;
+    var st = null;   // {btn, id, x0, y0, timer, on, grab}
+    function modeButtons(){ return Array.prototype.filter.call(nav.querySelectorAll('button[data-mode]'), function(b){ return b.dataset.mode!=='items'; }); }
+    function natLeft(btn){ var t = btn.style.transform; btn.style.transform = ''; var l = btn.getBoundingClientRect().left; btn.style.transform = t; return l; }
+    function startDrag(){
+      if(!st) return;
+      st.on = true;
+      st.grab = st.x0 - st.btn.getBoundingClientRect().left;
+      st.btn.classList.add('tab-dragging');
+      nav.classList.add('tab-drag-on');
+      try{ st.btn.setPointerCapture(st.id); }catch(e){}
+      if(navigator.vibrate){ try{ navigator.vibrate(12); }catch(e){} }
+    }
+    function end(cancel){
+      if(!st) return;
+      clearTimeout(st.timer);
+      if(st.on){
+        st.btn.classList.remove('tab-dragging');
+        st.btn.style.transform = '';
+        nav.classList.remove('tab-drag-on');
+        navDragJustEnded = true;
+        setTimeout(function(){ navDragJustEnded = false; }, 350);
+        var order = modeButtons().map(function(b){ return b.dataset.mode; });
+        if(!cancel && order.join(',')!==tabOrder.join(',')){
+          tabOrder = order;
+          saveTabOrder();
+          if(view.mode==='items') render();   // 設定の並び順表示も更新
+        } else { applyTabOrder(); }
+      }
+      st = null;
+    }
+    nav.addEventListener('pointerdown', function(e){
+      var btn = e.target.closest && e.target.closest('button[data-mode]');
+      if(!btn || btn.dataset.mode==='items' || (e.button && e.button!==0)) return;
+      st = {btn:btn, id:e.pointerId, x0:e.clientX, y0:e.clientY, on:false};
+      st.timer = setTimeout(startDrag, e.pointerType==='mouse' ? 250 : 380);
+    });
+    window.addEventListener('pointermove', function(e){
+      if(!st || e.pointerId!==st.id) return;
+      if(!st.on){
+        if(Math.abs(e.clientX-st.x0)>8 || Math.abs(e.clientY-st.y0)>8){ clearTimeout(st.timer); st = null; }
+        return;
+      }
+      e.preventDefault();
+      var btns = modeButtons();
+      // 指の位置に合わせて並び順を入れ替える
+      var others = btns.filter(function(b){ return b!==st.btn; });
+      var idx = 0;
+      others.forEach(function(b){ var r = b.getBoundingClientRect(); if(e.clientX > r.left + r.width/2) idx++; });
+      var cur = btns.indexOf(st.btn);
+      if(idx!==cur){
+        var ref = others[idx] || null;
+        if(ref) nav.insertBefore(st.btn, ref);
+        else { var last = others[others.length-1]; nav.insertBefore(st.btn, last.nextSibling); }
+      }
+      // ボタンは指について動く（外側にはみ出しすぎないよう制限）
+      var first = modeButtons()[0], lastB = modeButtons()[btns.length-1];
+      var minL = natLeft(first), maxL = natLeft(lastB);
+      var want = Math.max(minL, Math.min(maxL, e.clientX - st.grab));
+      st.btn.style.transform = 'translateX('+(want - natLeft(st.btn))+'px) scale(1.04)';
+    });
+    window.addEventListener('pointerup', function(e){ if(st && e.pointerId===st.id) end(false); });
+    window.addEventListener('pointercancel', function(e){ if(st && e.pointerId===st.id) end(true); });
+    nav.addEventListener('contextmenu', function(e){ if(e.target.closest && e.target.closest('button[data-mode]')) e.preventDefault(); });
+    nav.addEventListener('click', function(e){ if(navDragJustEnded){ e.stopPropagation(); e.preventDefault(); } }, true);
+  }
+
   function applyTabOrder(){
+    setupTabDrag();
     var nav = document.querySelector('.nav');
     if(!nav) return;
     tabOrder.forEach(function(m){
@@ -2305,7 +2385,7 @@
       html += '<button class="btn ghost" data-tab-move="down" data-tab-mode="'+m+'" style="padding:4px 12px;"'+(i===tabOrder.length-1?' disabled':'')+' aria-label="下へ">↓</button>';
       html += '</div></div>';
     });
-    html += '<p class="hint" style="margin-top:6px;">上から順に、左→右のタブになります（「設定」は常に右端）。このブラウザだけの設定です（同じ端末でも、別のブラウザやホーム画面に追加したアプリとは別になります）。</p>';
+    html += '<p class="hint" style="margin-top:6px;">上から順に、左→右のタブになります（「設定」は常に右端）。上のタブを長押ししてドラッグしても並べ替えられます。このブラウザだけの設定です（同じ端末でも、別のブラウザやホーム画面に追加したアプリとは別になります）。</p>';
     html += '<label class="small" style="margin-top:6px;" for="tagline-input">アプリのヒント文（タイトルの下の一文）</label>';
     html += '<input type="text" id="tagline-input" maxlength="60" value="'+esc(currentTagline())+'" placeholder="'+esc(DEFAULT_TAGLINE)+'">';
     html += '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;">';
