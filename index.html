@@ -340,6 +340,14 @@
   .op-row.one{grid-template-columns:1fr;}
   .swipe-bg.role-hide-bg{background:#2f7de1;}
   .item-row.role-hidden .item-name{opacity:.5;}
+  .update-box{border-top:1px solid var(--seam);padding:18px 2px 20px;margin-top:6px;}
+  .update-title{font-size:15px;font-weight:700;color:var(--cream);}
+  .update-btn{width:100%;text-align:left;font-family:inherit;font-size:15px;font-weight:700;color:var(--cream);background:var(--panel);border:1px solid var(--seam);border-radius:10px;padding:14px 16px;cursor:pointer;}
+  .update-btn:disabled{opacity:.6;cursor:default;}
+  .update-msg{font-size:12.5px;margin:10px 2px 0;color:var(--cream-dim);}
+  .update-msg.ok{color:#2e9e6b;}
+  .update-msg.ng{color:var(--red);}
+  .update-msg.new{color:var(--amber);font-weight:700;margin:0 2px 10px;}
   .chip.chip-edit{border-style:dashed;color:var(--cream-dim);}
   .step-arrow{display:inline-block;margin:0 .45em;color:var(--cream-dim);font-weight:400;opacity:.75;}
   .step-num{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--amber);color:#fff;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;letter-spacing:0;font-family:var(--font-jp);}
@@ -594,11 +602,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.22.0';
+  var APP_VERSION = '1.23.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-23';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.23.0': [
+      '設定の一番下に「アプリの更新」を追加。「更新を確認」で最新版があるか調べ、あればその場で更新できます',
+      'パートの表示／非表示を、目のアイコンのタップでも切り替えられるように'
+    ],
     '1.22.0': [
       '設定の「パートを管理」で、パートを右スワイプすると非表示にできるように。非表示のパートは予定の登録時のパート選択に出なくなります（もう一度右スワイプか目のアイコンで戻せます）'
     ],
@@ -1153,6 +1165,32 @@
     return 0;
   }
   var lastUpdateCheck = 0;
+  // 最新版を確実に読み込む（ブラウザのキャッシュを避けるため一時的に ?u= を付けて開き直す）
+  function hardReload(){
+    var go = function(){ location.replace(location.pathname + '?u=' + Date.now()); };
+    try{
+      if(navigator.serviceWorker && navigator.serviceWorker.getRegistration){
+        navigator.serviceWorker.getRegistration().then(function(reg){
+          if(reg && reg.update){ reg.update().then(go, go); } else { go(); }
+        }, go);
+        return;
+      }
+    }catch(e){}
+    go();
+  }
+  try{ if(/[?&]u=\d+/.test(location.search) && history.replaceState){ history.replaceState(null, '', location.pathname + location.hash); } }catch(e){}
+  // 設定の「更新を確認」ボタン用
+  function manualUpdateCheck(){
+    if(!IS_HOSTED || !window.fetch){ view.updateCheck = {state:'unsupported'}; render(); return; }
+    view.updateCheck = {state:'checking'}; render();
+    fetch('index.html?check=' + Date.now(), {cache:'no-store'}).then(function(res){ return res.ok ? res.text() : ''; }).then(function(t){
+      var m = /var APP_VERSION = '([0-9.]+)'/.exec(t||'');
+      if(!m){ view.updateCheck = {state:'error'}; }
+      else if(cmpVersion(m[1], APP_VERSION) > 0){ view.updateCheck = {state:'new', version:m[1]}; view.newVersion = m[1]; }
+      else { view.updateCheck = {state:'latest'}; }
+      render();
+    }).catch(function(){ view.updateCheck = {state:'error'}; render(); });
+  }
   function checkForUpdate(){
     if(!IS_HOSTED || !window.fetch) return;
     if(Date.now() - lastUpdateCheck < 60*1000) return;
@@ -1254,6 +1292,7 @@
     backupPlan: null,
     regOpen: {studio:false, live:false, recording:false},
     newVersion: null,
+    updateCheck: null,
     backupDone: ''
   };
 
@@ -1982,7 +2021,11 @@
       window.addEventListener('load', function(){ setTimeout(function(){ window.scrollTo(0,0); }, 0); });
     }
     var nvReload = document.getElementById('newver-reload-btn');
-    if(nvReload){ nvReload.onclick = function(){ location.reload(); }; }
+    if(nvReload){ nvReload.onclick = function(){ hardReload(); }; }
+    var updCheckBtn = document.getElementById('update-check-btn');
+    if(updCheckBtn){ updCheckBtn.onclick = function(){ manualUpdateCheck(); }; }
+    var updNowBtn = document.getElementById('update-now-btn');
+    if(updNowBtn){ updNowBtn.onclick = function(){ hardReload(); }; }
     var showHiddenListEl = document.getElementById('show-hidden-list');
     if(showHiddenListEl){
       showHiddenListEl.onchange = function(){
@@ -2575,13 +2618,13 @@
     html += '<input type="text" id="role-name" placeholder="例: サポートキーボード">';
     html += '<button class="btn block" id="add-role-btn">+ パートを追加</button>';
     if(state.roles.length>0){
-      html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更。右スワイプ → で非表示（予定の登録時のパート選択に出なくなります。もう一度右スワイプか目のアイコンで戻せます）。</p>';
+      html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更。目のアイコンのタップか右スワイプ → で表示／非表示を切り替え（非表示のパートは予定の登録時のパート選択に出なくなります）。</p>';
       state.roles.forEach(function(r, i){
         var hid = isRoleHidden(r);
         html += '<div class="swipe-wrap"><button class="swipe-bg del" data-role-del="'+esc(r)+'">削除</button><div class="swipe-bg pin role-hide-bg">'+(hid?'表示に戻す':'非表示')+'</div><div class="item-row swipe-row'+(hid?' role-hidden':'')+'" data-swipe-row="role-'+i+'" data-swipe-kind="del" data-swipe-right="role-hide" data-role-name="'+esc(r)+'">';
         html += '<div class="item-name">'+esc(r)+(hid?' <span class="hidden-tag">非表示中</span>':'')+'</div>';
         html += '<div style="display:flex;gap:4px;align-items:center;">';
-        if(hid) html += '<button class="icon-btn restore-btn" data-role-unhide="'+esc(r)+'" aria-label="表示に戻す" title="表示に戻す">'+EYE_SVG+'</button>';
+        html += '<button class="icon-btn'+(hid?' restore-btn':'')+'" data-role-unhide="'+esc(r)+'" aria-label="'+(hid?'表示に戻す':'非表示にする')+'" title="'+(hid?'表示に戻す（今は非表示）':'非表示にする')+'">'+(hid?EYE_OFF_SVG:EYE_SVG)+'</button>';
         html += '<button class="btn ghost" data-role-up="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===0?' disabled':'')+'>▲</button>';
         html += '<button class="btn ghost" data-role-down="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===state.roles.length-1?' disabled':'')+'>▼</button>';
         html += '<button class="del-x" data-role-del="'+esc(r)+'" aria-label="削除">×</button>';
@@ -2643,6 +2686,22 @@
     html += '<div class="panel-label">ご意見・不具合報告</div>';
     html += '<p class="hint" style="margin-top:0;">使ってみた感想や「ここが使いにくい」「動かない」などは、下のフォームから気軽にどうぞ。不具合の場合は、どの画面で何をしたかと、使っている端末・ブラウザを書いてもらえると助かります（今のバージョン：'+APP_VERSION+'）。</p>';
     html += '<a class="btn block" href="'+FEEDBACK_URL+'?version='+encodeURIComponent(APP_VERSION)+'" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block;">ご意見・不具合報告フォームを開く</a>';
+    html += '</div>';
+
+    // アプリの更新（アコーディオンにしない、常に表示）
+    var uc = view.updateCheck || {};
+    html += '<div class="update-box">';
+    html += '<div class="update-title">アプリの更新</div>';
+    html += '<p class="hint" style="margin:6px 0 12px;line-height:1.7;">ホーム画面のアプリは、閉じても裏で止まっているだけで、自動では新しくなりません。開いたときに最新版を確認しますが、すぐ知りたいときはここで確認できます。</p>';
+    if(uc.state==='new'){
+      html += '<p class="update-msg new">新しいバージョン v'+esc(uc.version)+' があります（今は v'+esc(APP_VERSION)+'）</p>';
+      html += '<button class="btn block" id="update-now-btn">今すぐ更新する</button>';
+    } else {
+      html += '<button class="update-btn" id="update-check-btn"'+(uc.state==='checking'?' disabled':'')+'>'+(uc.state==='checking'?'確認中…':'更新を確認')+'</button>';
+      if(uc.state==='latest') html += '<p class="update-msg ok">✓ 最新版です（v'+esc(APP_VERSION)+'）</p>';
+      if(uc.state==='error') html += '<p class="update-msg ng">確認できませんでした。ネットにつながっているか確かめて、もう一度お試しください。</p>';
+      if(uc.state==='unsupported') html += '<p class="update-msg">この画面（プレビューなど）では確認できません。公開版のアプリで確認してください。</p>';
+    }
     html += '</div>';
 
     html += '<div style="text-align:center;color:var(--cream-dim);font-size:10.5px;letter-spacing:.05em;padding:6px 0 18px;">Powered by SunaTrux</div>';
