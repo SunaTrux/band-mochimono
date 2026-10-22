@@ -602,11 +602,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.23.0';
+  var APP_VERSION = '1.23.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-23';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.23.1': [
+      '予定の登録欄でパートを選べなくなっていた不具合を直しました（v1.22.0で発生）'
+    ],
     '1.23.0': [
       '設定の一番下に「アプリの更新」を追加。「更新を確認」で最新版があるか調べ、あればその場で更新できます',
       'パートの表示／非表示を、目のアイコンのタップでも切り替えられるように'
@@ -2082,7 +2085,7 @@
       html += '<div class="chip-wrap">';
       visibleRoles().forEach(function(r){
         var on = view.newEntryRoles.indexOf(r)!==-1;
-        html += '<span class="chip'+(on?' on':'')+'" data-role-entry=""'+esc(r)+'">'+esc(r)+'</span>';
+        html += '<span class="chip'+(on?' on':'')+'" data-role-entry="'+esc(r)+'">'+esc(r)+'</span>';
       });
       html += '<span class="chip chip-edit" id="role-edit-chip" role="button" tabindex="0" title="設定のパート管理を開く">✎ 編集</span>';
       html += '</div>';
