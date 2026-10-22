@@ -328,6 +328,16 @@
   .panel.acc-open > .acc-head .reg-chev svg{transform:rotate(180deg);}
   /* やることが分かる見出し（番号つき） */
   .step-head{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--cream);letter-spacing:.02em;}
+  .head-btns{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+  .head-btns .btn{padding-left:10px;padding-right:10px;white-space:nowrap;}
+  .head-btns .lock-btn:not(.on){padding-left:9px;padding-right:9px;}
+  .lock-btn.on{color:var(--amber);border-color:var(--amber);background:rgba(200,128,32,.10);font-weight:700;}
+  .lock-note{font-size:11.5px;color:var(--amber);margin:6px 2px 8px;line-height:1.5;}
+  .lock-mark{margin-left:4px;font-size:.85em;}
+  .check-row.locked-row{cursor:default;}
+  .check-row.locked-row .toggle{opacity:.75;cursor:default;}
+  .bring-tag{flex-shrink:0;font-size:10px;padding:3px 7px;border:1px solid var(--seam);border-radius:7px;color:var(--cream-dim);}
+  .op-row.one{grid-template-columns:1fr;}
   .step-arrow{display:inline-block;margin:0 .45em;color:var(--cream-dim);font-weight:400;opacity:.75;}
   .step-num{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--amber);color:#fff;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;letter-spacing:0;font-family:var(--font-jp);}
   .step-icon{font-size:12px;}
@@ -581,11 +591,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.19.2';
+  var APP_VERSION = '1.20.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-23';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.20.0': [
+      '持ち物チェックリストに 🔓（ロック）ボタンを追加。ロック中は、チェックのオン／オフ・持ち物の編集・予定の削除ができなくなります（一覧には🔒を表示）'
+    ],
     '1.19.2': [
       '予定の登録欄で、パートのチップは閉じていても常に表示するように戻しました'
     ],
@@ -1045,7 +1058,7 @@
           nameOverride:cleanIdMap(e.nameOverride, function(v){ var t = cleanText(v).trim(); return t ? t : undefined; }),
           hiddenIds:cleanIdList(e.hiddenIds), pinnedIds:cleanIdList(e.pinnedIds),
           handIds:cleanIdList(e.handIds), handOff:cleanIdList(e.handOff),
-          pinned:e.pinned===true,
+          pinned:e.pinned===true, locked:e.locked===true,
           updatedAt:(typeof e.updatedAt==='number' && isFinite(e.updatedAt)) ? e.updatedAt : 0
         };
         if(!o.itemIds) delete o.itemIds;
@@ -2053,10 +2066,10 @@
       function renderEntryCard(e){
         var p = progressFor(mode, e);
         var st = dateStatus(e);
-        html += '<div class="swipe-wrap entry-wrap"><button class="swipe-bg del" data-entry-del="'+e.id+'">削除</button><div class="swipe-bg pin">'+(e.pinned?'📌 解除':'📌 ピン留め')+'</div><div class="entry-card swipe-row st-card-'+st.kind+(e.pinned?' entry-pinned':'')+'" data-entry="'+e.id+'" data-swipe-row="entry-'+e.id+'" data-swipe-kind="del" data-swipe-right="pin-entry">';
+        html += '<div class="swipe-wrap entry-wrap">'+(e.locked?'':'<button class="swipe-bg del" data-entry-del="'+e.id+'">削除</button>')+'<div class="swipe-bg pin">'+(e.pinned?'📌 解除':'📌 ピン留め')+'</div><div class="entry-card swipe-row st-card-'+st.kind+(e.pinned?' entry-pinned':'')+'" data-entry="'+e.id+'" data-swipe-row="entry-'+e.id+'" data-swipe-kind="'+(e.locked?'none':'del')+'" data-swipe-right="pin-entry">';
         var hp = handProgress(mode, e);
         var forgot = (st.kind==='past' && hp.total>hp.done) ? '<span class="forgot-badge">渡し忘れ '+(hp.total-hp.done)+'</span>' : '';
-        html += '<div><div class="name">'+(e.pinned?'<span class="pin-mark">📌</span>':'')+statusBadge(st)+esc(e.name)+forgot+'</div>';
+        html += '<div><div class="name">'+(e.pinned?'<span class="pin-mark">📌</span>':'')+statusBadge(st)+esc(e.name)+(e.locked?'<span class="lock-mark" title="ロック中">🔒</span>':'')+forgot+'</div>';
         if(e.date){
           var wd = weekdayJa(e.date);
           var dateLine = e.date + (wd? '('+wd.charAt(0)+')' : '') + (timeRange(e)? ' '+timeRange(e) : '');
@@ -2092,6 +2105,8 @@
     var entry = list.filter(function(e){return e.id===entryId;})[0];
     if(!entry){ view.selectedByMode[mode] = null; return renderEntryListView(mode); }
 
+    var locked = !!entry.locked;
+    if(locked){ view.editMode = false; view.infoOpen = false; }
     var items = itemsForEntry(mode, entry);
     var bringItems = items.filter(function(it){ return isBringForEntry(it, entry) && !isHiddenForEntry(it, entry); });
     var ck = state.checks[checkKey(mode, entry.id)] || {};
@@ -2122,7 +2137,7 @@
     }
     if(entry.artist){ html += '<div class="info-artist">'+esc(entry.artist)+'</div>'; }
     html += '</div>';
-    html += '<button class="info-toggle'+(view.infoOpen?' open':'')+'" id="info-toggle-btn" aria-label="'+(view.infoOpen?'閉じる':'詳細を編集')+'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>';
+    if(!locked) html += '<button class="info-toggle'+(view.infoOpen?' open':'')+'" id="info-toggle-btn" aria-label="'+(view.infoOpen?'閉じる':'詳細を編集')+'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>';
     html += '</div>';
     html += '</div></div>';
 
@@ -2152,8 +2167,12 @@
 
     html += '<div class="row-between">';
     html += '<div class="step-head" style="margin-bottom:0;"><span class="step-num step-icon">'+(view.editMode?'✎':'✓')+'</span>'+(view.editMode?'含める持ち物を選ぶ':'持ち物チェックリスト')+'</div>';
-    html += '<button class="btn ghost" id="toggle-edit-btn">'+(view.editMode?'完了':'持ち物を編集')+'</button>';
+    html += '<div class="head-btns">';
+    if(!view.editMode){ html += '<button class="btn ghost lock-btn'+(locked?' on':'')+'" id="lock-toggle-btn" aria-pressed="'+(locked?'true':'false')+'" title="'+(locked?'タップでロック解除':'ロックすると編集・削除・チェックができなくなります')+'" aria-label="'+(locked?'ロック中（タップで解除）':'ロックする')+'">'+(locked?'🔒 ロック中':'🔓')+'</button>'; }
+    if(!locked){ html += '<button class="btn ghost" id="toggle-edit-btn">'+(view.editMode?'完了':'持ち物を編集')+'</button>'; }
     html += '</div>';
+    html += '</div>';
+    if(locked){ html += '<p class="lock-note">🔒 ロック中は、チェックのオン／オフ・持ち物の編集・予定の削除ができません。「ロック中」をタップすると解除します。</p>'; }
     if(!view.editMode && bringItems.length){ html += renderMeter(done, bringItems.length, handProgress(mode, entry)); }
 
     if(view.editMode){
@@ -2197,11 +2216,26 @@
             html += '<div class="swipe-wrap"><div class="check-row hidden-row">';
             html += '<div style="width:24px;flex-shrink:0;"></div>';
             html += '<div class="check-label">'+esc(effectiveItemName(it, entry))+' <span class="hidden-tag">非表示中</span></div>';
-            html += '<button class="icon-btn restore-btn" data-toggle-entry-visible="'+it.id+'" aria-label="表示に戻す" title="表示に戻す">'+EYE_SVG+'</button>';
+            if(!locked) html += '<button class="icon-btn restore-btn" data-toggle-entry-visible="'+it.id+'" aria-label="表示に戻す" title="表示に戻す">'+EYE_SVG+'</button>';
             html += '</div></div>';
             return;
           }
           var bringNow = isBringForEntry(it, entry);
+          if(locked){
+            var onL = bringNow && !!ck[it.id];
+            var blL = bringLabel(it, entry);
+            html += '<div class="swipe-wrap"><div class="check-row locked-row'+(isPinned?' pinned':'')+(isHandForEntry(it, entry) && ck[handedKey(it.id)]?' handed-row':'')+'"'+(bringNow?'':' data-rental="1"')+'>';
+            if(bringNow){
+              html += '<div class="toggle'+(onL?' on':'')+'"><div class="knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>';
+            } else {
+              html += '<div style="width:24px;flex-shrink:0;"></div>';
+            }
+            html += '<div class="check-label'+(onL?' done':'')+'">'+esc(effectiveItemName(it, entry))+'</div>';
+            if(isHandForEntry(it, entry)){ var hdL = !!ck[handedKey(it.id)]; html += '<span class="hand-btn'+(hdL?' on':'')+'">'+(hdL?'渡した ✓':'未渡し')+'</span>'; }
+            html += '<span class="bring-tag" style="'+blL.style+'">'+blL.text+'</span>';
+            html += '</div></div>';
+            return;
+          }
           html += '<div class="swipe-wrap"><div class="swipe-bg hide">非表示</div><div class="swipe-bg pin">'+(isPinned?'📌 解除':'📌 ピン留め')+'</div><div class="check-row swipe-row'+(isPinned?' pinned':'')+(isHandForEntry(it, entry) && ck[handedKey(it.id)]?' handed-row':'')+'" data-swipe-row="'+it.id+'" data-swipe-kind="hide" data-swipe-right="pin"'+(bringNow?'':' data-rental="1"')+'>';
           if(bringNow){
             var on = !!ck[it.id];
@@ -2230,11 +2264,11 @@
           g.items.forEach(renderCheckRow);
         });
       }
-      if(visibleItems.length>0){
+      if(visibleItems.length>0 && !locked){
         html += '<p class="hint" style="margin:6px 2px 0;">← 左スワイプで非表示（戻すのは「持ち物を編集」から）／ 右スワイプ → で📌ピン留め（先頭に表示）</p>';
       }
       html += '</div>';
-      html += renderCustomItemForm(mode);
+      if(!locked) html += renderCustomItemForm(mode);
       html += '<div class="backrow" style="margin-top:4px;"><button class="backbtn" id="back-btn-bottom">← '+esc(modeLabel(mode))+'一覧</button></div>';
     }
 
@@ -2278,15 +2312,19 @@
       if(total>0){ html += '<button class="btn" id="entry-import-confirm" style="flex:1;">取り込む</button>'; }
       html += '</div></div>';
     }
-    html += '<div class="op-row">';
-    html += '<button class="btn ghost" id="reset-check-btn">チェック解除</button>';
+    html += '<div class="op-row'+(locked?' one':'')+'">';
+    if(!locked) html += '<button class="btn ghost" id="reset-check-btn">チェック解除</button>';
     html += '<button class="btn ghost" id="csv-export-btn">CSV出力</button>';
-    html += '<button class="btn ghost" id="csv-import-btn">CSV取込</button>';
+    if(!locked) html += '<button class="btn ghost" id="csv-import-btn">CSV取込</button>';
     html += '</div>';
     html += '<input type="file" id="csv-import-input" accept=".csv,text/csv" style="display:none;">';
 
     html += '<div class="op-label">予定の操作</div>';
-    if(view.confirmDeleteEntry){
+    if(locked){
+      html += '<div class="op-row one">';
+      html += '<button class="btn ghost" id="copy-entry-btn">この内容で新規作成</button>';
+      html += '</div>';
+    } else if(view.confirmDeleteEntry){
       html += '<div class="panel">';
       html += '<p class="hint" style="color:var(--red);">本当にこの'+modeLabel(mode)+'を削除しますか？この操作は取り消せません。</p>';
       html += '<div class="row-between" style="margin-bottom:0;">';
@@ -2704,6 +2742,19 @@
     var backBtnBottom = document.getElementById('back-btn-bottom');
     if(backBtnBottom){ backBtnBottom.onclick = goBackToList; }
 
+    var lockBtn = document.getElementById('lock-toggle-btn');
+    if(lockBtn){
+      lockBtn.onclick = function(){
+        var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
+        if(!entry) return;
+        entry.locked = !entry.locked;
+        if(!entry.locked) delete entry.locked;
+        view.confirmDeleteEntry = false;
+        saveState();
+        render();
+        showToast(entry.locked ? '🔒 ロックしました。チェックや編集はできません' : '🔓 ロックを解除しました');
+      };
+    }
     var toggleEditBtn = document.getElementById('toggle-edit-btn');
     if(toggleEditBtn){
       toggleEditBtn.onclick = function(){
