@@ -595,7 +595,7 @@
 <div class="header">
   <div class="led"></div>
   <h1>バンドマン持ち物リスト</h1>
-  <p>パート・スタジオ・イベント・レコーディングごとに、忘れ物ゼロへ</p>
+  <p>パートや予定に合わせて持ち物チェック</p>
 </div>
 
 <div id="pin-bar"></div>
@@ -612,11 +612,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.26.0';
+  var APP_VERSION = '1.26.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-25';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.26.1': [
+      'タイトルの下のヒント文の初期の文を「パートや予定に合わせて持ち物チェック」に変更（自分で書きかえている場合はそのまま）'
+    ],
     '1.26.0': [
       'スマホ横向き・PCでは、設定画面の左側にメニューを表示し、選んだ項目を右側に大きく表示するようにしました'
     ],
@@ -2089,7 +2092,7 @@
 
   // ---------- render ----------
   // ---------- ヘッダーのヒント文（設定で変更可。空なら初期の文） ----------
-  var DEFAULT_TAGLINE = 'パート・スタジオ・イベント・レコーディングごとに、忘れ物ゼロへ';
+  var DEFAULT_TAGLINE = 'パートや予定に合わせて持ち物チェック';
   function currentTagline(){ return (typeof state.tagline==='string' && state.tagline.trim()) ? state.tagline.trim() : DEFAULT_TAGLINE; }
   function applyTagline(){
     var el = document.querySelector('.header p');
