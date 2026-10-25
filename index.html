@@ -319,6 +319,22 @@
   .update-close{position:absolute;top:6px;right:6px;width:32px;height:32px;border:none;background:none;color:var(--cream-dim);font-size:20px;cursor:pointer;}
   .panel.reg-panel{padding-top:8px;}
   .reg-title{font-size:15px;font-weight:700;color:var(--cream);letter-spacing:.02em;}
+  /* ---------- 設定：横向き・PCでは左にメニュー、右に内容 ---------- */
+  .set-layout{display:grid;grid-template-columns:minmax(210px,32%) minmax(0,1fr);gap:16px;align-items:start;margin-bottom:14px;}
+  .set-menu{position:sticky;top:8px;background:var(--panel);border:1px solid var(--seam);border-radius:var(--radius);padding:8px;max-height:calc(100vh - 16px);overflow:auto;box-sizing:border-box;}
+  .set-menu-item{display:block;width:100%;text-align:left;background:none;border:none;border-radius:10px;padding:10px 12px;margin:0 0 2px;color:var(--cream);font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .set-menu-item .t{display:block;font-size:14px;font-weight:700;letter-spacing:.02em;}
+  .set-menu-item .s{display:block;font-size:11px;color:var(--cream-dim);margin-top:2px;line-height:1.4;}
+  @media (hover:hover){ .set-menu-item:hover:not(.on){background:var(--panel-raised);} }
+  .set-menu-item.on{background:var(--amber);color:#1c1b19;}
+  .set-menu-item.on .s{color:rgba(28,27,25,.72);}
+  .set-pane{min-width:0;}
+  .set-pane > .panel{margin-bottom:0;}
+  .set-pane .acc-head{cursor:default;pointer-events:none;}
+  .set-pane .acc-head .reg-chev{display:none;}
+  .set-pane .acc-title{font-size:18px;}
+  .set-pane > .update-box{background:var(--panel);border:1px solid var(--seam);border-radius:var(--radius);padding:16px 14px;margin:0;}
+  .set-pane > .update-box .update-title{font-size:18px;}
   .panel.acc{padding-top:8px;padding-bottom:8px;}
   .panel.acc.acc-open{padding-bottom:16px;}
   .panel.acc:not(.acc-open) > :not(.acc-head){display:none !important;}
@@ -545,12 +561,6 @@
     html body.is-list #app > *{grid-column:auto;}
     html body.is-list #app > .reg-panel{grid-column:1;}
     html body.is-list #app > .panel:not(.reg-panel){grid-column:2;grid-row:1 / span 20;}
-    /* 設定：パネルを2列に並べる */
-    html body.is-settings #app{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;align-items:start;}
-    html body.is-settings #app > *{min-width:0;}
-    html body.is-settings #app > :not(.panel){grid-column:1 / -1;}
-    html body.is-settings #app{grid-auto-flow:row dense;}
-    html body.is-settings #app > .panel.acc-open{grid-column:1 / -1;}  /* 開いた項目は横幅いっぱいに */
     /* タブ・タイトルは本文と同じ左右の位置に（iPhone横向きのノッチ・角の丸みの分も避ける） */
     html body.is-detail .nav, html body.is-detail .header, html body.is-detail #pin-bar, html body.is-list .nav, html body.is-list .header, html body.is-list #pin-bar, html body.is-settings .nav, html body.is-settings .header, html body.is-settings #pin-bar{padding-left:max(16px, env(safe-area-inset-left, 0px), calc(50% - 434px));padding-right:max(16px, env(safe-area-inset-right, 0px), calc(50% - 434px));}
     html body.is-detail .header .led, html body.is-list .header .led, html body.is-settings .header .led{right:max(20px, calc(env(safe-area-inset-right, 0px) + 8px), calc(50% - 426px));}
@@ -602,11 +612,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.25.0';
+  var APP_VERSION = '1.26.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-25';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.26.0': [
+      'スマホ横向き・PCでは、設定画面の左側にメニューを表示し、選んだ項目を右側に大きく表示するようにしました'
+    ],
     '1.25.0': [
       '設定に「このアプリを友達に勧める」を追加。アプリのURLと説明を、LINEなどでそのまま送れます（文章は送る前に書きかえOK）'
     ],
@@ -1958,6 +1971,69 @@
 
   // ---------- 設定画面のアコーディオン ----------
   // 各パネルの見出しを押すと開閉。確認待ちの操作があるパネルは自動で開く。
+  // 横向き・PCのときは、設定を「左メニュー＋右に選んだ項目」の形に組み替える
+  var WIDE_SETTINGS_MQ = '(orientation:landscape) and (min-width:640px)';
+  function wideSettings(){ try{ return !!(window.matchMedia && window.matchMedia(WIDE_SETTINGS_MQ).matches); }catch(e){ return false; } }
+  try{
+    var wmq = window.matchMedia && window.matchMedia(WIDE_SETTINGS_MQ);
+    var onWide = function(){ if(view && view.mode==='items') render(); };
+    if(wmq){ if(wmq.addEventListener) wmq.addEventListener('change', onWide); else if(wmq.addListener) wmq.addListener(onWide); }
+  }catch(e){}
+  function settingsSub(key){
+    var n = function(a){ return (a||[]).length; };
+    var map = {
+      '表示設定': 'テーマ・タブの並び順・ヒント文',
+      '持ち物を追加': '名前・用途・パート・初期状態',
+      '登録済みの持ち物': n(masterItems())+'件',
+      '持ち物の一括管理': 'CSVの書き出し・取り込み',
+      'パートを管理': n(state.roles)+'件・いつものパート・非表示',
+      'データ管理': 'バックアップ・復元・初期化',
+      'このアプリを友達に勧める': 'URLと説明を送る',
+      'ご意見・不具合報告': '感想・不具合をフォームで送る',
+      'アプリの更新': '最新版を確認 ・ v'+APP_VERSION
+    };
+    return map[key] || '';
+  }
+  function applySettingsSideMenu(root){
+    var secs = Array.prototype.slice.call(root.querySelectorAll(':scope > .panel.acc, :scope > .update-box'));
+    if(!secs.length) return;
+    secs.forEach(function(sec){ if(sec.classList.contains('update-box')) sec.dataset.accKey = 'アプリの更新'; });
+    var keys = secs.map(function(sec){ return sec.dataset.accKey; });
+    var forcedSec = secs.filter(function(sec){ return sec.dataset.forced==='1'; })[0];
+    var sel = forcedSec ? forcedSec.dataset.accKey : view.settingsSel;
+    if(keys.indexOf(sel)===-1) sel = keys[0];
+    view.settingsSel = sel;
+    var layout = document.createElement('div'); layout.className = 'set-layout';
+    var menu = document.createElement('nav'); menu.className = 'set-menu'; menu.setAttribute('aria-label','設定メニュー');
+    var pane = document.createElement('div'); pane.className = 'set-pane';
+    root.insertBefore(layout, secs[0]);
+    layout.appendChild(menu); layout.appendChild(pane);
+    secs.forEach(function(sec){
+      var key = sec.dataset.accKey;
+      var b = document.createElement('button');
+      b.className = 'set-menu-item' + (key===sel ? ' on' : '');
+      b.setAttribute('aria-current', key===sel ? 'true' : 'false');
+      var t = document.createElement('span'); t.className = 't'; t.textContent = key;
+      var sub = settingsSub(key);
+      b.appendChild(t);
+      if(sub){ var sp = document.createElement('span'); sp.className = 's'; sp.textContent = sub; b.appendChild(sp); }
+      b.onclick = function(){
+        if(view.settingsSel===key) return;
+        view.settingsSel = key;
+        render();
+        var l = document.querySelector('.set-layout');
+        if(l){ var top = l.getBoundingClientRect().top; if(top < 0) window.scrollTo(0, window.pageYOffset + top - 8); }
+      };
+      menu.appendChild(b);
+      if(key===sel){
+        sec.classList.add('acc-open');
+        pane.appendChild(sec);
+      } else {
+        sec.parentNode.removeChild(sec);
+      }
+    });
+  }
+
   function applySettingsAccordion(root){
     if(!view.settingsOpen) view.settingsOpen = {};
     root.querySelectorAll(':scope > .panel').forEach(function(panel){
@@ -1967,6 +2043,8 @@
       var key = title.replace(/[（(].*$/, '').trim();
       var forced = !!panel.querySelector('#items-import-cancel, #backup-cancel-btn, [data-role-del-confirm], #reset-confirm-btn, #undo-reset-confirm, #csv-fallback-text');
       var open = forced || !!view.settingsOpen[key];
+      panel.dataset.accKey = key;
+      if(forced) panel.dataset.forced = '1';
       panel.classList.add('acc');
       panel.classList.toggle('acc-open', open);
       var btn = document.createElement('button');
@@ -2050,6 +2128,7 @@
     if(view.mode==='items'){
       app.innerHTML = renderItemsView();
       applySettingsAccordion(app);
+      if(wideSettings()) applySettingsSideMenu(app);
     } else {
       if(view.selectedByMode[view.mode]){
         app.innerHTML = renderDetailView(view.mode, view.selectedByMode[view.mode]);
@@ -2907,6 +2986,7 @@
         view.editMode = false;
         if(!view.settingsOpen) view.settingsOpen = {};
         view.settingsOpen['パートを管理'] = true;
+        view.settingsSel = 'パートを管理';
         render();
         var heads = document.querySelectorAll('.acc-head');
         for(var i=0;i<heads.length;i++){
