@@ -602,11 +602,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.24.0';
+  var APP_VERSION = '1.25.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
-  var APP_RELEASE_DATE = '2026-10-23';
+  var APP_RELEASE_DATE = '2026-10-25';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.25.0': [
+      '設定に「このアプリを友達に勧める」を追加。アプリのURLと説明を、LINEなどでそのまま送れます（文章は送る前に書きかえOK）'
+    ],
     '1.24.0': [
       '「全データを初期化」したあとでも、設定 →「データ管理」の「初期化前に戻す」で元のデータに戻せるようになりました'
     ],
@@ -1184,6 +1187,30 @@
     return 0;
   }
   var lastUpdateCheck = 0;
+  // ---------- 友達に勧める ----------
+  var SHARE_URL = 'https://sunatrux.github.io/band-mochimono/';
+  function defaultShareText(){
+    return 'バンドマン持ち物リスト\n' +
+      'スタジオ・イベント・レコーディングの持ち物を、パートごとに自動でリストにして「あれ忘れた！」をなくせるチェックリストです。ホーム画面に追加すると、アプリのように使えます。入力したデータはこの端末の中だけに保存され、サーバーには送られません。\n' +
+      SHARE_URL;
+  }
+  function shareText(){ return (view.shareText===null || view.shareText===undefined) ? defaultShareText() : view.shareText; }
+  function copyTextToClipboard(text, okMsg){
+    var done = function(){ showToast(okMsg || 'コピーしました'); };
+    var fallback = function(){
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      var ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta);
+      showToast(ok ? (okMsg || 'コピーしました') : 'コピーできませんでした。文章を長押ししてコピーしてください');
+    };
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done, fallback); return; }
+    }catch(e){}
+    fallback();
+  }
+
   // 最新版を確実に読み込む（ブラウザのキャッシュを避けるため一時的に ?u= を付けて開き直す）
   function hardReload(){
     var go = function(){ location.replace(location.pathname + '?u=' + Date.now()); };
@@ -1313,6 +1340,7 @@
     regOpen: {studio:false, live:false, recording:false},
     newVersion: null,
     updateCheck: null,
+    shareText: null,
     backupDone: ''
   };
 
@@ -2042,6 +2070,27 @@
     }
     var nvReload = document.getElementById('newver-reload-btn');
     if(nvReload){ nvReload.onclick = function(){ hardReload(); }; }
+    var shareTa = document.getElementById('share-text');
+    if(shareTa){
+      shareTa.oninput = function(){ view.shareText = shareTa.value; };
+      var shareSend = document.getElementById('share-send-btn');
+      if(shareSend) shareSend.onclick = function(){
+        var text = shareTa.value;
+        if(navigator.share){
+          // 本文にURLが入っていれば、そのまま送る（URLが二重にならないように）
+          navigator.share({title:'バンドマン持ち物リスト', text:text}).catch(function(err){
+            if(err && err.name==='AbortError') return;
+            copyTextToClipboard(text, '送れなかったので、文章をコピーしました。LINEなどに貼り付けて送ってください');
+          });
+        } else {
+          copyTextToClipboard(text, 'この端末では直接送れないので、文章をコピーしました。LINEやメールに貼り付けて送ってください');
+        }
+      };
+      var shareCopy = document.getElementById('share-copy-btn');
+      if(shareCopy) shareCopy.onclick = function(){ copyTextToClipboard(shareTa.value, '文章をコピーしました'); };
+      var shareReset = document.getElementById('share-reset-btn');
+      if(shareReset) shareReset.onclick = function(){ view.shareText = null; render(); };
+    }
     var updCheckBtn = document.getElementById('update-check-btn');
     if(updCheckBtn){ updCheckBtn.onclick = function(){ manualUpdateCheck(); }; }
     var updNowBtn = document.getElementById('update-now-btn');
@@ -2715,6 +2764,17 @@
     }
     html += '</div>';
     }
+
+    html += '<div class="panel">';
+    html += '<div class="panel-label">このアプリを友達に勧める</div>';
+    html += '<p class="hint" style="margin-top:0;line-height:1.7;">友達に、このアプリのURLと簡単な説明を送れます。送る前に、文章を確認・書きかえできます。</p>';
+    html += '<textarea id="share-text" rows="9" style="width:100%;box-sizing:border-box;background:var(--field-bg);border:1px solid var(--seam);color:var(--cream);border-radius:8px;padding:12px;font-family:inherit;font-size:14px;line-height:1.7;resize:vertical;">'+esc(shareText())+'</textarea>';
+    html += '<div class="row-between" style="margin:10px 0 0;gap:8px;">';
+    html += '<button class="btn" id="share-send-btn" style="flex:1;">友達に送る</button>';
+    html += '<button class="btn ghost" id="share-copy-btn" style="flex:1;">文章をコピー</button>';
+    html += '</div>';
+    if(view.shareText!==null && view.shareText!==defaultShareText()){ html += '<button class="btn ghost block" id="share-reset-btn" style="margin-top:8px;font-size:12px;">最初の文章に戻す</button>'; }
+    html += '</div>';
 
     html += '<div class="panel">';
     html += '<div class="panel-label">ご意見・不具合報告</div>';
