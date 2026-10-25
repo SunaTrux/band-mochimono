@@ -593,7 +593,6 @@
 
 <div id="top-notice"></div>
 <div class="header">
-  <div class="led"></div>
   <h1>バンドマン持ち物リスト</h1>
   <p>パートや予定に合わせて持ち物チェック</p>
 </div>
@@ -612,11 +611,14 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.26.1';
+  var APP_VERSION = '1.26.2';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-25';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.26.2': [
+      '画面右上の飾りのオレンジの点を削除しました'
+    ],
     '1.26.1': [
       'タイトルの下のヒント文の初期の文を「パートや予定に合わせて持ち物チェック」に変更（自分で書きかえている場合はそのまま）'
     ],
