@@ -360,7 +360,8 @@
   .step-head{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--cream);letter-spacing:.02em;}
   .head-btns{display:flex;gap:6px;align-items:center;flex-shrink:0;}
   .head-btns .btn{padding-left:10px;padding-right:10px;white-space:nowrap;}
-  .lock-btn{margin-left:auto;display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--seam);background:var(--panel);color:var(--cream-dim);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+  .role-rm-box{margin-top:10px;padding:10px 12px;border:1px solid var(--amber);border-radius:10px;background:var(--panel);}
+  .lock-btn{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-height:34px;padding:5px 11px;border-radius:9px;border:1px solid var(--seam);background:var(--panel);color:var(--cream-dim);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
   .lock-btn.on{color:var(--amber);border-color:var(--amber);background:rgba(200,128,32,.10);font-weight:700;}
   .lock-note{font-size:11.5px;color:var(--amber);margin:6px 2px 8px;line-height:1.5;}
   .lock-mark{margin-left:4px;font-size:.85em;}
@@ -625,12 +626,16 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.27.2';
+  var APP_VERSION = '1.28.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-27';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.28.0': [
+      '予定の情報（∨で開く編集欄）で、パートをあとから追加・外せるように。追加するとそのパートの持ち物も入ります。外すときは、そのパートだけの持ち物も外すか選べます（チェック済みの物は残ります）',
+      '予定画面のロックボタンを少し小さくしました'
+    ],
     '1.27.2': [
       '持ち物の初期値に「タオル」と「●●を●●へ返す」（渡す）を追加しました（新しく始めるとき・初期化したときに入ります）'
     ],
@@ -1386,6 +1391,7 @@
     newVersion: null,
     updateCheck: null,
     shareText: null,
+    roleRemove: null,
     backupDone: ''
   };
 
@@ -1393,6 +1399,46 @@
     if(!scope || scope.length===0) return '(用途未設定)';
     if(scope.length===MODES.length) return '全シーン共通';
     return scope.map(modeLabel).join('・');
+  }
+
+  // パートを外すとき：そのパートだけの持ち物（ほかに選んでいるパートや共通には当てはまらない物）
+  function roleOnlyItems(mode, entry, role){
+    var rest = (entry.roles||[]).filter(function(r){ return r!==role; });
+    var ck = state.checks[checkKey(mode, entry.id)] || {};
+    var only = itemsForEntry(mode, entry).filter(function(it){
+      if(it.local) return false;
+      var rs = it.roles || [];
+      if(rs.indexOf(role)===-1) return false;
+      return !rs.some(function(r){ return rest.indexOf(r)!==-1; });
+    });
+    return {
+      removable: only.filter(function(it){ return !ck[it.id]; }),
+      kept: only.filter(function(it){ return !!ck[it.id]; })
+    };
+  }
+  // パートを追加するとき：そのパートの持ち物（この予定の種類で使う物）をまだ入っていなければ足す
+  function addRoleToEntry(mode, entry, role){
+    if(!entry.roles) entry.roles = [];
+    if(entry.roles.indexOf(role)===-1) entry.roles.push(role);
+    if(!entry.itemIds) entry.itemIds = [];
+    var added = 0;
+    state.items.forEach(function(it){
+      if(it.local || !it.scope || it.scope.indexOf(mode)===-1) return;
+      if((it.roles||[]).indexOf(role)===-1) return;
+      if(entry.itemIds.indexOf(it.id)===-1){ entry.itemIds.push(it.id); added++; }
+      if(entry.hiddenIds){ entry.hiddenIds = entry.hiddenIds.filter(function(id){ return id!==it.id; }); }
+    });
+    return added;
+  }
+  function removeRoleFromEntry(mode, entry, role, withItems){
+    if(withItems){
+      var ids = roleOnlyItems(mode, entry, role).removable.map(function(it){ return it.id; });
+      entry.itemIds = (entry.itemIds||[]).filter(function(id){ return ids.indexOf(id)===-1; });
+      ['pinnedIds','handIds','handOff','hiddenIds'].forEach(function(k){ if(entry[k]) entry[k] = entry[k].filter(function(id){ return ids.indexOf(id)===-1; }); });
+      if(entry.bringOverride) ids.forEach(function(id){ delete entry.bringOverride[id]; });
+      if(entry.nameOverride) ids.forEach(function(id){ delete entry.nameOverride[id]; });
+    }
+    entry.roles = (entry.roles||[]).filter(function(r){ return r!==role; });
   }
 
   function itemsForEntry(mode, entry){
@@ -2435,10 +2481,32 @@
       html += '</div>';
       html += '<label class="small" style="margin-top:8px;">アーティスト名</label>';
       html += '<input type="text" id="detail-artist-input" placeholder="例：バンド名" value="'+esc(entry.artist||'')+'" style="margin-bottom:0;">';
-      if(entry.roles && entry.roles.length){
-        html += '<label class="small" style="margin-top:10px;">パート</label>';
-        html += '<div class="chip-wrap" style="margin-bottom:0;">';
-        entry.roles.forEach(function(r){ html += '<span class="chip static on">'+esc(r)+'</span>'; });
+      // パート：タップで追加（そのパートの持ち物も追加）／外す（確認あり）
+      var eRoles = entry.roles || [];
+      var roleChoices = state.roles.filter(function(r){ return !isRoleHidden(r) || eRoles.indexOf(r)!==-1; });
+      html += '<label class="small" style="margin-top:10px;">パート（タップで追加・外す）</label>';
+      html += '<div class="chip-wrap" style="margin-bottom:0;">';
+      roleChoices.forEach(function(r){
+        var on = eRoles.indexOf(r)!==-1;
+        html += '<span class="chip'+(on?' on':'')+'" data-entry-role="'+esc(r)+'" role="button" tabindex="0">'+(on?'':'＋ ')+esc(r)+'</span>';
+      });
+      html += '</div>';
+      var rr = view.roleRemove;
+      if(rr && rr.entryId===entry.id && eRoles.indexOf(rr.role)!==-1){
+        var rm = roleOnlyItems(mode, entry, rr.role);
+        html += '<div class="role-rm-box">';
+        html += '<p class="hint" style="margin:0 0 8px;color:var(--cream);">パート「'+esc(rr.role)+'」を外しますか？</p>';
+        if(rm.removable.length){
+          html += '<p class="hint" style="margin:0 0 8px;">「'+esc(rr.role)+'」だけの持ち物 '+rm.removable.length+'件：'+namesPreviewList(rm.removable.map(function(it){ return effectiveItemName(it, entry); }))+(rm.kept.length?'<br>（チェック済みの '+rm.kept.length+'件は残します）':'')+'</p>';
+          html += '<div class="row-between" style="margin-bottom:6px;gap:6px;">';
+          html += '<button class="btn danger" id="role-rm-items" style="flex:1;">持ち物も外す</button>';
+          html += '<button class="btn ghost" id="role-rm-only" style="flex:1;">パートだけ外す</button>';
+          html += '</div>';
+        } else {
+          html += '<p class="hint" style="margin:0 0 8px;">'+(rm.kept.length?'「'+esc(rr.role)+'」だけの持ち物はチェック済みなので、そのまま残します。':'「'+esc(rr.role)+'」だけの持ち物はありません。')+'</p>';
+          html += '<button class="btn ghost block" id="role-rm-only" style="margin-bottom:6px;">外す</button>';
+        }
+        html += '<button class="btn ghost block" id="role-rm-cancel">キャンセル</button>';
         html += '</div>';
       }
       html += '</div>';
@@ -3450,6 +3518,43 @@
         render();
       };
     });
+
+    document.querySelectorAll('[data-entry-role]').forEach(function(c){
+      c.onclick = function(){
+        var entry = currentEntry();
+        if(!entry || entry.locked) return;
+        var r = c.dataset.entryRole;
+        if((entry.roles||[]).indexOf(r)===-1){
+          var n = addRoleToEntry(view.mode, entry, r);
+          view.roleRemove = null;
+          entry.updatedAt = Date.now();
+          saveState();
+          render();
+          showToast('「'+r+'」を追加しました'+(n?'（持ち物 '+n+'件を追加）':''));
+        } else {
+          view.roleRemove = {entryId: entry.id, role: r};
+          render();
+        }
+      };
+    });
+    var roleRmDo = function(withItems){
+      var entry = currentEntry();
+      var rr = view.roleRemove;
+      view.roleRemove = null;
+      if(!entry || !rr || entry.locked){ render(); return; }
+      var n = withItems ? roleOnlyItems(view.mode, entry, rr.role).removable.length : 0;
+      removeRoleFromEntry(view.mode, entry, rr.role, withItems);
+      entry.updatedAt = Date.now();
+      saveState();
+      render();
+      showToast('「'+rr.role+'」を外しました'+(n?'（持ち物 '+n+'件を外しました）':''));
+    };
+    var roleRmItems = document.getElementById('role-rm-items');
+    if(roleRmItems) roleRmItems.onclick = function(){ roleRmDo(true); };
+    var roleRmOnly = document.getElementById('role-rm-only');
+    if(roleRmOnly) roleRmOnly.onclick = function(){ roleRmDo(false); };
+    var roleRmCancel = document.getElementById('role-rm-cancel');
+    if(roleRmCancel) roleRmCancel.onclick = function(){ view.roleRemove = null; render(); };
 
     var detailArtistInput = document.getElementById('detail-artist-input');
     if(detailArtistInput){
