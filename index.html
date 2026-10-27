@@ -488,16 +488,7 @@
   .past-toggle{display:flex;align-items:center;gap:8px;font-size:13px;margin:-2px 0 10px;cursor:pointer;color:var(--cream-dim);}
   .past-toggle input{width:auto;margin:0;}
   .meter{background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:10px 14px 12px;margin:2px 0 12px;position:sticky;top:6px;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.06);}
-  .meter-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px;padding-right:26px;}
-  .meter-toggle{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;border:1px solid var(--seam);background:var(--panel);color:var(--cream-dim);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
-  .meter-toggle svg{transform:rotate(180deg);transition:transform .15s;}
-  .meter.meter-closed{padding:6px 12px 7px;}
-  .meter.meter-closed .meter-top{margin-bottom:4px;}
-  .meter.meter-closed .meter-msg{font-size:12px;}
-  .meter.meter-closed .meter-num b{font-size:13.5px;}
-  .meter.meter-closed .meter-track{height:5px;}
-  .meter.meter-closed .meter-toggle{top:3px;width:24px;height:24px;}
-  .meter.meter-closed .meter-toggle svg{transform:none;}
+  .meter-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px;}
   .meter-msg{font-size:13px;font-weight:700;color:var(--cream);}
   .meter-num{font-size:12.5px;color:var(--cream-dim);font-variant-numeric:tabular-nums;white-space:nowrap;}
   .meter-num b{font-size:16px;color:var(--cream);}
@@ -642,12 +633,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.29.0';
+  var APP_VERSION = '1.29.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-27';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.29.1': [
+      '持ち物の進捗カード（「チェックしていこう」など）は、設定 →「表示設定」で表示しないこともできるようにしました（カードの開閉ボタンはなくしました）'
+    ],
     '1.29.0': [
       'ピン留めした持ち物も、画面上部の「📌 ピン留め」欄に出るように。どの予定を開いていても、非表示にしていても表示されます（買う物などの備忘に）',
       '持ち物の進捗バーを ∨ で小さく閉じられるように',
@@ -1614,16 +1608,16 @@
     var pct = total ? Math.round(done/total*100) : 0;
     var complete = total>0 && done>=total;
     var msg = complete ? '準備完了！忘れ物ゼロ 🎉' : (pct>=67 ? 'あと少し！' : (pct>=34 ? 'いい調子' : (done>0 ? 'スタート！' : 'チェックしていこう')));
-    var h = '<div class="meter'+(complete?' complete':'')+(meterCollapsed?' meter-closed':'')+'">';
+    var h = '<div class="meter'+(complete?' complete':'')+'">';
     h += '<div class="meter-top"><span class="meter-msg">'+esc(msg)+'</span><span class="meter-num"><b>'+done+'</b> / '+total+'（'+pct+'%）'+(hand && hand.total ? '<span class="meter-hand'+(hand.done>=hand.total?' ok':'')+'">渡す '+hand.done+'/'+hand.total+'</span>' : '')+'</span></div>';
-    h += '<button class="meter-toggle" id="meter-toggle-btn" aria-expanded="'+(meterCollapsed?'false':'true')+'" aria-label="'+(meterCollapsed?'進捗バーを開く':'進捗バーを閉じる')+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>';
     h += '<div class="meter-track"><div class="meter-fill" style="width:'+pct+'%;background:'+meterColor(pct)+';"></div></div>';
     h += '</div>';
     return h;
   }
-  var METER_COLLAPSED_KEY = 'gp-meter-collapsed-v1';
-  var meterCollapsed = false;
-  try{ meterCollapsed = localStorage.getItem(METER_COLLAPSED_KEY)==='1'; }catch(e){}
+  // 持ち物の進捗カード（「チェックしていこう」など）を出すかどうか。設定の「表示設定」で切り替え（このブラウザだけの設定）
+  var SHOW_METER_KEY = 'gp-show-meter-v1';
+  var showMeter = true;
+  try{ showMeter = localStorage.getItem(SHOW_METER_KEY)!=='0'; }catch(e){}
   function miniMeter(done, total){
     if(!total) return '';
     var pct = Math.round(done/total*100);
@@ -2087,7 +2081,7 @@
   function settingsSub(key){
     var n = function(a){ return (a||[]).length; };
     var map = {
-      '表示設定': 'テーマ・タブの並び順・ヒント文',
+      '表示設定': 'テーマ・進捗カード・タブの並び順・ヒント文',
       '持ち物を追加': '名前・用途・パート・初期状態',
       '登録済みの持ち物': n(masterItems())+'件',
       '持ち物の一括管理': 'CSVでまとめて書き出し・取り込み',
@@ -2299,14 +2293,13 @@
       window.scrollTo(0,0);
       window.addEventListener('load', function(){ setTimeout(function(){ window.scrollTo(0,0); }, 0); });
     }
-    var meterToggle = document.getElementById('meter-toggle-btn');
-    if(meterToggle){
-      meterToggle.onclick = function(){
-        meterCollapsed = !meterCollapsed;
-        try{ localStorage.setItem(METER_COLLAPSED_KEY, meterCollapsed?'1':'0'); }catch(e){}
+    document.querySelectorAll('[data-meter-set]').forEach(function(c){
+      c.onclick = function(){
+        showMeter = c.dataset.meterSet==='on';
+        try{ localStorage.setItem(SHOW_METER_KEY, showMeter?'1':'0'); }catch(e){}
         render();
       };
-    }
+    });
     var nvReload = document.getElementById('newver-reload-btn');
     if(nvReload){ nvReload.onclick = function(){ hardReload(); }; }
     var shareTa = document.getElementById('share-text');
@@ -2576,7 +2569,7 @@
     html += '</div>';
     html += '</div>';
     if(locked){ html += '<p class="lock-note">🔒 ロック中は、チェックのオン／オフ・持ち物の編集・予定の削除ができません。右上の「ロック中」をタップすると解除します。</p>'; }
-    if(!view.editMode && bringItems.length){ html += renderMeter(done, bringItems.length, handProgress(mode, entry)); }
+    if(!view.editMode && bringItems.length && showMeter){ html += renderMeter(done, bringItems.length, handProgress(mode, entry)); }
 
     if(view.editMode){
       html += renderEditItemsPanel(mode, entry);
@@ -2824,6 +2817,11 @@
     html += '<div class="chip-wrap">';
     html += '<span class="chip'+(view.theme==='dark'?' on':'')+'" data-theme-set="dark">ダーク</span>';
     html += '<span class="chip'+(view.theme==='light'?' on':'')+'" data-theme-set="light">ライト</span>';
+    html += '</div>';
+    html += '<label class="small" style="margin-top:6px;">持ち物の進捗カード（「チェックしていこう」と進み具合のバー）</label>';
+    html += '<div class="chip-wrap">';
+    html += '<span class="chip'+(showMeter?' on':'')+'" data-meter-set="on">表示する</span>';
+    html += '<span class="chip'+(!showMeter?' on':'')+'" data-meter-set="off">表示しない</span>';
     html += '</div>';
     html += '<label class="small" style="margin-top:6px;">タブの並び順</label>';
     tabOrder.forEach(function(m, i){
