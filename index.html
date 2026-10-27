@@ -366,6 +366,20 @@
   .head-btns .btn{padding-left:10px;padding-right:10px;white-space:nowrap;}
   /* スワイプできる端末（タッチ操作）では、スワイプと同じ働きの目のアイコンは出さない */
   @media (hover:none) and (pointer:coarse){ .swipe-alt{display:none !important;} }
+  .nav button[data-mode="items"]{display:flex;align-items:center;justify-content:center;gap:5px;}
+  .tab-ic{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;}
+  /* 設定「使い方・ヘルプ」 */
+  .help-h{font-size:12.5px;font-weight:800;color:var(--amber);letter-spacing:.04em;margin:16px 0 6px;}
+  .help-h:first-of-type{margin-top:2px;}
+  .help-list{margin:0;padding:0;list-style:none;}
+  .help-list li{padding:6px 0;border-bottom:1px dashed var(--seam);}
+  .help-list li:last-child{border-bottom:none;}
+  .help-steps{margin:0;padding-left:1.4em;}
+  .help-steps li{padding:5px 0;}
+  .help-steps li::marker{color:var(--amber);font-weight:800;}
+  .help-t{font-size:13.5px;font-weight:700;color:var(--cream);}
+  .help-d{font-size:12px;color:var(--cream-dim);line-height:1.6;margin-top:2px;}
+  .help-end{margin-top:14px;padding:10px 12px;border-radius:10px;background:var(--panel-raised);font-size:12.5px;color:var(--cream);line-height:1.7;text-align:center;}
   .role-rm-box{margin-top:10px;padding:10px 12px;border:1px solid var(--amber);border-radius:10px;background:var(--panel);}
   .lock-btn{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-height:36px;padding:5px 11px;border-radius:9px;border:1px solid var(--seam);background:var(--panel);color:var(--cream-dim);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
   .lock-btn.on{color:var(--amber);border-color:var(--amber);background:rgba(200,128,32,.10);font-weight:700;}
@@ -626,7 +640,7 @@
   <button data-mode="studio">スタジオ</button>
   <button data-mode="live">イベント</button>
   <button data-mode="recording">レコ</button>
-  <button data-mode="items">設定</button>
+  <button data-mode="items"><svg class="tab-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/><circle cx="12" cy="12" r="6.6"/></svg><span>設定</span></button>
 </div>
 
 <div class="container" id="app"></div>
@@ -635,12 +649,16 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.30.3';
+  var APP_VERSION = '1.31.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-27';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.31.0': [
+      '設定の「その他」に「使い方・ヘルプ」を追加。アプリの特徴・主な使い方・便利な機能・困ったときの答えをまとめました',
+      '「設定」タブに⚙️アイコンを付けました'
+    ],
     '1.30.3': [
       'スマホなどスワイプできる端末では、スワイプと同じ働きの目のアイコン（持ち物の非表示・パートの表示切り替え）を出さないようにしました'
     ],
@@ -1285,6 +1303,46 @@
     return 0;
   }
   var lastUpdateCheck = 0;
+  // ---------- 使い方・ヘルプ ----------
+  var HELP_FEATURES = [
+    ['パートと予定に合わせて、自動で持ち物リスト', 'パートを選んで予定を登録するだけで、必要な持ち物がそろいます。'],
+    ['スタジオ・イベント・レコーディング別', '予定の種類ごとに、いる物・いらない物を分けて管理できます。'],
+    ['登録なし・この端末だけ', 'ログイン不要。データは端末の中だけに保存されます。ホーム画面に追加すると、アプリのように使えます。']
+  ];
+  var HELP_STEPS = [
+    ['パートを選んで予定を登録', 'タブ（スタジオ・イベント・レコ）を選び、パートと名前・日付を入れます。'],
+    ['予定を開いて持ち物をチェック', '持った物をタップでチェック。全部そろえば準備完了です。'],
+    ['予定に合わせて調整', '「持ち物を編集」で足し引き。「この予定だけの持ち物を追加」も使えます。'],
+    ['持ち物の種類は設定で管理', '持ち物やパートの追加・並べ替えは、設定からまとめてできます。']
+  ];
+  var HELP_TIPS = [
+    ['📌 ピン留め', '右スワイプで先頭に表示。持ち物のピンは画面上部にも出るので、買う物のメモにも。'],
+    ['渡す', '返す物・あげる物は「渡した」までチェック。日付が過ぎて渡していないと「渡し忘れ」を表示。'],
+    ['🔒 ロック', '本番前に、チェックや持ち物をうっかり変えないように固定できます。'],
+    ['未チェックだけ', '残りの持ち物だけを表示して、出かける直前の確認に。'],
+    ['この内容で新規作成', '前の予定の持ち物をまるごとコピーして使い回せます。'],
+    ['CSV・バックアップ', '表計算アプリで編集したり、機種変更のときにデータを移したりできます。']
+  ];
+  var HELP_FAQ = [
+    ['別の端末にデータを移したい', '設定 →「バックアップ・復元」で保存し、移したい端末で復元します。'],
+    ['間違えて全データを初期化した', '設定 →「データ初期化」の「初期化前に戻す」で元に戻せます。'],
+    ['持ち物を消さずに隠したい', 'チェックリストで左スワイプ。「非表示も表示」から戻せます。'],
+    ['新しいバージョンにならない', '設定 →「アプリの更新」の「更新を確認」を押してください。'],
+    ['困ったとき・要望があるとき', '設定 →「作者に感想を送る」から気軽にどうぞ。']
+  ];
+  function renderHelpPanel(){
+    function li(a){ return '<li><div class="help-t">'+esc(a[0])+'</div><div class="help-d">'+esc(a[1])+'</div></li>'; }
+    var h = '<div class="panel">';
+    h += '<div class="panel-label">使い方・ヘルプ</div>';
+    h += '<div class="help-h">アプリの特徴</div><ul class="help-list">'+HELP_FEATURES.map(li).join('')+'</ul>';
+    h += '<div class="help-h">主な使い方</div><ol class="help-steps">'+HELP_STEPS.map(li).join('')+'</ol>';
+    h += '<div class="help-h">便利な機能</div><ul class="help-list">'+HELP_TIPS.map(li).join('')+'</ul>';
+    h += '<div class="help-h">ヘルプ</div><ul class="help-list">'+HELP_FAQ.map(li).join('')+'</ul>';
+    h += '<div class="help-end">忘れ物の心配を減らして、演奏に集中できますように。<br>あなたの音楽ライフを応援しています。</div>';
+    h += '</div>';
+    return h;
+  }
+
   // ---------- 友達に勧める ----------
   var SHARE_URL = 'https://sunatrux.github.io/band-mochimono/';
   function defaultShareText(){
@@ -2148,6 +2206,7 @@
       'パートを管理': n(state.roles)+'件・いつものパート・非表示',
       'バックアップ・復元': '全データを1つのファイルに保存・復元',
       'データ初期化': (loadBeforeReset() ? '全データを削除・初期化前に戻す' : '全データを削除'),
+      '使い方・ヘルプ': '特徴・使い方・便利な機能・ヘルプ',
       'このアプリを友達に勧める': 'URLと説明を送る',
       '作者に感想を送る': '感想・使いにくいところ・不具合など',
       'アプリの更新': '最新版を確認 ・ v'+APP_VERSION
@@ -3094,6 +3153,7 @@
     html += '</div>';
 
     html += '<div class="set-group">その他</div>';
+    html += renderHelpPanel();
     html += '<div class="panel">';
     html += '<div class="panel-label">このアプリを友達に勧める</div>';
     html += '<p class="hint" style="margin-top:0;line-height:1.7;">友達に、このアプリのURLと簡単な説明を送れます。送る前に、文章を確認・書きかえできます。</p>';
