@@ -137,11 +137,12 @@
     background:var(--panel-raised);
     border:1px solid var(--seam);
     border-radius:8px;
-    color:var(--cream-dim);
-    font-family:'Oswald',var(--font-jp);
-    font-size:11.5px;
-    letter-spacing:.02em;
-    padding:10px 2px;
+    color:var(--cream);
+    font-family:var(--font-jp);
+    font-size:13.5px;
+    font-weight:800;
+    letter-spacing:.04em;
+    padding:9px 2px;
     cursor:pointer;
   }
   .nav button{touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
@@ -300,6 +301,9 @@
   .pin-mode-studio{background:#5b7fa6;}
   .pin-mode-live{background:#c2603f;}
   .pin-mode-recording{background:#7a5ea8;}
+  .pin-mode-item{background:#3d8b7d;}
+  .pin-name.pin-done{color:var(--cream-dim);text-decoration:line-through;}
+  .pin-meta.pin-where{max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .pin-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;}
   .pin-meta{flex:0 0 auto;font-size:12px;color:var(--cream-dim);font-variant-numeric:tabular-nums;}
   .pin-meta b{color:var(--amber);font-weight:700;margin-left:4px;}
@@ -361,7 +365,7 @@
   .head-btns{display:flex;gap:6px;align-items:center;flex-shrink:0;}
   .head-btns .btn{padding-left:10px;padding-right:10px;white-space:nowrap;}
   .role-rm-box{margin-top:10px;padding:10px 12px;border:1px solid var(--amber);border-radius:10px;background:var(--panel);}
-  .lock-btn{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-height:34px;padding:5px 11px;border-radius:9px;border:1px solid var(--seam);background:var(--panel);color:var(--cream-dim);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+  .lock-btn{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-height:36px;padding:5px 11px;border-radius:9px;border:1px solid var(--seam);background:var(--panel);color:var(--cream-dim);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
   .lock-btn.on{color:var(--amber);border-color:var(--amber);background:rgba(200,128,32,.10);font-weight:700;}
   .lock-note{font-size:11.5px;color:var(--amber);margin:6px 2px 8px;line-height:1.5;}
   .lock-mark{margin-left:4px;font-size:.85em;}
@@ -484,7 +488,16 @@
   .past-toggle{display:flex;align-items:center;gap:8px;font-size:13px;margin:-2px 0 10px;cursor:pointer;color:var(--cream-dim);}
   .past-toggle input{width:auto;margin:0;}
   .meter{background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:10px 14px 12px;margin:2px 0 12px;position:sticky;top:6px;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.06);}
-  .meter-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px;}
+  .meter-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px;padding-right:26px;}
+  .meter-toggle{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;border:1px solid var(--seam);background:var(--panel);color:var(--cream-dim);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+  .meter-toggle svg{transform:rotate(180deg);transition:transform .15s;}
+  .meter.meter-closed{padding:6px 12px 7px;}
+  .meter.meter-closed .meter-top{margin-bottom:4px;}
+  .meter.meter-closed .meter-msg{font-size:12px;}
+  .meter.meter-closed .meter-num b{font-size:13.5px;}
+  .meter.meter-closed .meter-track{height:5px;}
+  .meter.meter-closed .meter-toggle{top:3px;width:24px;height:24px;}
+  .meter.meter-closed .meter-toggle svg{transform:none;}
   .meter-msg{font-size:13px;font-weight:700;color:var(--cream);}
   .meter-num{font-size:12.5px;color:var(--cream-dim);font-variant-numeric:tabular-nums;white-space:nowrap;}
   .meter-num b{font-size:16px;color:var(--cream);}
@@ -520,9 +533,9 @@
   }
   .backbtn,.backbtn-bottom{
     display:inline-flex;align-items:center;justify-content:center;gap:6px;
-    min-height:44px;padding:8px 16px 8px 12px;border-radius:10px;
+    min-height:36px;padding:5px 13px 5px 10px;border-radius:9px;
     border:1px solid var(--seam);background:var(--panel);color:var(--cream);
-    font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+    font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;
     touch-action:manipulation;-webkit-tap-highlight-color:transparent;white-space:nowrap;flex-shrink:0;
   }
   .backbtn-bottom{width:100%;margin:4px 0 14px;}
@@ -580,6 +593,9 @@
     html body.is-detail .nav, html body.is-detail .header, html body.is-detail #pin-bar, html body.is-list .nav, html body.is-list .header, html body.is-list #pin-bar, html body.is-settings .nav, html body.is-settings .header, html body.is-settings #pin-bar{padding-left:max(16px, env(safe-area-inset-left, 0px), calc(50% - 434px));padding-right:max(16px, env(safe-area-inset-right, 0px), calc(50% - 434px));}
     html body.is-detail .header .led, html body.is-list .header .led, html body.is-settings .header .led{right:max(20px, calc(env(safe-area-inset-right, 0px) + 8px), calc(50% - 426px));}
     html body.is-detail #pin-bar .pin-bar-inner, html body.is-list #pin-bar .pin-bar-inner, html body.is-settings #pin-bar .pin-bar-inner{max-width:868px;}
+    /* アップデートのお知らせも、アプリ本体と同じ横幅に */
+    html body #top-notice{padding-left:max(16px, env(safe-area-inset-left, 0px), calc(50% - 434px));padding-right:max(16px, env(safe-area-inset-right, 0px), calc(50% - 434px));}
+    html body #top-notice > *{max-width:868px;}
     /* ピン留め欄：横に引き伸ばさず、縦向きと同じくらいの幅の行を並べる */
     html body.is-detail #pin-bar .pin-bar-inner, html body.is-list #pin-bar .pin-bar-inner, html body.is-settings #pin-bar .pin-bar-inner{display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));column-gap:8px;align-items:start;}
     #pin-bar .pin-bar-title, #pin-bar .pin-bar-hint{grid-column:1 / -1;}
@@ -626,12 +642,18 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.28.0';
+  var APP_VERSION = '1.29.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-27';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.29.0': [
+      'ピン留めした持ち物も、画面上部の「📌 ピン留め」欄に出るように。どの予定を開いていても、非表示にしていても表示されます（買う物などの備忘に）',
+      '持ち物の進捗バーを ∨ で小さく閉じられるように',
+      'タブ（スタジオ・イベント・レコ・設定）の文字を太く大きく、「← 一覧」ボタンを小さくしました',
+      'PCでアップデートのお知らせをアプリと同じ横幅に。持ち物の初期値に「差し入れ・おみやげ」を追加'
+    ],
     '1.28.0': [
       '予定の情報（∨で開く編集欄）で、パートをあとから追加・外せるように。追加するとそのパートの持ち物も入ります。外すときは、そのパートだけの持ち物も外すか選べます（チェック済みの物は残ります）',
       '予定画面のロックボタンを少し小さくしました'
@@ -1001,6 +1023,7 @@
         {id:uid(), name:'筆記用具', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'ドリンク', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'タオル', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'差し入れ・おみやげ', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'●●を●●へ返す', scope:['studio','live','recording'], roles:[], bring:true, hand:true},
         {id:uid(), name:'ステージ衣装', scope:['live'], roles:[]},
         {id:uid(), name:'物販', scope:['live'], roles:[]},
@@ -1591,12 +1614,16 @@
     var pct = total ? Math.round(done/total*100) : 0;
     var complete = total>0 && done>=total;
     var msg = complete ? '準備完了！忘れ物ゼロ 🎉' : (pct>=67 ? 'あと少し！' : (pct>=34 ? 'いい調子' : (done>0 ? 'スタート！' : 'チェックしていこう')));
-    var h = '<div class="meter'+(complete?' complete':'')+'">';
+    var h = '<div class="meter'+(complete?' complete':'')+(meterCollapsed?' meter-closed':'')+'">';
     h += '<div class="meter-top"><span class="meter-msg">'+esc(msg)+'</span><span class="meter-num"><b>'+done+'</b> / '+total+'（'+pct+'%）'+(hand && hand.total ? '<span class="meter-hand'+(hand.done>=hand.total?' ok':'')+'">渡す '+hand.done+'/'+hand.total+'</span>' : '')+'</span></div>';
+    h += '<button class="meter-toggle" id="meter-toggle-btn" aria-expanded="'+(meterCollapsed?'false':'true')+'" aria-label="'+(meterCollapsed?'進捗バーを開く':'進捗バーを閉じる')+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>';
     h += '<div class="meter-track"><div class="meter-fill" style="width:'+pct+'%;background:'+meterColor(pct)+';"></div></div>';
     h += '</div>';
     return h;
   }
+  var METER_COLLAPSED_KEY = 'gp-meter-collapsed-v1';
+  var meterCollapsed = false;
+  try{ meterCollapsed = localStorage.getItem(METER_COLLAPSED_KEY)==='1'; }catch(e){}
   function miniMeter(done, total){
     if(!total) return '';
     var pct = Math.round(done/total*100);
@@ -2170,7 +2197,17 @@
     MODES.forEach(function(m){
       listForMode(m).forEach(function(e){ if(e.pinned) rows.push({mode:m, e:e}); });
     });
-    if(!rows.length) return '';
+    // 持ち物のピン留め（予定の種類・非表示に関係なく、すべての予定から集める）
+    var itemRows = [];
+    MODES.forEach(function(m){
+      listForMode(m).forEach(function(e){
+        (e.pinnedIds||[]).forEach(function(id){
+          var it = state.items.filter(function(x){ return x.id===id; })[0];
+          if(it && (e.itemIds||[]).indexOf(id)!==-1) itemRows.push({mode:m, e:e, it:it});
+        });
+      });
+    });
+    if(!rows.length && !itemRows.length) return '';
     var saved = sortMode; sortMode = 'date';
     rows.sort(function(a,b){ return compareEntries(a.e, b.e); });
     sortMode = saved;
@@ -2184,6 +2221,17 @@
       h += '<span class="pin-mode pin-mode-'+r.mode+'">'+esc(r.mode==='recording'?'レコ':modeLabel(r.mode))+'</span>';
       h += '<span class="pin-name">'+statusBadge(st)+esc(e.name)+'</span>';
       h += '<span class="pin-meta">'+esc(d)+(p.total?' <b>'+p.done+'/'+p.total+'</b>':'')+'</span>';
+      h += '</div></div>';
+    });
+    itemRows.forEach(function(r){
+      var e = r.e, it = r.it;
+      var ck = state.checks[checkKey(r.mode, e.id)] || {};
+      var done = !!ck[it.id];
+      h += '<div class="swipe-wrap pin-wrap"><div class="swipe-bg pin">📌 解除</div>';
+      h += '<div class="pin-row pin-item-row swipe-row" role="button" tabindex="0" data-pin-open="'+r.mode+'|'+e.id+'" data-swipe-row="pinitem-'+e.id+'-'+it.id+'" data-swipe-kind="none" data-swipe-right="pin-item" data-entry="'+e.id+'" data-entry-mode="'+r.mode+'" data-item-id="'+it.id+'">';
+      h += '<span class="pin-mode pin-mode-item">持ち物</span>';
+      h += '<span class="pin-name'+(done?' pin-done':'')+'">'+(done?'✓ ':'')+esc(effectiveItemName(it, e))+'</span>';
+      h += '<span class="pin-meta pin-where">'+esc(e.name)+'</span>';
       h += '</div></div>';
     });
     h += '<div class="pin-bar-hint">右にスワイプでピン留めを解除</div>';
@@ -2250,6 +2298,14 @@
       try{ history.scrollRestoration = 'manual'; }catch(e){}
       window.scrollTo(0,0);
       window.addEventListener('load', function(){ setTimeout(function(){ window.scrollTo(0,0); }, 0); });
+    }
+    var meterToggle = document.getElementById('meter-toggle-btn');
+    if(meterToggle){
+      meterToggle.onclick = function(){
+        meterCollapsed = !meterCollapsed;
+        try{ localStorage.setItem(METER_COLLAPSED_KEY, meterCollapsed?'1':'0'); }catch(e){}
+        render();
+      };
     }
     var nvReload = document.getElementById('newver-reload-btn');
     if(nvReload){ nvReload.onclick = function(){ hardReload(); }; }
@@ -3779,7 +3835,12 @@
         tracking=false;
         row.classList.remove('swiping');
         if(moved){
-          if(canRight && dx > 90 && row.dataset.swipeRight==='role-hide'){
+          if(canRight && dx > 90 && row.dataset.swipeRight==='pin-item'){
+            row.style.transform='';
+            var pe = listForMode(row.dataset.entryMode || view.mode).filter(function(x){ return x.id===row.dataset.entry; })[0];
+            if(pe && pe.pinnedIds){ pe.pinnedIds = pe.pinnedIds.filter(function(x){ return x!==row.dataset.itemId; }); saveState(); }
+            setTimeout(render, 120);
+          } else if(canRight && dx > 90 && row.dataset.swipeRight==='role-hide'){
             row.style.transform='';
             toggleRoleHidden(row.dataset.roleName);
             setTimeout(render, 120);
