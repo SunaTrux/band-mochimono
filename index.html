@@ -633,12 +633,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.30.0';
+  var APP_VERSION = '1.30.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-27';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.30.1': [
+      '設定の「ご意見・不具合報告」を「作者に感想を送る」に、ボタンを「感想を送る」に変えました'
+    ],
     '1.30.0': [
       'テーマに「端末に合わせる」を追加し、初期値にしました。スマホやPCのライト／ダークの設定に自動で合わせます（自分でライト・ダークを選んでいた場合はそのまま）'
     ],
@@ -2109,7 +2112,7 @@
       'バックアップ・復元': '全データを1つのファイルに保存・復元',
       'データ初期化': (loadBeforeReset() ? '全データを削除・初期化前に戻す' : '全データを削除'),
       'このアプリを友達に勧める': 'URLと説明を送る',
-      'ご意見・不具合報告': 'フォームを開く',
+      '作者に感想を送る': '感想・使いにくいところ・不具合など',
       'アプリの更新': '最新版を確認 ・ v'+APP_VERSION
     };
     return map[key] || '';
@@ -3066,9 +3069,9 @@
     html += '</div>';
 
     html += '<div class="panel">';
-    html += '<div class="panel-label">ご意見・不具合報告</div>';
+    html += '<div class="panel-label">作者に感想を送る</div>';
     html += '<p class="hint" style="margin-top:0;">使ってみた感想や「ここが使いにくい」「動かない」などは、下のフォームから気軽にどうぞ。不具合の場合は、どの画面で何をしたかと、使っている端末・ブラウザを書いてもらえると助かります（今のバージョン：'+APP_VERSION+'）。</p>';
-    html += '<a class="btn block" href="'+FEEDBACK_URL+'?app='+encodeURIComponent(FEEDBACK_APP_NAME)+'&version='+encodeURIComponent(APP_VERSION)+'" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block;">ご意見・不具合報告フォームを開く</a>';
+    html += '<a class="btn block" href="'+FEEDBACK_URL+'?app='+encodeURIComponent(FEEDBACK_APP_NAME)+'&version='+encodeURIComponent(APP_VERSION)+'" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block;">感想を送る</a>';
     html += '</div>';
 
     // アプリの更新（アコーディオンにしない、常に表示）
