@@ -364,6 +364,8 @@
   .step-head{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--cream);letter-spacing:.02em;}
   .head-btns{display:flex;gap:6px;align-items:center;flex-shrink:0;}
   .head-btns .btn{padding-left:10px;padding-right:10px;white-space:nowrap;}
+  /* スワイプできる端末（タッチ操作）では、スワイプと同じ働きの目のアイコンは出さない */
+  @media (hover:none) and (pointer:coarse){ .swipe-alt{display:none !important;} }
   .role-rm-box{margin-top:10px;padding:10px 12px;border:1px solid var(--amber);border-radius:10px;background:var(--panel);}
   .lock-btn{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-height:36px;padding:5px 11px;border-radius:9px;border:1px solid var(--seam);background:var(--panel);color:var(--cream-dim);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
   .lock-btn.on{color:var(--amber);border-color:var(--amber);background:rgba(200,128,32,.10);font-weight:700;}
@@ -633,12 +635,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.30.2';
+  var APP_VERSION = '1.30.3';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-27';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.30.3': [
+      'スマホなどスワイプできる端末では、スワイプと同じ働きの目のアイコン（持ち物の非表示・パートの表示切り替え）を出さないようにしました'
+    ],
     '1.30.2': [
       '感想を送るとき、アプリのバージョンと使っている端末・ブラウザが自動で一緒に送られるようにしました（書かなくてOK）'
     ],
@@ -2702,7 +2707,7 @@
             html += '<button class="hand-btn'+(handed?' on':'')+'" data-hand-item="'+it.id+'">'+(handed?'渡した ✓':'渡した？')+'</button>';
           }
           html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:3px 7px;font-size:10px;flex-shrink:0;'+bl.style+'">'+bl.text+'</button>';
-          html += '<button class="icon-btn" data-hide-item="'+it.id+'" aria-label="非表示にする" title="非表示にする"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg></button>';
+          html += '<button class="icon-btn swipe-alt" data-hide-item="'+it.id+'" aria-label="非表示にする" title="非表示にする"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg></button>';
           html += '</div></div>';
         }
         if(pinnedItems.length){
@@ -3004,13 +3009,13 @@
     html += '<input type="text" id="role-name" placeholder="例: サポートキーボード">';
     html += '<button class="btn block" id="add-role-btn">+ パートを追加</button>';
     if(state.roles.length>0){
-      html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更。目のアイコンのタップか右スワイプ → で表示／非表示を切り替え（非表示のパートは予定の登録時のパート選択に出なくなります）。</p>';
+      html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更。右スワイプ →（PCでは目のアイコン）で表示／非表示を切り替え（非表示のパートは予定の登録時のパート選択に出なくなります）。</p>';
       state.roles.forEach(function(r, i){
         var hid = isRoleHidden(r);
         html += '<div class="swipe-wrap"><button class="swipe-bg del" data-role-del="'+esc(r)+'">削除</button><div class="swipe-bg pin role-hide-bg">'+(hid?'表示に戻す':'非表示')+'</div><div class="item-row swipe-row'+(hid?' role-hidden':'')+'" data-swipe-row="role-'+i+'" data-swipe-kind="del" data-swipe-right="role-hide" data-role-name="'+esc(r)+'">';
         html += '<div class="item-name">'+esc(r)+(hid?' <span class="hidden-tag">非表示中</span>':'')+'</div>';
         html += '<div style="display:flex;gap:4px;align-items:center;">';
-        html += '<button class="icon-btn'+(hid?' restore-btn':'')+'" data-role-unhide="'+esc(r)+'" aria-label="'+(hid?'表示に戻す':'非表示にする')+'" title="'+(hid?'表示に戻す（今は非表示）':'非表示にする')+'">'+(hid?EYE_OFF_SVG:EYE_SVG)+'</button>';
+        html += '<button class="icon-btn swipe-alt'+(hid?' restore-btn':'')+'" data-role-unhide="'+esc(r)+'" aria-label="'+(hid?'表示に戻す':'非表示にする')+'" title="'+(hid?'表示に戻す（今は非表示）':'非表示にする')+'">'+(hid?EYE_OFF_SVG:EYE_SVG)+'</button>';
         html += '<button class="btn ghost" data-role-up="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===0?' disabled':'')+'>▲</button>';
         html += '<button class="btn ghost" data-role-down="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===state.roles.length-1?' disabled':'')+'>▼</button>';
         html += '<button class="del-x" data-role-del="'+esc(r)+'" aria-label="削除">×</button>';
