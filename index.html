@@ -416,6 +416,10 @@
   #master-list.searching .group-toggle{pointer-events:none;}
   #master-list.searching .group-toggle .group-chev{visibility:hidden;}
   .mrow.s-miss, .mg.s-empty{display:none !important;}
+  .filter-row.kind-row{margin-top:-4px;gap:5px;flex-wrap:nowrap;}
+  .filter-row.kind-row .chip{padding:5px 8px;font-size:11.5px;white-space:nowrap;}
+  .filter-row.kind-row .sort-label{white-space:nowrap;flex-shrink:0;}
+  .kind-row .kc{opacity:.75;font-variant-numeric:tabular-nums;}
   .chip.chip-edit{border-style:dashed;color:var(--cream-dim);}
   .step-arrow{display:inline-block;margin:0 .45em;color:var(--cream-dim);font-weight:400;opacity:.75;}
   .step-num{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--amber);color:#fff;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;letter-spacing:0;font-family:var(--font-jp);}
@@ -666,12 +670,16 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.35.0';
+  var APP_VERSION = '1.36.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-29';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.36.0': [
+      '持ち物チェックリストの「種類」で、持込・借りる・渡すを絞り込めるようにしました',
+      '「レンタル」を「借りる」という言い方に変えました'
+    ],
     '1.35.0': [
       '「チェックしていこう」の進捗カードを、左右にスワイプして非表示にできるようにしました。直後は「元に戻す」で戻せます（設定 →「表示設定」でも選べます）'
     ],
@@ -1410,7 +1418,7 @@
   ];
   var HELP_TIPS = [
     ['📌 ピン留め', '右スワイプで先頭に表示。持ち物のピンは画面上部にも出るので、買う物のメモにも。'],
-    ['渡す', '返す物・あげる物は「渡した」までチェック。日付が過ぎて渡していないと「渡し忘れ」を表示。'],
+    ['持込・借りる・渡す', '持ち物ごとに切り替え。借りる物（スタジオや会場で借りる）はチェック不要、返す物・あげる物は「渡した」までチェック。「種類」で絞り込みも。'],
     ['🔒 ロック', '本番前に、チェックや持ち物をうっかり変えないように固定できます。'],
     ['未チェックだけ', '残りの持ち物だけを表示して、出かける直前の確認に。'],
     ['この内容で新規作成', '前の予定の持ち物をまるごとコピーして使い回せます。'],
@@ -1783,6 +1791,11 @@
   var SHOW_HIDDEN_KEY = 'gp-show-hidden-list-v1';
   var showHiddenList = false;
   try{ showHiddenList = localStorage.getItem(SHOW_HIDDEN_KEY)==='1'; }catch(e){}
+  // 持ち物の種類で絞り込み：'all'／'bring'（持込）／'rental'（借りる）／'hand'（渡す）
+  var KIND_FILTER_KEY = 'gp-kind-filter-v1';
+  var kindFilter = 'all';
+  try{ var kf = localStorage.getItem(KIND_FILTER_KEY); if(kf==='bring'||kf==='rental'||kf==='hand') kindFilter = kf; }catch(e){}
+  function itemKind(it, entry){ return isHandForEntry(it, entry) ? 'hand' : (isBringForEntry(it, entry) ? 'bring' : 'rental'); }
   var UNCHECKED_KEY = 'gp-unchecked-only-v1';
   var uncheckedOnly = false;
   try{ uncheckedOnly = localStorage.getItem(UNCHECKED_KEY)==='1'; }catch(e){}
@@ -1825,7 +1838,7 @@
   function bringLabel(it, entry){
     if(entry ? isHandForEntry(it, entry) : isHandMaster(it)) return {text:'渡す', style:'color:#7a5ea8;border-color:#7a5ea8;'};
     if(isBringForEntry(it, entry)) return {text:'持込', style:''};
-    return {text:'レンタル', style:'color:var(--amber);border-color:var(--amber);'};
+    return {text:'借りる', style:'color:var(--amber);border-color:var(--amber);'};
   }
 
   function renderMeter(done, total, hand){
@@ -2635,6 +2648,13 @@
         render();
       };
     }
+    document.querySelectorAll('[data-kind-filter]').forEach(function(c){
+      c.onclick = function(){
+        kindFilter = c.dataset.kindFilter;
+        try{ localStorage.setItem(KIND_FILTER_KEY, kindFilter); }catch(e){}
+        render();
+      };
+    });
     document.querySelectorAll('[data-check-filter]').forEach(function(c){
       c.onclick = function(){
         uncheckedOnly = c.dataset.checkFilter==='unchecked';
@@ -2885,9 +2905,17 @@
           html += '<label class="filter-check"><input type="checkbox" id="show-hidden-list"'+(showHiddenList?' checked':'')+'> 非表示も表示（'+hiddenList.length+'）</label>';
         }
         html += '</div>';
+        var kc = {bring:0, rental:0, hand:0};
+        items.forEach(function(it){ if(!isHiddenForEntry(it, entry) || showHiddenList) kc[itemKind(it, entry)]++; });
+        html += '<div class="filter-row kind-row"><span class="sort-label">種類</span>';
+        html += '<span class="chip'+(kindFilter==='all'?' on':'')+'" data-kind-filter="all">すべて</span>';
+        [['bring','持込'],['rental','借りる'],['hand','渡す']].forEach(function(k){
+          html += '<span class="chip'+(kindFilter===k[0]?' on':'')+'" data-kind-filter="'+k[0]+'">'+k[1]+' <span class="kc">'+kc[k[0]]+'</span></span>';
+        });
+        html += '</div>';
       }
       // 未チェックだけ：チェック済みとレンタル（チェック不要）を隠す
-      if(uncheckedOnly){ visibleItems = visibleItems.filter(function(it){ return isBringForEntry(it, entry) && (!ck[it.id] || (isHandForEntry(it, entry) && !ck[handedKey(it.id)])); }); }
+      if(uncheckedOnly && kindFilter!=='rental'){ visibleItems = visibleItems.filter(function(it){ return isBringForEntry(it, entry) && (!ck[it.id] || (isHandForEntry(it, entry) && !ck[handedKey(it.id)])); }); }
       // 非表示も表示：非表示の持ち物も元の位置に並べる（薄く表示・目のアイコンで復活）
       if(showHiddenList && hiddenList.length){
         var keep = {};
@@ -2895,9 +2923,14 @@
         hiddenList.forEach(function(it){ keep[it.id] = true; });
         visibleItems = items.filter(function(it){ return keep[it.id]; });
       }
+      // 種類で絞り込み（借りる物はチェックしないので、「未チェックだけ」と組み合わせても全部出す）
+      var beforeKind = visibleItems.length;
+      if(kindFilter!=='all'){ visibleItems = visibleItems.filter(function(it){ return itemKind(it, entry)===kindFilter; }); }
       html += '<div class="panel checklist-panel">';
       if(items.length===0){
         html += '<div class="empty">まだ持ち物がありません。「持ち物を編集」から追加してください。</div>';
+      } else if(kindFilter!=='all' && beforeKind>0 && visibleItems.length===0){
+        html += '<div class="empty">'+({bring:'持込',rental:'借りる',hand:'渡す'}[kindFilter])+'の持ち物'+(uncheckedOnly?'で未チェックの物':'')+'はありません。<br>「種類」の「すべて」に切り替えると、ほかの持ち物も表示します。</div>';
       } else if(uncheckedOnly && allVisibleCount>0 && visibleItems.length===0){
         html += '<div class="empty">未チェックの持ち物はありません 🎉<br>「すべて」に切り替えると、チェック済みの持ち物も表示します。</div>';
       } else if(visibleItems.length===0){
@@ -3000,7 +3033,7 @@
         html += '<p class="hint" style="margin-top:0;color:var(--cream);">この'+modeLabel(mode)+'に、次のように取り込みます（今ある持ち物は消えません）。</p>';
         if(eplan.fromMaster.length){ html += '<p class="hint"><b>マスタから追加 '+eplan.fromMaster.length+'件</b>：'+namesPreview(eplan.fromMaster)+'</p>'; }
         if(eplan.created.length){ html += '<p class="hint"><b style="color:var(--amber);">新規 '+eplan.created.length+'件</b>（持ち物マスタにも登録されます）：'+namesPreview(eplan.created)+'</p>'; }
-        if(eplan.already.length){ html += '<p class="hint"><b>追加済み '+eplan.already.length+'件</b>'+((eplan.hasBring||eplan.hasChecked)?'（'+[eplan.hasBring?'持込/レンタル':'', eplan.hasChecked?'チェック状態':''].filter(Boolean).join('・')+'をCSVの内容で上書き）':'（変更なし）')+'：'+namesPreview(eplan.already)+'</p>'; }
+        if(eplan.already.length){ html += '<p class="hint"><b>追加済み '+eplan.already.length+'件</b>'+((eplan.hasBring||eplan.hasChecked)?'（'+[eplan.hasBring?'持込/借りる/渡す':'', eplan.hasChecked?'チェック状態':''].filter(Boolean).join('・')+'をCSVの内容で上書き）':'（変更なし）')+'：'+namesPreview(eplan.already)+'</p>'; }
         if(eplan.hasChecked && (eplan.fromMaster.length||eplan.created.length)){ html += '<p class="hint">チェック状態もCSVの内容が反映されます。</p>'; }
       }
       html += '<div class="row-between" style="margin-bottom:0;">';
@@ -3026,7 +3059,7 @@
         html += '<span class="chip'+(m===tgt?' on':'')+'" data-copy-mode="'+m+'" role="button" tabindex="0">'+esc(modeLabel(m))+(m===mode?'（今）':'')+'</span>';
       });
       html += '</div>';
-      html += '<p class="hint" style="margin:0 0 10px;">持ち物・パート・持込／レンタル／渡す・ピン留めなどをそのまま引き継ぎます（チェックは引き継ぎません）。</p>';
+      html += '<p class="hint" style="margin:0 0 10px;">持ち物・パート・持込／借りる／渡す・ピン留めなどをそのまま引き継ぎます（チェックは引き継ぎません）。</p>';
       html += '<div class="row-between" style="margin-bottom:0;">';
       html += '<button class="btn ghost" id="copy-cancel-btn" style="flex:1;margin-right:8px;">キャンセル</button>';
       html += '<button class="btn" id="copy-confirm-btn" style="flex:1;">作成する</button>';
@@ -3077,7 +3110,7 @@
 
     html += '<div class="panel">';
     html += '<div class="panel-label">このリストに含まれている</div>';
-    html += '<p class="hint">持ち物名の変更・「持込／レンタル」・表示/非表示は、この'+modeLabel(mode)+'だけの設定です（他の予定や「設定」タブの持ち物一覧には影響しません）。いずれもトグルになってます。チェックリストで「非表示にする」を押した持ち物は、ここの「表示」ボタンで元に戻せます。</p>';
+    html += '<p class="hint">持ち物名の変更・「持込／借りる／渡す」・表示/非表示は、この'+modeLabel(mode)+'だけの設定です（他の予定や「設定」タブの持ち物一覧には影響しません）。いずれもトグルになってます。チェックリストで「非表示にする」を押した持ち物は、ここの「表示」ボタンで元に戻せます。</p>';
     var hiddenCount = included.filter(function(it){ return isHiddenForEntry(it, entry); }).length;
     html += '<label style="display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:13px;cursor:pointer;"><input type="checkbox" id="show-hidden-toggle"'+(view.showHiddenInEdit?' checked':'')+' style="width:auto;margin:0;"> 非表示の持ち物も表示する（'+hiddenCount+'件）</label>';
     if(included.length===0){
@@ -3110,7 +3143,7 @@
     } else {
       candidates.forEach(function(it){
         html += '<div class="item-row">';
-        html += '<div><div class="item-name">'+esc(it.name)+(isBring(it)?'':' <span style="color:var(--cream-dim);font-size:11px;">(レンタル)</span>')+'</div>';
+        html += '<div><div class="item-name">'+esc(it.name)+(isBring(it)?'':' <span style="color:var(--cream-dim);font-size:11px;">(借りる)</span>')+'</div>';
         if(it.roles && it.roles.length){
           html += '<div class="item-meta">'+it.roles.map(esc).join(' / ')+'</div>';
         }
@@ -3179,10 +3212,10 @@
     html += '<label class="small">初期状態</label>';
     html += '<div class="chip-wrap">';
     html += '<span class="chip'+(view.newItemBring==='bring'?' on':'')+'" data-bring-new="bring">持込</span>';
-    html += '<span class="chip'+(view.newItemBring==='rental'?' on':'')+'" data-bring-new="rental">レンタル</span>';
+    html += '<span class="chip'+(view.newItemBring==='rental'?' on':'')+'" data-bring-new="rental">借りる</span>';
     html += '<span class="chip'+(view.newItemBring==='hand'?' on':'')+'" data-bring-new="hand">渡す</span>';
     html += '</div>';
-    html += '<p class="hint">「レンタル」にすると、チェックリスト上でグレー表示になり、チェック対象・進捗カウントから外れます。各持ち物ごと、あとで一覧から切り替えられます。</p>';
+    html += '<p class="hint">「借りる」（スタジオや会場で借りる物）にすると、チェックリスト上でグレー表示になり、チェック対象・進捗カウントから外れます。各持ち物ごと、あとで一覧から切り替えられます。</p>';
     html += '<button class="btn block" id="add-item-btn">+ 持ち物を追加</button>';
     html += '</div>';
 
@@ -3213,7 +3246,7 @@
         html += '<div class="item-meta">'+scopeArrayLabel(it.scope)+(it.roles&&it.roles.length? ' ・ '+it.roles.map(esc).join(' / ') : ' ・ 全パート共通')+'</div></div>';
         html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;margin-top:2px;">';
         var mbl = bringLabel(it, null);
-        html += '<button class="btn ghost" data-toggle-bring="'+it.id+'" title="タップで 持込→レンタル→渡す を切り替え" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+mbl.style+'">'+mbl.text+'</button>';
+        html += '<button class="btn ghost" data-toggle-bring="'+it.id+'" title="タップで 持込→借りる→渡す を切り替え" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+mbl.style+'">'+mbl.text+'</button>';
         html += '<button class="del-x" data-item-del="'+it.id+'" aria-label="削除" title="削除">×</button>';
         html += '</div>';
         html += '</div></div>';
@@ -3234,7 +3267,7 @@
       if(plan.fileName){ html += '<p class="hint" style="color:var(--cream);">'+describeFileName(plan.fileName)+'</p>'; }
       html += '<p class="hint" style="color:var(--red);">更新 '+plan.updated+'件 ／ 新規追加 '+plan.created+'件 ／ 削除 '+plan.removedItems.length+'件 になります。この内容で取り込みますか？</p>';
       if(plan.createdNames && plan.createdNames.length){ html += '<p class="hint"><b style="color:var(--amber);">新しく追加される持ち物</b>：'+namesPreviewList(plan.createdNames)+'</p>'; }
-      if(plan.updatedNames && plan.updatedNames.length){ html += '<p class="hint"><b>用途・パート・持込/レンタルがCSVの内容で上書きされる持ち物</b>：'+namesPreviewList(plan.updatedNames)+'</p>'; }
+      if(plan.updatedNames && plan.updatedNames.length){ html += '<p class="hint"><b>用途・パート・持込/借りる/渡すがCSVの内容で上書きされる持ち物</b>：'+namesPreviewList(plan.updatedNames)+'</p>'; }
       if(plan.removedItems.length>0){
         html += '<p class="hint">削除される持ち物：'+plan.removedItems.map(function(it){ return esc(it.name); }).join('、')+'（登録済みの予定からも外れます）</p>';
       }
