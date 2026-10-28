@@ -649,12 +649,16 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.32.0';
+  var APP_VERSION = '1.33.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-27';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.33.0': [
+      '最初に入っているパートを、ギター・ベース・ドラム・ボーカル・キーボードの5つにしました',
+      '設定 →「パートを管理」の「候補から追加」で、ハープ・カホン・サックスを、よく使う持ち物と一緒に追加できるようにしました'
+    ],
     '1.32.0': [
       '「この内容で新規作成」で、作る先のタブを選べるようにしました（例：スタジオの予定をもとにレコーディングの予定を作る）'
     ],
@@ -1015,8 +1019,32 @@
 
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
+  // 設定の「候補から追加」で選べるパートと、そのとき一緒に入る持ち物
+  var ROLE_PRESETS = [
+    {role:'ハープ', items:['ハープ（使うキー全部）','ハープケース','ハープホルダー']},
+    {role:'カホン', items:['カホン本体','カホンケース','カホン用マレット/ブラシ']},
+    {role:'サックス', items:['サックス本体','サックスケース','リード(予備含む)','マウスピース','ネックストラップ','お手入れ用スワブ']}
+  ];
+  function addPresetRole(role){
+    var pr = ROLE_PRESETS.filter(function(x){ return x.role===role; })[0];
+    if(!pr) return 0;
+    if(state.roles.indexOf(role)===-1){
+      if(state.roles.length >= LIMIT.roles){ limitReached('roles'); return -1; }
+      state.roles.push(role);
+    }
+    if(state.hiddenRoles) state.hiddenRoles = state.hiddenRoles.filter(function(r){ return r!==role; });
+    var added = 0;
+    pr.items.forEach(function(name){
+      var ex = masterItems().filter(function(it){ return it.name===name; })[0];
+      if(ex){ if((ex.roles||[]).indexOf(role)===-1){ ex.roles = (ex.roles||[]).concat([role]); } return; }
+      if(state.items.length >= LIMIT.items) return;
+      state.items.push({id:uid(), name:name, scope:['studio','live','recording'], roles:[role]});
+      added++;
+    });
+    return added;
+  }
   function defaultRoles(){
-    return ['ギター','ベース','ドラム','ボーカル','キーボード','カホン','サックス'];
+    return ['ギター','ベース','ドラム','ボーカル','キーボード'];
   }
 
   function defaultState(){
@@ -1054,15 +1082,6 @@
         {id:uid(), name:'各種ホルダー', scope:['studio','live','recording'], roles:['ドラム']},
         {id:uid(), name:'ミュート', scope:['studio','live','recording'], roles:['ドラム']},
         {id:uid(), name:'絆創膏', scope:['studio','live','recording'], roles:['ドラム']},
-        {id:uid(), name:'カホン本体', scope:['studio','live','recording'], roles:['カホン']},
-        {id:uid(), name:'カホンケース', scope:['studio','live','recording'], roles:['カホン']},
-        {id:uid(), name:'カホン用マレット/ブラシ', scope:['studio','live','recording'], roles:['カホン']},
-        {id:uid(), name:'サックス本体', scope:['studio','live','recording'], roles:['サックス']},
-        {id:uid(), name:'サックスケース', scope:['studio','live','recording'], roles:['サックス']},
-        {id:uid(), name:'リード(予備含む)', scope:['studio','live','recording'], roles:['サックス']},
-        {id:uid(), name:'マウスピース', scope:['studio','live','recording'], roles:['サックス']},
-        {id:uid(), name:'ネックストラップ', scope:['studio','live','recording'], roles:['サックス']},
-        {id:uid(), name:'お手入れ用スワブ', scope:['studio','live','recording'], roles:['サックス']},
         {id:uid(), name:'耳栓', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'イヤモニ', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'譜面 / タブレット', scope:['studio','live','recording'], roles:[]},
@@ -3105,6 +3124,14 @@
       html += '</div>';
       html += '<p class="hint">例：ドラムとギターを兼務するなら2つ選んでおくと、登録のたびに選び直さずに済みます。何も選ばなければ、これまで通り毎回選ぶ形です。</p>';
     }
+    var presetLeft = ROLE_PRESETS.filter(function(x){ return state.roles.indexOf(x.role)===-1; });
+    if(presetLeft.length){
+      html += '<label class="small">候補から追加（よく使う持ち物も一緒に入ります）</label>';
+      html += '<div class="chip-wrap">';
+      presetLeft.forEach(function(x){ html += '<span class="chip" data-role-preset="'+esc(x.role)+'" role="button" tabindex="0" title="'+esc(x.items.join('、'))+'">＋ '+esc(x.role)+'</span>'; });
+      html += '</div>';
+    }
+    html += '<label class="small">自分で追加</label>';
     html += '<input type="text" id="role-name" maxlength="'+LIMIT.role+'" placeholder="例: サポートキーボード">';
     html += '<button class="btn block" id="add-role-btn">+ パートを追加</button>';
     if(state.roles.length>0){
@@ -4211,6 +4238,16 @@
       };
     }
 
+    document.querySelectorAll('[data-role-preset]').forEach(function(c){
+      c.onclick = function(){
+        var r = c.dataset.rolePreset;
+        var n = addPresetRole(r);
+        if(n < 0) return;
+        saveState();
+        render();
+        showToast('パート「'+r+'」を追加しました'+(n?'（持ち物 '+n+'件も追加）':''));
+      };
+    });
     var addRoleBtn = document.getElementById('add-role-btn');
     if(addRoleBtn){
       addRoleBtn.onclick = function(){
