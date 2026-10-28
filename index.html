@@ -663,12 +663,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.34.5';
+  var APP_VERSION = '1.34.6';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-29';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.34.6': [
+      '登録欄の見出しを「スタジオの予定を登録。担当は？」のような、短い言い方にしました'
+    ],
     '1.34.5': [
       'レコーディングの登録欄の見出しを「パートを選んでレコーディング予定を登録」にしました'
     ],
@@ -2615,7 +2618,7 @@
     // パートのチップは常に表示。名前・日時などの入力欄はふだん閉じておき、パートを選ぶかタップで開く。予定が1件もない・パートが未登録のときだけ最初から開く（∨で閉じたらそれを優先）
     var regOpen = view.regOpen[mode]===true || (view.regOpen[mode]!=='closed' && (list.length===0 || state.roles.length===0));
     html += '<div class="panel reg-panel">';
-    html += '<button class="reg-toggle'+(regOpen?' open':'')+'" id="reg-toggle-btn"><span class="reg-title step-head"><span>パートを選んで'+esc(label)+(mode==='recording'?'':'の')+'予定を登録</span></span><span class="reg-chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></button>';
+    html += '<button class="reg-toggle'+(regOpen?' open':'')+'" id="reg-toggle-btn"><span class="reg-title step-head"><span>'+esc(label)+(mode==='recording'?'':'の')+'予定を登録。担当は？</span></span><span class="reg-chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></button>';
     html += '<div style="height:10px;"></div>';
     if(true){
       html += '<div class="chip-wrap">';
