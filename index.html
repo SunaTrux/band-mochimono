@@ -287,7 +287,10 @@
   .op-row.two{grid-template-columns:1fr 1fr;}
   .op-row .btn{padding:9px 4px;font-size:12.5px;white-space:nowrap;min-width:0;width:100%;}
   .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom, 0px));transform:translate(-50%, 20px);max-width:calc(100% - 32px);width:max-content;background:var(--cream);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:13px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:50;}
-  .toast.show{opacity:1;transform:translate(-50%, 0);}
+  .toast.show{opacity:1;transform:translate(-50%, 0);pointer-events:auto;}
+  .toast-undo{margin-left:12px;font-family:inherit;font-size:13px;font-weight:800;color:inherit;background:none;border:none;padding:2px 4px;cursor:pointer;text-decoration:underline;}
+  .meter{touch-action:pan-y;}
+  .meter.meter-gone{transition:transform .18s ease, opacity .18s ease;opacity:0;}
   #pin-bar:empty{display:none;}
   #pin-bar{background:var(--bg);border-bottom:1px solid var(--seam);padding:8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));}
   .pin-bar-inner{max-width:448px;margin:0 auto;}
@@ -663,12 +666,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.34.6';
+  var APP_VERSION = '1.35.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-29';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.35.0': [
+      '「チェックしていこう」の進捗カードを、左右にスワイプして非表示にできるようにしました。直後は「元に戻す」で戻せます（設定 →「表示設定」でも選べます）'
+    ],
     '1.34.6': [
       '登録欄の見出しを「スタジオの予定を登録。担当は？」のような、短い言い方にしました'
     ],
@@ -1496,13 +1502,20 @@
   setTimeout(checkForUpdate, 3000);
 
   var toastTimer = null;
-  function showToast(msg){
+  function showToast(msg, undo){
     var el = document.getElementById('toast');
     if(!el){ el = document.createElement('div'); el.id = 'toast'; el.className = 'toast'; document.body.appendChild(el); }
     el.textContent = msg;
+    if(undo){
+      // 「元に戻す」つきのお知らせ（少し長めに表示）
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'toast-undo'; b.textContent = '元に戻す';
+      b.onclick = function(){ el.classList.remove('show'); clearTimeout(toastTimer); undo(); };
+      el.appendChild(b);
+    }
     el.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 3500);
+    toastTimer = setTimeout(function(){ el.classList.remove('show'); }, undo ? 6000 : 3500);
   }
 
   function renderNewVersionBar(){
@@ -2533,6 +2546,52 @@
       try{ history.scrollRestoration = 'manual'; }catch(e){}
       window.scrollTo(0,0);
       window.addEventListener('load', function(){ setTimeout(function(){ window.scrollTo(0,0); }, 0); });
+    }
+    // 進捗カードは左右どちらかにスワイプで非表示（直後は「元に戻す」、設定でも切り替え可）
+    var meterEl = document.querySelector('#app .meter');
+    if(meterEl){
+      var mx0 = 0, my0 = 0, mdx = 0, mOn = false, mMoved = false, mPid = null;
+      meterEl.addEventListener('pointerdown', function(e){ mOn = true; mMoved = false; mdx = 0; mx0 = e.clientX; my0 = e.clientY; mPid = e.pointerId; });
+      meterEl.addEventListener('pointermove', function(e){
+        if(!mOn || e.pointerId!==mPid) return;
+        var dx = e.clientX - mx0, dy = e.clientY - my0;
+        if(!mMoved){
+          if(Math.abs(dx) < 10) return;
+          if(Math.abs(dy) > Math.abs(dx)){ mOn = false; return; }
+          mMoved = true;
+          try{ meterEl.setPointerCapture(mPid); }catch(_){}
+        }
+        mdx = dx;
+        meterEl.style.transition = 'none';
+        meterEl.style.transform = 'translateX('+dx+'px)';
+        meterEl.style.opacity = String(Math.max(0.25, 1 - Math.abs(dx)/260));
+      });
+      var mEnd = function(){
+        if(!mOn) return;
+        mOn = false;
+        if(!mMoved) return;
+        if(Math.abs(mdx) > 90){
+          meterEl.style.transition = '';
+          meterEl.classList.add('meter-gone');
+          meterEl.style.transform = 'translateX('+(mdx>0?'110%':'-110%')+')';
+          setTimeout(function(){
+            showMeter = false;
+            try{ localStorage.setItem(SHOW_METER_KEY, '0'); }catch(_){}
+            render();
+            showToast('進捗カードを非表示にしました（設定 →「表示設定」でも戻せます）', function(){
+              showMeter = true;
+              try{ localStorage.setItem(SHOW_METER_KEY, '1'); }catch(_){}
+              render();
+            });
+          }, 170);
+        } else {
+          meterEl.style.transition = 'transform .15s ease, opacity .15s ease';
+          meterEl.style.transform = '';
+          meterEl.style.opacity = '';
+        }
+      };
+      meterEl.addEventListener('pointerup', mEnd);
+      meterEl.addEventListener('pointercancel', mEnd);
     }
     document.querySelectorAll('[data-meter-set]').forEach(function(c){
       c.onclick = function(){
