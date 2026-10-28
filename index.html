@@ -649,12 +649,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.31.1';
+  var APP_VERSION = '1.31.2';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-27';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.31.2': [
+      'スマホで予定の日付・時刻を選ぶとき、選んだ瞬間にカレンダーが閉じて反映されないようにしました。「完了」や外側のタップで閉じたときに確定します'
+    ],
     '1.31.1': [
       '入力できる文字数を、持ち物名・予定名・アーティスト名は50文字、パート名は20文字までにしました',
       '持ち物・予定・パートが上限（5000件・5000件・200個）に達したときや、保存できなかったときにお知らせを出すようにしました'
@@ -3268,7 +3271,6 @@
       entryDateEl.onchange = function(){
         view.newEntryDate = entryDateEl.value;
         entryDateWeekdayEl.textContent = dowShort(entryDateEl.value);
-        if(window.matchMedia && window.matchMedia('(pointer:coarse)').matches){ setTimeout(function(){ entryDateEl.blur(); }, 0); }   // スマホでは日付を選んだら閉じる
       };
     }
 
@@ -3833,11 +3835,15 @@
         saveState();
         refreshInfoCard();
       }
-      el.oninput = apply;
-      el.onchange = function(){
-        apply();
-        if(cfg[2] && isTouch){ setTimeout(function(){ el.blur(); }, 0); }   // 日付を選んだら閉じる
-      };
+      if(isTouch){
+        // スマホ：カレンダー（時刻）を選んでいる間は閉じず、反映もしない。「完了」や外側のタップで閉じたときに確定する
+        var dowEl = cfg[2] ? el.parentNode.querySelector('.dow-badge') : null;
+        el.oninput = el.onchange = function(){ if(dowEl) dowEl.textContent = dowShort(el.value); };
+        el.onblur = apply;
+      } else {
+        el.oninput = apply;
+        el.onchange = apply;
+      }
     });
 
     function currentEntry(){
