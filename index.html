@@ -649,12 +649,16 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.31.0';
+  var APP_VERSION = '1.31.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-27';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.31.1': [
+      '入力できる文字数を、持ち物名・予定名・アーティスト名は50文字、パート名は20文字までにしました',
+      '持ち物・予定・パートが上限（5000件・5000件・200個）に達したときや、保存できなかったときにお知らせを出すようにしました'
+    ],
     '1.31.0': [
       '設定の「その他」に「使い方・ヘルプ」を追加。アプリの特徴・主な使い方・便利な機能・困ったときの答えをまとめました',
       '「設定」タブに⚙️アイコンを付けました'
@@ -1139,6 +1143,12 @@
   // 悪意のあるファイルを読み込んでも、決まった形・長さ・文字種の値だけを残し、それ以外は捨てる。
   var ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
   var MAX_TEXT = 200, MAX_LIST = 5000;
+  // 入力の上限（入力欄の文字数と、追加できる数）。読み込み時の安全装置（MAX_TEXT など）より小さくしてある
+  var LIMIT = {name:50, role:20, items:5000, entries:5000, roles:200};
+  function limitReached(what){
+    var msg = {items:'持ち物は'+LIMIT.items+'件までです。使っていない持ち物を削除してから追加してください', entries:'予定は1つのタブに'+LIMIT.entries+'件までです。古い予定を削除してから追加してください', roles:'パートは'+LIMIT.roles+'個までです'}[what];
+    showToast(msg);
+  }
   function cleanText(v, max){
     if(typeof v!=='string') return '';
     // 制御文字（改行・タブ以外）を除き、長さを制限
@@ -1274,8 +1284,16 @@
     return null;
   }
 
+  var lastSaveErrorAt = 0;
   function saveState(){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch(e){
+      // 容量オーバーなどで保存できなかったときは知らせる（何度も出ないよう、30秒に1回まで）
+      if(Date.now() - lastSaveErrorAt > 30000){
+        lastSaveErrorAt = Date.now();
+        setTimeout(function(){ showToast('⚠ 保存できませんでした。ブラウザの保存容量がいっぱいかもしれません。設定 →「バックアップ・復元」でバックアップを取ってください'); }, 0);
+      }
+    }
   }
 
   var hadSavedData = false;
@@ -2517,7 +2535,7 @@
     };
     var nameValue = (view.newEntryName===null) ? (defaultNames[mode]||'') : view.newEntryName;
     html += '<label class="small">'+label+'名</label>';
-    html += '<input type="text" id="entry-name" placeholder="'+placeholders[mode]+'" value="'+esc(nameValue)+'">';
+    html += '<input type="text" id="entry-name" maxlength="'+LIMIT.name+'" placeholder="'+placeholders[mode]+'" value="'+esc(nameValue)+'">';
     html += '<label class="small">対象日・開始〜終了時間(任意)</label>';
     html += '<div class="dt-row">';
     html += '<input type="date" id="entry-date" value="'+esc(view.newEntryDate)+'" style="flex:1.6;margin-bottom:0;">';
@@ -2527,7 +2545,7 @@
     html += '<input type="time" id="entry-endtime" value="'+esc(view.newEntryEndTime)+'" style="flex:1;margin-bottom:0;">';
     html += '</div>';
     html += '<label class="small" style="margin-top:8px;">アーティスト名(任意)</label>';
-    html += '<input type="text" id="entry-artist" placeholder="例：バンド名" value="'+esc(view.newEntryArtist)+'">';
+    html += '<input type="text" id="entry-artist" maxlength="'+LIMIT.name+'" placeholder="例：バンド名" value="'+esc(view.newEntryArtist)+'">';
     html += '<button class="btn block" id="add-entry-btn">+ 登録して持ち物をセット</button>';
     }
     html += '</div>';
@@ -2638,7 +2656,7 @@
     if(view.infoOpen){
       html += '<div class="info-edit">';
       html += '<label class="small">'+esc(modeLabel(mode))+'名</label>';
-      html += '<input type="text" id="detail-title-input" value="'+esc(entry.name)+'">';
+      html += '<input type="text" id="detail-title-input" maxlength="'+LIMIT.name+'" value="'+esc(entry.name)+'">';
       html += '<label class="small">対象日・開始〜終了時間</label>';
       html += '<div class="dt-row">';
       html += '<input type="date" id="detail-date-input" value="'+(entry.date?esc(entry.date):'')+'" style="flex:1.6;margin-bottom:0;">';
@@ -2648,7 +2666,7 @@
       html += '<input type="time" id="detail-endtime-input" value="'+(entry.endTime?esc(entry.endTime):'')+'" style="flex:1;margin-bottom:0;">';
       html += '</div>';
       html += '<label class="small" style="margin-top:8px;">アーティスト名</label>';
-      html += '<input type="text" id="detail-artist-input" placeholder="例：バンド名" value="'+esc(entry.artist||'')+'" style="margin-bottom:0;">';
+      html += '<input type="text" id="detail-artist-input" maxlength="'+LIMIT.name+'" placeholder="例：バンド名" value="'+esc(entry.artist||'')+'" style="margin-bottom:0;">';
       // パート：タップで追加（そのパートの持ち物も追加）／外す（確認あり）
       var eRoles = entry.roles || [];
       var roleChoices = state.roles.filter(function(r){ return !isRoleHidden(r) || eRoles.indexOf(r)!==-1; });
@@ -2864,7 +2882,7 @@
     var html = '<div class="panel">';
     html += '<div class="panel-label">この'+modeLabel(mode)+'だけの持ち物を追加</div>';
     html += '<div style="display:flex;gap:8px;">';
-    html += '<input type="text" id="custom-item-name" placeholder="例：予備のシールド" style="flex:1;margin-bottom:0;">';
+    html += '<input type="text" id="custom-item-name" maxlength="'+LIMIT.name+'" placeholder="例：予備のシールド" style="flex:1;margin-bottom:0;">';
     html += '<button class="btn" id="custom-item-add-btn">追加</button>';
     html += '</div>';
     html += '<div id="custom-item-suggest" class="suggest"></div>';
@@ -2891,7 +2909,7 @@
         var hiddenNow = isHiddenForEntry(it, entry);
         if(hiddenNow && !view.showHiddenInEdit) return;
         html += '<div class="swipe-wrap"><button class="swipe-bg del" data-remove-item="'+it.id+'">削除</button><div class="item-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="del" style="align-items:flex-start;">';
-        html += '<div style="flex:1;min-width:0;"><input type="text" class="item-name-input" data-item-rename="'+it.id+'" value="'+esc(effectiveItemName(it, entry))+'">';
+        html += '<div style="flex:1;min-width:0;"><input type="text" class="item-name-input" maxlength="'+LIMIT.name+'" data-item-rename="'+it.id+'" value="'+esc(effectiveItemName(it, entry))+'">';
         if(it.local){ html += '<div class="item-meta"><span class="local-tag">この'+modeLabel(mode)+'だけ</span> <button class="btn ghost" data-promote-item="'+it.id+'" style="padding:2px 7px;font-size:10px;">マスタに登録</button></div>'; }
         html += '</div>';
         html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:52%;">';
@@ -2964,7 +2982,7 @@
     html += '<div class="set-group">持ち物</div>';
     html += '<div class="panel">';
     html += '<div class="panel-label">持ち物を追加</div>';
-    html += '<input type="text" id="item-name" placeholder="例: エフェクターボード">';
+    html += '<input type="text" id="item-name" maxlength="'+LIMIT.name+'" placeholder="例: エフェクターボード">';
     html += '<label class="small">用途(複数選択可)</label>';
     html += '<div class="chip-wrap" id="scope-chips">';
     MODES.forEach(function(m){
@@ -3007,7 +3025,7 @@
       g.items.forEach(function(it){
         html += '<div class="swipe-wrap"><button class="swipe-bg del" data-item-del="'+it.id+'">削除</button><div class="item-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="del" style="align-items:flex-start;">';
         html += '<div style="flex:1;min-width:0;">';
-        html += '<input type="text" class="item-name-input" data-item-master-rename="'+it.id+'" value="'+esc(it.name)+'">';
+        html += '<input type="text" class="item-name-input" maxlength="'+LIMIT.name+'" data-item-master-rename="'+it.id+'" value="'+esc(it.name)+'">';
         html += '<div class="item-meta">'+scopeArrayLabel(it.scope)+(it.roles&&it.roles.length? ' ・ '+it.roles.map(esc).join(' / ') : ' ・ 全パート共通')+'</div></div>';
         html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;margin-top:2px;">';
         var mbl = bringLabel(it, null);
@@ -3065,7 +3083,7 @@
       html += '</div>';
       html += '<p class="hint">例：ドラムとギターを兼務するなら2つ選んでおくと、登録のたびに選び直さずに済みます。何も選ばなければ、これまで通り毎回選ぶ形です。</p>';
     }
-    html += '<input type="text" id="role-name" placeholder="例: サポートキーボード">';
+    html += '<input type="text" id="role-name" maxlength="'+LIMIT.role+'" placeholder="例: サポートキーボード">';
     html += '<button class="btn block" id="add-role-btn">+ パートを追加</button>';
     if(state.roles.length>0){
       html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更。右スワイプ →（PCでは目のアイコン）で表示／非表示を切り替え（非表示のパートは予定の登録時のパート選択に出なくなります）。</p>';
@@ -3271,8 +3289,9 @@
         var nameEl = document.getElementById('entry-name');
         var dateEl = document.getElementById('entry-date');
         var timeEl = document.getElementById('entry-time');
-        var name = nameEl.value.trim();
+        var name = nameEl.value.trim().slice(0, LIMIT.name);
         if(!name){ nameEl.focus(); return; }
+        if(listForMode(view.mode).length >= LIMIT.entries){ limitReached('entries'); return; }
         var entry = {id:uid(), name:name, date:(dateEl?dateEl.value:''), time:(timeEl?timeEl.value:''), endTime:(document.getElementById('entry-endtime')?document.getElementById('entry-endtime').value:''), artist:(document.getElementById('entry-artist')?document.getElementById('entry-artist').value.trim():''), roles:view.newEntryRoles.slice(), itemIds:computeAutoItemIds(view.mode, view.newEntryRoles), updatedAt:Date.now()};
         listForMode(view.mode).push(entry);
         view.newEntryRoles = defaultEntryRoles();
@@ -3620,6 +3639,7 @@
         var list = listForMode(view.mode);
         var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
         if(!entry) return;
+        if(list.length >= LIMIT.entries){ limitReached('entries'); return; }
         var copyEntry = {
           id: uid(),
           name: entry.name + 'のコピー',
@@ -3833,8 +3853,9 @@
     function addCustomItem(){
       var entry = currentEntry();
       if(!entry || !customNameEl) return;
-      var name = customNameEl.value.trim();
+      var name = customNameEl.value.trim().slice(0, LIMIT.name);
       if(!name){ customNameEl.focus(); return; }
+      if(state.items.length >= LIMIT.items){ limitReached('items'); return; }
       var item;
       if(view.newCustomMaster){
         item = {id:uid(), name:name, scope:[view.mode], roles:(entry.roles||[]).slice(), bring:true};
@@ -4046,8 +4067,9 @@
     if(addItemBtn){
       addItemBtn.onclick = function(){
         var nameEl = document.getElementById('item-name');
-        var name = nameEl.value.trim();
+        var name = nameEl.value.trim().slice(0, LIMIT.name);
         if(!name){ nameEl.focus(); return; }
+        if(state.items.length >= LIMIT.items){ limitReached('items'); return; }
         var newItem = {id:uid(), name:name, scope:view.newItemScope.slice(), roles:view.newItemRoles.slice(), bring:view.newItemBring!=='rental'};
         if(view.newItemBring==='hand') newItem.hand = true;
         state.items.push(newItem);
@@ -4146,8 +4168,9 @@
     if(addRoleBtn){
       addRoleBtn.onclick = function(){
         var nameEl = document.getElementById('role-name');
-        var name = nameEl.value.trim();
+        var name = nameEl.value.trim().slice(0, LIMIT.role);
         if(!name){ nameEl.focus(); return; }
+        if(state.roles.indexOf(name)===-1 && state.roles.length >= LIMIT.roles){ limitReached('roles'); return; }
         if(state.roles.indexOf(name)===-1) state.roles.push(name);
         saveState();
         render();
