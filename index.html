@@ -649,12 +649,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.31.2';
+  var APP_VERSION = '1.32.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-27';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.32.0': [
+      '「この内容で新規作成」で、作る先のタブを選べるようにしました（例：スタジオの予定をもとにレコーディングの予定を作る）'
+    ],
     '1.31.2': [
       'スマホで予定の日付・時刻を選ぶとき、選んだ瞬間にカレンダーが閉じて反映されないようにしました。「完了」や外側のタップで閉じたときに確定します'
     ],
@@ -1519,6 +1522,7 @@
     updateCheck: null,
     shareText: null,
     roleRemove: null,
+    copyChoose: null,
     backupDone: ''
   };
 
@@ -2856,7 +2860,22 @@
     html += '<input type="file" id="csv-import-input" accept=".csv,text/csv" style="display:none;">';
 
     html += '<div class="op-label">予定の操作</div>';
-    if(locked){
+    if(view.copyChoose && view.copyChoose.entryId===entry.id){
+      // 「この内容で新規作成」：どのタブに作るかを選ぶ
+      var tgt = view.copyChoose.mode;
+      html += '<div class="panel copy-choose">';
+      html += '<p class="hint" style="margin:0 0 8px;color:var(--cream);"><b>この内容で新規作成</b>：どのタブに作りますか？</p>';
+      html += '<div class="chip-wrap" style="margin-bottom:10px;">';
+      tabOrder.forEach(function(m){
+        html += '<span class="chip'+(m===tgt?' on':'')+'" data-copy-mode="'+m+'" role="button" tabindex="0">'+esc(modeLabel(m))+(m===mode?'（今）':'')+'</span>';
+      });
+      html += '</div>';
+      html += '<p class="hint" style="margin:0 0 10px;">持ち物・パート・持込／レンタル／渡す・ピン留めなどをそのまま引き継ぎます（チェックは引き継ぎません）。</p>';
+      html += '<div class="row-between" style="margin-bottom:0;">';
+      html += '<button class="btn ghost" id="copy-cancel-btn" style="flex:1;margin-right:8px;">キャンセル</button>';
+      html += '<button class="btn" id="copy-confirm-btn" style="flex:1;">作成する</button>';
+      html += '</div></div>';
+    } else if(locked){
       html += '<div class="op-row one">';
       html += '<button class="btn ghost" id="copy-entry-btn">この内容で新規作成</button>';
       html += '</div>';
@@ -3638,10 +3657,30 @@
     var copyEntryBtn = document.getElementById('copy-entry-btn');
     if(copyEntryBtn){
       copyEntryBtn.onclick = function(){
-        var list = listForMode(view.mode);
-        var entry = list.filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
+        var entry = currentEntry();
         if(!entry) return;
-        if(list.length >= LIMIT.entries){ limitReached('entries'); return; }
+        view.copyChoose = {entryId: entry.id, mode: view.mode};
+        view.confirmDeleteEntry = false;
+        render();
+        var cc = document.querySelector('.copy-choose');
+        if(cc && cc.scrollIntoView) cc.scrollIntoView({block:'center'});
+      };
+    }
+    document.querySelectorAll('[data-copy-mode]').forEach(function(c){
+      c.onclick = function(){ if(view.copyChoose){ view.copyChoose.mode = c.dataset.copyMode; render(); } };
+    });
+    var copyCancelBtn = document.getElementById('copy-cancel-btn');
+    if(copyCancelBtn){ copyCancelBtn.onclick = function(){ view.copyChoose = null; render(); }; }
+    var copyConfirmBtn = document.getElementById('copy-confirm-btn');
+    if(copyConfirmBtn){
+      copyConfirmBtn.onclick = function(){
+        var fromMode = view.mode;
+        var toMode = (view.copyChoose && MODES.indexOf(view.copyChoose.mode)!==-1) ? view.copyChoose.mode : fromMode;
+        view.copyChoose = null;
+        var entry = listForMode(fromMode).filter(function(e){return e.id===view.selectedByMode[fromMode];})[0];
+        if(!entry) return;
+        var list = listForMode(toMode);
+        if(list.length >= LIMIT.entries){ limitReached('entries'); render(); return; }
         var copyEntry = {
           id: uid(),
           name: entry.name + 'のコピー',
@@ -3655,7 +3694,8 @@
         };
         var idMap = {};
         state.items.filter(function(it){ return it.local && it.ownerId===entry.id; }).forEach(function(it){
-          var c = {id:uid(), name:it.name, scope:it.scope.slice(), roles:[], bring:it.bring, local:true, ownerId:copyEntry.id};
+          var c = {id:uid(), name:it.name, scope:(toMode===fromMode ? it.scope.slice() : [toMode]), roles:[], bring:it.bring, local:true, ownerId:copyEntry.id};
+          if(it.hand) c.hand = true;
           state.items.push(c);
           idMap[it.id] = c.id;
         });
@@ -3672,11 +3712,12 @@
         if(entry.handIds){ copyEntry.handIds = entry.handIds.map(function(id){ return idMap[id] || id; }); }
         if(entry.handOff){ copyEntry.handOff = entry.handOff.map(function(id){ return idMap[id] || id; }); }
         list.push(copyEntry);
-        view.selectedByMode[view.mode] = copyEntry.id;
+        view.mode = toMode;
+        view.selectedByMode[toMode] = copyEntry.id;
         view.editMode = false;
         view.confirmDeleteEntry = false;
         view.infoOpen = true;   // コピー後すぐ名前・日時を書き換えられるように編集欄を開く
-        showToast('「'+entry.name+'」の内容で新しい予定を作りました。名前や日時を変えてください');
+        showToast('「'+entry.name+'」の内容で、'+modeLabel(toMode)+'に新しい予定を作りました。名前や日時を変えてください');
         saveState();
         render();
         window.scrollTo(0, 0);
