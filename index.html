@@ -416,8 +416,18 @@
   #master-list.searching .group-toggle{pointer-events:none;}
   #master-list.searching .group-toggle .group-chev{visibility:hidden;}
   .mrow.s-miss, .mg.s-empty{display:none !important;}
-  .filter-row.kind-row{gap:4px;flex-wrap:nowrap;}
-  .kind-row .edit-pencil{margin-left:auto;flex-shrink:0;width:30px;height:30px;}
+  .filter-row.kind-row{gap:4px;row-gap:6px;flex-wrap:wrap;}
+  .kind-row .edit-pencil{flex-shrink:0;width:30px;height:30px;}
+  .kind-row .kind-tools{margin-left:auto;display:flex;gap:4px;flex-shrink:0;}
+  .kind-row .eye-filter{flex-shrink:0;width:auto;min-width:30px;height:30px;border-radius:15px;padding:0 5px;gap:1px;}
+  .eye-filter .eye-n{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .eye-filter.on{background:#2f7de1;border-color:#2f7de1;color:#fff;}
+  .chip.chip-off{opacity:.45;pointer-events:none;}
+  .hidden-only-note{font-size:11.5px;color:#2f7de1;margin:-2px 2px 8px;}
+  .row-pencil{width:28px;height:28px;}
+  .rename-box{flex:1;min-width:0;display:flex;gap:6px;align-items:center;}
+  .rename-input{flex:1;min-width:0;margin:0 !important;padding:6px 8px !important;font-size:16px !important;}
+  .rename-ok{width:30px;height:30px;color:var(--teal);border-color:var(--teal);}
   .edit-done-row{justify-content:flex-end;}
   @media (max-width:340px){ .filter-row.kind-row{flex-wrap:wrap;} .kind-sep{display:none;} }
   .kind-sep{width:1px;align-self:stretch;margin:3px 2px;background:var(--seam);flex-shrink:0;}
@@ -676,12 +686,17 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.37.1';
+  var APP_VERSION = '1.38.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-29';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.38.0': [
+      '持ち物の行ごとに鉛筆アイコンをつけました。押すとその場で名前を変えられます（この予定だけの名前）',
+      '絞り込みの行に目のアイコンを追加。押すと非表示にした持ち物だけを表示し、それぞれ表示に戻せます（「非表示も表示」のチェックはなくしました）',
+      '持ち物の追加・外すボタンは、鉛筆と区別できるようリストのアイコンにしました'
+    ],
     '1.37.1': [
       '持ち物の編集画面の見出しと説明を「このリストだけの編集」に変え、短くしました'
     ],
@@ -1625,6 +1640,7 @@
     shareText: null,
     roleRemove: null,
     copyChoose: null,
+    renamingItem: null,
     masterQuery: '',
     backupDone: ''
   };
@@ -1807,8 +1823,9 @@
     return sa==='past' ? -asc : asc;
   }
   var SHOW_HIDDEN_KEY = 'gp-show-hidden-list-v1';
-  var showHiddenList = false;
-  try{ showHiddenList = localStorage.getItem(SHOW_HIDDEN_KEY)==='1'; }catch(e){}
+  var showHiddenList = false;   // （旧）非表示も表示。v1.38.0 から「非表示だけ表示」(hiddenOnly) に置きかえ
+  var hiddenOnly = false;
+
   // 持ち物の種類で絞り込み：'all'／'bring'（持込）／'rental'（借りる）／'hand'（渡す）
   var KIND_FILTER_KEY = 'gp-kind-filter-v1';
   var kindFilter = 'all';
@@ -2920,28 +2937,35 @@
       var visibleItems = items.filter(function(it){ return !isHiddenForEntry(it, entry); });
       var allVisibleCount = visibleItems.length;
       var hiddenList = items.filter(function(it){ return isHiddenForEntry(it, entry); });
-      var editPencil = locked ? '' : '<button class="icon-btn edit-pencil" id="toggle-edit-btn" aria-label="持ち物を編集" title="持ち物を編集"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>';
+      // 持ち物の追加・外す（リストの編集）。行の鉛筆＝名前の変更 と区別するため、リストのアイコン
+      var editPencil = locked ? '' : '<button class="icon-btn edit-pencil" id="toggle-edit-btn" aria-label="持ち物を追加・外す" title="持ち物を追加・外す"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M4 12h10M4 18h7"/><path d="M18 14v6M15 17h6"/></svg></button>';
       if(items.length===0 && editPencil){ html += '<div class="filter-row kind-row">'+editPencil+'</div>'; }
       if(items.length>0){
         // 絞り込みは1行に：「未チェック」と種類（持込・借りる・渡す）。押すとオン、もう一度押すとオフ
         var kc = {bring:0, rental:0, hand:0};
-        items.forEach(function(it){ if(!isHiddenForEntry(it, entry) || showHiddenList) kc[itemKind(it, entry)]++; });
+        if(hiddenOnly && !hiddenList.length) hiddenOnly = false;
+        items.forEach(function(it){ if(isHiddenForEntry(it, entry)===hiddenOnly) kc[itemKind(it, entry)]++; });
         html += '<div class="filter-row kind-row">';
-        html += '<span class="chip'+(uncheckedOnly?' on':'')+'" data-check-toggle="1" title="未チェックの物だけ表示">未チェック <span class="kc">'+(bringItems.length-done)+'</span></span>';
-        html += '<span class="kind-sep" aria-hidden="true"></span>';
+        html += '<span class="chip'+(uncheckedOnly&&!hiddenOnly?' on':'')+(hiddenOnly?' chip-off':'')+'" data-check-toggle="1" title="未チェックの物だけ表示">未チェック <span class="kc">'+(bringItems.length-done)+'</span></span>';
+        if(!hiddenList.length) html += '<span class="kind-sep" aria-hidden="true"></span>';
         [['bring','持込'],['rental','借りる'],['hand','渡す']].forEach(function(k){
           html += '<span class="chip'+(kindFilter===k[0]?' on':'')+'" data-kind-filter="'+k[0]+'">'+k[1]+' <span class="kc">'+kc[k[0]]+'</span></span>';
         });
-        html += editPencil;
-        html += '</div>';
+        // 目のアイコン：非表示にした持ち物だけを表示（そこから各持ち物の非表示を解除できる）
+        html += '<span class="kind-tools">';
         if(hiddenList.length){
-          html += '<div class="filter-row"><label class="filter-check"><input type="checkbox" id="show-hidden-list"'+(showHiddenList?' checked':'')+'> 非表示も表示（'+hiddenList.length+'）</label></div>';
+          html += '<button class="icon-btn eye-filter'+(hiddenOnly?' on':'')+'" id="hidden-only-btn" aria-pressed="'+(hiddenOnly?'true':'false')+'" aria-label="非表示の持ち物だけ表示（'+hiddenList.length+'件）" title="非表示の持ち物だけ表示">'+EYE_OFF_SVG+'<span class="eye-n">'+hiddenList.length+'</span></button>';
         }
+        html += editPencil;
+        html += '</span>';
+        html += '</div>';
+        if(hiddenOnly){ html += '<p class="hidden-only-note">非表示の持ち物だけを表示中（各行の目のアイコンで表示に戻す）</p>'; }
       }
       // 未チェックだけ：チェック済みとレンタル（チェック不要）を隠す
-      if(uncheckedOnly && kindFilter!=='rental'){ visibleItems = visibleItems.filter(function(it){ return isBringForEntry(it, entry) && (!ck[it.id] || (isHandForEntry(it, entry) && !ck[handedKey(it.id)])); }); }
+      if(hiddenOnly){ visibleItems = hiddenList.slice(); }
+      if(uncheckedOnly && !hiddenOnly && kindFilter!=='rental'){ visibleItems = visibleItems.filter(function(it){ return isBringForEntry(it, entry) && (!ck[it.id] || (isHandForEntry(it, entry) && !ck[handedKey(it.id)])); }); }
       // 非表示も表示：非表示の持ち物も元の位置に並べる（薄く表示・目のアイコンで復活）
-      if(showHiddenList && hiddenList.length){
+      if(false){
         var keep = {};
         visibleItems.forEach(function(it){ keep[it.id] = true; });
         hiddenList.forEach(function(it){ keep[it.id] = true; });
@@ -2952,7 +2976,7 @@
       if(kindFilter!=='all'){ visibleItems = visibleItems.filter(function(it){ return itemKind(it, entry)===kindFilter; }); }
       html += '<div class="panel checklist-panel">';
       if(items.length===0){
-        html += '<div class="empty">まだ持ち物がありません。上の鉛筆アイコン（持ち物を編集）から追加してください。</div>';
+        html += '<div class="empty">まだ持ち物がありません。上のリストのアイコン（持ち物を追加・外す）から追加してください。</div>';
       } else if(kindFilter!=='all' && beforeKind>0 && visibleItems.length===0){
         html += '<div class="empty">'+({bring:'持込',rental:'借りる',hand:'渡す'}[kindFilter])+'の持ち物'+(uncheckedOnly?'で未チェックの物':'')+'はありません。<br>選んでいる種類をもう一度押すと、ほかの持ち物も表示します。</div>';
       } else if(uncheckedOnly && allVisibleCount>0 && visibleItems.length===0){
@@ -2968,8 +2992,11 @@
           if(isHiddenForEntry(it, entry)){
             html += '<div class="swipe-wrap"><div class="check-row hidden-row">';
             html += '<div style="width:24px;flex-shrink:0;"></div>';
-            html += '<div class="check-label">'+esc(effectiveItemName(it, entry))+' <span class="hidden-tag">非表示中</span></div>';
-            if(!locked) html += '<button class="icon-btn restore-btn" data-toggle-entry-visible="'+it.id+'" aria-label="表示に戻す" title="表示に戻す">'+EYE_SVG+'</button>';
+            html += renamingLabel(it, entry, '<div class="check-label">'+esc(effectiveItemName(it, entry))+' <span class="hidden-tag">非表示中</span></div>');
+            if(!locked){
+              html += '<button class="icon-btn restore-btn" data-toggle-entry-visible="'+it.id+'" aria-label="表示に戻す" title="表示に戻す">'+EYE_SVG+'</button>';
+              if(view.renamingItem!==it.id) html += '<button class="icon-btn row-pencil" data-rename-item="'+it.id+'" aria-label="名前を変える" title="名前を変える">'+ROW_PENCIL_SVG+'</button>';
+            }
             html += '</div></div>';
             return;
           }
@@ -2993,17 +3020,19 @@
           if(bringNow){
             var on = !!ck[it.id];
             html += '<div class="toggle'+(on?' on':'')+'" data-item="'+it.id+'"><div class="knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>';
-            html += '<div class="check-label'+(on?' done':'')+'" data-item="'+it.id+'" style="cursor:pointer;">'+esc(effectiveItemName(it, entry))+'</div>';
+            html += renamingLabel(it, entry, '<div class="check-label'+(on?' done':'')+'" data-item="'+it.id+'" style="cursor:pointer;">'+esc(effectiveItemName(it, entry))+'</div>');
           } else {
             html += '<div style="width:24px;flex-shrink:0;"></div>';
-            html += '<div class="check-label">'+esc(effectiveItemName(it, entry))+'</div>';
+            html += renamingLabel(it, entry, '<div class="check-label">'+esc(effectiveItemName(it, entry))+'</div>');
           }
+          if(view.renamingItem===it.id){ html += '</div></div>'; return; }
           var bl = bringLabel(it, entry);
           if(isHandForEntry(it, entry)){
             var handed = !!ck[handedKey(it.id)];
             html += '<button class="hand-btn'+(handed?' on':'')+'" data-hand-item="'+it.id+'">'+(handed?'渡した ✓':'渡した？')+'</button>';
           }
           html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:3px 7px;font-size:10px;flex-shrink:0;'+bl.style+'">'+bl.text+'</button>';
+          html += '<button class="icon-btn row-pencil" data-rename-item="'+it.id+'" aria-label="名前を変える" title="名前を変える">'+ROW_PENCIL_SVG+'</button>';
           html += '<button class="icon-btn swipe-alt" data-hide-item="'+it.id+'" aria-label="非表示にする" title="非表示にする"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg></button>';
           html += '</div></div>';
         }
@@ -3017,8 +3046,8 @@
           g.items.forEach(renderCheckRow);
         });
       }
-      if(visibleItems.length>0 && !locked){
-        html += '<p class="hint" style="margin:6px 2px 0;">← 左スワイプで非表示（戻すのは鉛筆アイコンの編集から）／ 右スワイプ → で📌ピン留め（先頭に表示）</p>';
+      if(visibleItems.length>0 && !locked && !hiddenOnly){
+        html += '<p class="hint" style="margin:6px 2px 0;">← 左スワイプで非表示（戻すのは上の目のアイコンから）／ 右スワイプ → で📌ピン留め（先頭に表示）</p>';
       }
       html += '</div>';
       if(!locked) html += renderCustomItemForm(mode);
@@ -3110,6 +3139,12 @@
     return html;
   }
 
+  var ROW_PENCIL_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  // 行の中の名前：名前を変えている途中は入力欄にする（この予定だけの名前）
+  function renamingLabel(it, entry, normalHtml){
+    if(view.renamingItem!==it.id) return normalHtml;
+    return '<div class="rename-box"><input type="text" class="rename-input" id="rename-input" maxlength="'+LIMIT.name+'" value="'+esc(effectiveItemName(it, entry))+'" data-rename-for="'+it.id+'" enterkeyhint="done" aria-label="持ち物の名前（この予定だけ）"><button class="icon-btn rename-ok" id="rename-ok" aria-label="名前を決定" title="決定"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button></div>';
+  }
   var EYE_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   var EYE_OFF_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
 
@@ -3723,6 +3758,47 @@
       };
     });
 
+    var hiddenOnlyBtn = document.getElementById('hidden-only-btn');
+    if(hiddenOnlyBtn){ hiddenOnlyBtn.onclick = function(){ hiddenOnly = !hiddenOnly; render(); }; }
+    document.querySelectorAll('[data-rename-item]').forEach(function(b){
+      b.onclick = function(){
+        view.renamingItem = b.dataset.renameItem;
+        render();
+        var inp = document.getElementById('rename-input');
+        if(inp){ try{ inp.focus(); inp.select(); }catch(e){} }
+      };
+    });
+    var renameInput = document.getElementById('rename-input');
+    if(renameInput){
+      var renameDone = false;
+      var commitRename = function(save){
+        if(renameDone) return;
+        renameDone = true;
+        var entry = currentEntry();
+        var item = state.items.filter(function(it){ return it.id===renameInput.dataset.renameFor; })[0];
+        view.renamingItem = null;
+        if(save && entry && item && !entry.locked){
+          var name = renameInput.value.trim().slice(0, LIMIT.name);
+          if(name){
+            if(!entry.nameOverride) entry.nameOverride = {};
+            if(name===item.name) delete entry.nameOverride[item.id]; else entry.nameOverride[item.id] = name;
+            entry.updatedAt = Date.now();
+            saveState();
+          }
+        }
+        render();
+      };
+      var rnComposing = false;
+      renameInput.addEventListener('compositionstart', function(){ rnComposing = true; });
+      renameInput.addEventListener('compositionend', function(){ rnComposing = false; });
+      renameInput.addEventListener('keydown', function(e){
+        if(e.key==='Enter' && !rnComposing && !e.isComposing){ e.preventDefault(); commitRename(true); }
+        else if(e.key==='Escape'){ commitRename(false); }
+      });
+      renameInput.addEventListener('blur', function(){ setTimeout(function(){ commitRename(true); }, 0); });
+      var renameOk = document.getElementById('rename-ok');
+      if(renameOk){ renameOk.addEventListener('pointerdown', function(e){ e.preventDefault(); }); renameOk.onclick = function(){ commitRename(true); }; }
+    }
     document.querySelectorAll('[data-toggle-entry-visible]').forEach(function(b){
       b.onclick = function(){
         var entry = listForMode(view.mode).filter(function(e){return e.id===view.selectedByMode[view.mode];})[0];
