@@ -276,6 +276,10 @@
   .group-toggle{width:100%;background:none;border:none;border-bottom:1px solid var(--seam);font-family:inherit;text-align:left;cursor:pointer;padding:12px 2px;font-size:13px;}
   .group-toggle .group-chev{margin-left:auto;color:var(--cream-dim);display:flex;transition:transform .18s;}
   .group-toggle.open .group-chev{transform:rotate(180deg);}
+  .cg-toggle{width:100%;background:none;border:none;border-bottom:1px solid var(--seam);font-family:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .cg-toggle .group-chev{margin-left:auto;color:var(--cream-dim);display:flex;transition:transform .18s;}
+  .cg-toggle.open .group-chev{transform:rotate(180deg);}
+  .cg-toggle:not(.open){padding-bottom:10px;}
   .group-count{font-size:10.5px;font-weight:400;color:var(--cream-dim);}
   .suggest{margin-top:8px;}
   .suggest-row{display:flex;align-items:center;gap:8px;padding:7px 2px;border-top:1px solid var(--seam);font-size:13.5px;}
@@ -687,12 +691,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.38.2';
+  var APP_VERSION = '1.39.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-29';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.39.0': [
+      'チェックリストでパートが複数あるとき、パート名をタップすると、そのパートの持ち物を開け閉めできるようにしました（チェック数も表示）'
+    ],
     '1.38.2': [
       '進捗カード（「チェックしていこう」など）は、初期値を「表示しない」にしました。出したいときは設定 →「表示設定」で選べます'
     ],
@@ -1759,6 +1766,10 @@
     return order.map(function(k){ return groups[k]; }).sort(function(a,b){ return a.rank-b.rank; });
   }
 
+  // チェックリストで閉じているパート（このブラウザに保存。どの予定でも共通）
+  var CLOSED_GROUPS_KEY = 'gp-closed-check-groups-v1';
+  var closedCheckGroups = [];
+  try{ var cg0 = JSON.parse(localStorage.getItem(CLOSED_GROUPS_KEY)||'[]'); if(Array.isArray(cg0)) closedCheckGroups = cg0.filter(function(x){ return typeof x==='string'; }).slice(0, 300); }catch(e){}
   function groupHeading(label, count, total){
     if(total<=1) return '';  // 見出しが1種類だけなら出さない
     return '<div class="group-head">'+esc(label)+'<span class="group-count">'+count+'</span></div>';
@@ -3048,8 +3059,18 @@
           pinnedItems.forEach(renderCheckRow);
         }
         var gs = groupItemsByRole(restItems);
+        var multiPart = gs.length > 1;
         gs.forEach(function(g){
-          html += groupHeading(g.label, g.items.length, gs.length + (pinnedItems.length?1:0));
+          if(multiPart){
+            // パートが複数あるときは、パート名をタップで開け閉めできる（閉じても件数とチェック数は見える）
+            var closed = closedCheckGroups.indexOf(g.label)!==-1;
+            var gb = g.items.filter(function(it){ return isBringForEntry(it, entry) && !isHiddenForEntry(it, entry); });
+            var gd = gb.filter(function(it){ return ck[it.id]; }).length;
+            html += '<button class="group-head cg-toggle'+(closed?'':' open')+'" data-cgroup="'+esc(g.label)+'" aria-expanded="'+(closed?'false':'true')+'">'+esc(g.label)+'<span class="group-count">'+(gb.length ? gd+'/'+gb.length : g.items.length)+'</span><span class="group-chev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></button>';
+            if(closed) return;
+          } else {
+            html += groupHeading(g.label, g.items.length, gs.length + (pinnedItems.length?1:0));
+          }
           g.items.forEach(renderCheckRow);
         });
       }
@@ -3756,6 +3777,14 @@
       };
     });
 
+    document.querySelectorAll('[data-cgroup]').forEach(function(b){
+      b.onclick = function(){
+        var k = b.dataset.cgroup, i = closedCheckGroups.indexOf(k);
+        if(i===-1) closedCheckGroups.push(k); else closedCheckGroups.splice(i,1);
+        try{ localStorage.setItem(CLOSED_GROUPS_KEY, JSON.stringify(closedCheckGroups)); }catch(e){}
+        render();
+      };
+    });
     var hiddenOnlyBtn = document.getElementById('hidden-only-btn');
     if(hiddenOnlyBtn){ hiddenOnlyBtn.onclick = function(){ hiddenOnly = !hiddenOnly; render(); }; }
     document.querySelectorAll('[data-rename-item]').forEach(function(b){
