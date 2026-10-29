@@ -427,6 +427,7 @@
   .row-pencil{width:28px;height:28px;}
   .rename-box{flex:1;min-width:0;display:flex;gap:6px;align-items:center;}
   .rename-input{flex:1;min-width:0;margin:0 !important;padding:6px 8px !important;font-size:16px !important;}
+  .item-name.is-hidden-name{color:var(--cream-dim);}
   .rename-ok{width:30px;height:30px;color:var(--teal);border-color:var(--teal);}
   .edit-done-row{justify-content:flex-end;}
   @media (max-width:340px){ .filter-row.kind-row{flex-wrap:wrap;} .kind-sep{display:none;} }
@@ -686,12 +687,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.38.0';
+  var APP_VERSION = '1.38.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-29';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.38.1': [
+      'リストのアイコンで開く編集画面を、「外す」と「追加」だけのシンプルな形にしました（名前・持込／借りる／渡す・非表示は、チェックリストの各行から）'
+    ],
     '1.38.0': [
       '持ち物の行ごとに鉛筆アイコンをつけました。押すとその場で名前を変えられます（この予定だけの名前）',
       '絞り込みの行に目のアイコンを追加。押すと非表示にした持ち物だけを表示し、それぞれ表示に戻せます（「非表示も表示」のチェックはなくしました）',
@@ -3167,29 +3171,20 @@
     var candidates = candidateItemsForEntry(mode, entry);
     var html = '';
 
+    // 名前・持込／借りる／渡す・ピン留め・非表示はチェックリストの各行でできるので、ここは「外す」と「追加」だけ
     html += '<div class="panel">';
-    html += '<div class="panel-label">このリストだけの編集</div>';
-    html += '<p class="hint">持ち物名の変更・持込／借りる／渡す・表示／非表示を編集できます。<br>この予定だけの編集です。<br>マスタの編集は設定からできます。</p>';
-    var hiddenCount = included.filter(function(it){ return isHiddenForEntry(it, entry); }).length;
-    html += '<label style="display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:13px;cursor:pointer;"><input type="checkbox" id="show-hidden-toggle"'+(view.showHiddenInEdit?' checked':'')+' style="width:auto;margin:0;"> 非表示の持ち物も表示する（'+hiddenCount+'件）</label>';
+    html += '<div class="panel-label">このリストの持ち物</div>';
+    html += '<p class="hint">×か左スワイプで、この予定から外せます。<br>名前・持込／借りる／渡す・非表示は、チェックリストの各行から変えられます。<br>マスタの編集は設定からできます。</p>';
     if(included.length===0){
       html += '<div class="empty">まだありません</div>';
     } else {
       included.forEach(function(it){
         var hiddenNow = isHiddenForEntry(it, entry);
-        if(hiddenNow && !view.showHiddenInEdit) return;
-        html += '<div class="swipe-wrap"><button class="swipe-bg del" data-remove-item="'+it.id+'">削除</button><div class="item-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="del" style="align-items:flex-start;">';
-        html += '<div style="flex:1;min-width:0;"><input type="text" class="item-name-input" maxlength="'+LIMIT.name+'" data-item-rename="'+it.id+'" value="'+esc(effectiveItemName(it, entry))+'">';
+        html += '<div class="swipe-wrap"><button class="swipe-bg del" data-remove-item="'+it.id+'">外す</button><div class="item-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="del">';
+        html += '<div style="flex:1;min-width:0;"><div class="item-name'+(hiddenNow?' is-hidden-name':'')+'">'+esc(effectiveItemName(it, entry))+(hiddenNow?' <span class="hidden-tag">非表示中</span>':'')+'</div>';
         if(it.local){ html += '<div class="item-meta"><span class="local-tag">この'+modeLabel(mode)+'だけ</span> <button class="btn ghost" data-promote-item="'+it.id+'" style="padding:2px 7px;font-size:10px;">マスタに登録</button></div>'; }
         html += '</div>';
-        html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:52%;">';
-        var blE = bringLabel(it, entry);
-        html += '<button class="btn ghost" data-toggle-entry-bring="'+it.id+'" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+blE.style+'">'+blE.text+'</button>';
-        var pinnedNow = (entry.pinnedIds||[]).indexOf(it.id)!==-1;
-        html += '<button class="btn ghost" data-toggle-pin="'+it.id+'" style="padding:4px 8px;font-size:12px;line-height:1.2;'+(pinnedNow?'border-color:var(--amber);background:var(--amber-dim);':'opacity:.55;')+'" aria-label="'+(pinnedNow?'ピン留め中（押すと解除）':'ピン留めする')+'" title="'+(pinnedNow?'ピン留め中（押すと解除）':'ピン留めする')+'">📌</button>';
-        html += '<button class="btn ghost" data-toggle-entry-visible="'+it.id+'" style="padding:5px 9px;line-height:0;'+(hiddenNow?'color:var(--amber);border-color:var(--amber);':'')+'" aria-label="'+(hiddenNow?'非表示中（押すと表示）':'表示中（押すと非表示）')+'" title="'+(hiddenNow?'非表示中（押すと表示）':'表示中（押すと非表示）')+'">'+(hiddenNow?EYE_OFF_SVG:EYE_SVG)+'</button>';
-        html += '<button class="del-x" data-remove-item="'+it.id+'">×</button>';
-        html += '</div>';
+        html += '<button class="del-x" data-remove-item="'+it.id+'" aria-label="この予定から外す" title="この予定から外す">×</button>';
         html += '</div></div>';
       });
     }
@@ -3198,7 +3193,7 @@
     html += '<div class="panel">';
     html += '<div class="panel-label">追加できる持ち物</div>';
     if(candidates.length===0){
-      html += '<div class="empty">追加できる持ち物がありません。「持ち物」タブで新しく登録してください。</div>';
+      html += '<div class="empty">追加できる持ち物がありません。設定の「持ち物を追加」から登録してください。</div>';
     } else {
       candidates.forEach(function(it){
         html += '<div class="item-row">';
