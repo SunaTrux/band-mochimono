@@ -416,10 +416,12 @@
   #master-list.searching .group-toggle{pointer-events:none;}
   #master-list.searching .group-toggle .group-chev{visibility:hidden;}
   .mrow.s-miss, .mg.s-empty{display:none !important;}
-  .filter-row.kind-row{gap:5px;flex-wrap:nowrap;}
+  .filter-row.kind-row{gap:4px;flex-wrap:nowrap;}
+  .kind-row .edit-pencil{margin-left:auto;flex-shrink:0;width:30px;height:30px;}
+  .edit-done-row{justify-content:flex-end;}
   @media (max-width:340px){ .filter-row.kind-row{flex-wrap:wrap;} .kind-sep{display:none;} }
   .kind-sep{width:1px;align-self:stretch;margin:3px 2px;background:var(--seam);flex-shrink:0;}
-  .filter-row.kind-row .chip{padding:5px 8px;font-size:11.5px;white-space:nowrap;}
+  .filter-row.kind-row .chip{padding:5px 7px;font-size:11.5px;white-space:nowrap;}
   .filter-row.kind-row .sort-label{white-space:nowrap;flex-shrink:0;}
   .kind-row .kc{opacity:.75;font-variant-numeric:tabular-nums;}
   .chip.chip-edit{border-style:dashed;color:var(--cream-dim);}
@@ -674,12 +676,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.36.2';
+  var APP_VERSION = '1.37.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-29';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.37.0': [
+      '持ち物リストの見出し（「持ち物チェックリスト」「含める持ち物を選ぶ」）をなくし、「持ち物を編集」は絞り込みの行の右端の鉛筆アイコンにしました'
+    ],
     '1.36.2': [
       '進捗カードのスワイプを、持ち物の非表示と同じ動きにそろえました。左にスワイプすると、後ろに青い「非表示」が見えます'
     ],
@@ -1423,7 +1428,7 @@
   var HELP_STEPS = [
     ['パートを選んで予定を登録', 'タブ（スタジオ・イベント・レコ）を選び、パートと名前・日付を入れます。'],
     ['予定を開いて持ち物をチェック', '持った物をタップでチェック。全部そろえば準備完了です。'],
-    ['予定に合わせて調整', '「持ち物を編集」で足し引き。「この予定だけの持ち物を追加」も使えます。'],
+    ['予定に合わせて調整', '鉛筆アイコン（持ち物を編集）で足し引き。「この予定だけの持ち物を追加」も使えます。'],
     ['持ち物の種類は設定で管理', '持ち物やパートの追加・並べ替えは、設定からまとめてできます。']
   ];
   var HELP_TIPS = [
@@ -2901,12 +2906,8 @@
     }
     html += '<div style="height:10px;"></div>';
 
-    html += '<div class="row-between">';
-    html += '<div class="step-head" style="margin-bottom:0;"><span class="step-num step-icon">'+(view.editMode?'✎':'✓')+'</span>'+(view.editMode?'含める持ち物を選ぶ':'持ち物チェックリスト')+'</div>';
-    html += '<div class="head-btns">';
-    if(!locked){ html += '<button class="btn ghost" id="toggle-edit-btn">'+(view.editMode?'完了':'持ち物を編集')+'</button>'; }
-    html += '</div>';
-    html += '</div>';
+    // 見出しはなし。編集は絞り込みの行の右端の鉛筆から（編集中はここに「完了」）
+    if(view.editMode){ html += '<div class="filter-row edit-done-row"><button class="btn ghost" id="toggle-edit-btn">完了</button></div>'; }
     if(locked){ html += '<p class="lock-note">🔒 ロック中は、チェックのオン／オフ・持ち物の編集・予定の削除ができません。右上の「ロック中」をタップすると解除します。</p>'; }
     if(!view.editMode && bringItems.length && showMeter){ html += renderMeter(done, bringItems.length, handProgress(mode, entry)); }
 
@@ -2916,6 +2917,8 @@
       var visibleItems = items.filter(function(it){ return !isHiddenForEntry(it, entry); });
       var allVisibleCount = visibleItems.length;
       var hiddenList = items.filter(function(it){ return isHiddenForEntry(it, entry); });
+      var editPencil = locked ? '' : '<button class="icon-btn edit-pencil" id="toggle-edit-btn" aria-label="持ち物を編集" title="持ち物を編集"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>';
+      if(items.length===0 && editPencil){ html += '<div class="filter-row kind-row">'+editPencil+'</div>'; }
       if(items.length>0){
         // 絞り込みは1行に：「未チェック」と種類（持込・借りる・渡す）。押すとオン、もう一度押すとオフ
         var kc = {bring:0, rental:0, hand:0};
@@ -2926,6 +2929,7 @@
         [['bring','持込'],['rental','借りる'],['hand','渡す']].forEach(function(k){
           html += '<span class="chip'+(kindFilter===k[0]?' on':'')+'" data-kind-filter="'+k[0]+'">'+k[1]+' <span class="kc">'+kc[k[0]]+'</span></span>';
         });
+        html += editPencil;
         html += '</div>';
         if(hiddenList.length){
           html += '<div class="filter-row"><label class="filter-check"><input type="checkbox" id="show-hidden-list"'+(showHiddenList?' checked':'')+'> 非表示も表示（'+hiddenList.length+'）</label></div>';
@@ -2945,7 +2949,7 @@
       if(kindFilter!=='all'){ visibleItems = visibleItems.filter(function(it){ return itemKind(it, entry)===kindFilter; }); }
       html += '<div class="panel checklist-panel">';
       if(items.length===0){
-        html += '<div class="empty">まだ持ち物がありません。「持ち物を編集」から追加してください。</div>';
+        html += '<div class="empty">まだ持ち物がありません。上の鉛筆アイコン（持ち物を編集）から追加してください。</div>';
       } else if(kindFilter!=='all' && beforeKind>0 && visibleItems.length===0){
         html += '<div class="empty">'+({bring:'持込',rental:'借りる',hand:'渡す'}[kindFilter])+'の持ち物'+(uncheckedOnly?'で未チェックの物':'')+'はありません。<br>選んでいる種類をもう一度押すと、ほかの持ち物も表示します。</div>';
       } else if(uncheckedOnly && allVisibleCount>0 && visibleItems.length===0){
@@ -3011,7 +3015,7 @@
         });
       }
       if(visibleItems.length>0 && !locked){
-        html += '<p class="hint" style="margin:6px 2px 0;">← 左スワイプで非表示（戻すのは「持ち物を編集」から）／ 右スワイプ → で📌ピン留め（先頭に表示）</p>';
+        html += '<p class="hint" style="margin:6px 2px 0;">← 左スワイプで非表示（戻すのは鉛筆アイコンの編集から）／ 右スワイプ → で📌ピン留め（先頭に表示）</p>';
       }
       html += '</div>';
       if(!locked) html += renderCustomItemForm(mode);
@@ -3225,7 +3229,7 @@
       html += '<span class="chip'+(on?' on':'')+'" data-role-item="'+esc(r)+'">'+esc(r)+'</span>';
     });
     html += '</div>';
-    html += '<p class="hint">選んだ用途のシーンで新規リストに自動で入ります。パート指定ありの持ち物は、既存のスタジオ/イベント/レコーディングには自動追加されないので「持ち物を編集」から個別に追加してください。</p>';
+    html += '<p class="hint">選んだ用途のシーンで新規リストに自動で入ります。パート指定ありの持ち物は、既存のスタジオ/イベント/レコーディングには自動追加されないので鉛筆アイコン（持ち物を編集）から個別に追加してください。</p>';
     html += '<label class="small">初期状態</label>';
     html += '<div class="chip-wrap">';
     html += '<span class="chip'+(view.newItemBring==='bring'?' on':'')+'" data-bring-new="bring">持込</span>';
@@ -3238,7 +3242,7 @@
 
     html += '<div class="panel">';
     html += '<div class="panel-label">持ち物マスタ</div>';
-    html += '<p class="hint">ここでの変更はマスターデータです。次回以降、新しいスタジオ/イベント/レコーディングを登録した時の初期値になります（既存のイベントには影響しません）。イベントごとの名前変更は、各イベントの「持ち物を編集」から行えます。</p>';
+    html += '<p class="hint">ここでの変更はマスターデータです。次回以降、新しいスタジオ/イベント/レコーディングを登録した時の初期値になります（既存のイベントには影響しません）。イベントごとの名前変更は、各イベントの鉛筆アイコン（持ち物を編集）から行えます。</p>';
     if(masterItems().length===0){
       html += '<div class="empty">持ち物が登録されていません</div>';
     } else {
