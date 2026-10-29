@@ -290,6 +290,7 @@
   .op-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;}
   .op-row.two{grid-template-columns:1fr 1fr;}
   .op-row .btn{padding:9px 4px;font-size:12.5px;white-space:nowrap;min-width:0;width:100%;}
+  .md-panel .op-row{grid-template-columns:repeat(3,1fr);}
   .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom, 0px));transform:translate(-50%, 20px);max-width:calc(100% - 32px);width:max-content;background:var(--cream);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:13px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:50;}
   .toast.show{opacity:1;transform:translate(-50%, 0);pointer-events:auto;}
   .toast-undo{margin-left:12px;font-family:inherit;font-size:13px;font-weight:800;color:inherit;background:none;border:none;padding:2px 4px;cursor:pointer;text-decoration:underline;}
@@ -396,6 +397,10 @@
   .check-row.locked-row .toggle{opacity:.75;cursor:default;}
   .bring-tag{flex-shrink:0;font-size:10px;padding:3px 7px;border:1px solid var(--seam);border-radius:7px;color:var(--cream-dim);}
   .op-row.one{grid-template-columns:1fr;}
+  .op-row .btn.on{border-color:var(--teal);color:var(--teal);background:var(--teal-dim);}
+  .md-panel{margin-top:8px;}
+  .md-opts{gap:5px;}
+  .md-text{width:100%;box-sizing:border-box;background:var(--field-bg);border:1px solid var(--seam);color:var(--cream);border-radius:8px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace,var(--font-jp);font-size:12.5px;line-height:1.6;resize:vertical;}
   .swipe-bg.role-hide-bg{background:#2f7de1;}
   .item-row.role-hidden .item-name{opacity:.5;}
   .update-box{border-top:1px solid var(--seam);padding:18px 2px 20px;margin-top:6px;}
@@ -691,12 +696,16 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.39.0';
+  var APP_VERSION = '1.40.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
-  var APP_RELEASE_DATE = '2026-10-29';
+  var APP_RELEASE_DATE = '2026-10-30';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.40.0': [
+      '予定の持ち物を、テキスト（Markdown）で書き出せるようにしました。「テキスト出力」から、LINEなどにそのまま送れます',
+      '未チェックだけ・持込／借りる／渡すで絞り込めて、連番のあり・なしも選べます'
+    ],
     '1.39.0': [
       'チェックリストでパートが複数あるとき、パート名をタップすると、そのパートの持ち物を開け閉めできるようにしました（チェック数も表示）'
     ],
@@ -1655,6 +1664,7 @@
     roleRemove: null,
     copyChoose: null,
     renamingItem: null,
+    mdOpen: false,
     masterQuery: '',
     backupDone: ''
   };
@@ -3122,11 +3132,17 @@
       if(total>0){ html += '<button class="btn" id="entry-import-confirm" style="flex:1;">取り込む</button>'; }
       html += '</div></div>';
     }
-    html += '<div class="op-row'+(locked?' one':'')+'">';
-    if(!locked) html += '<button class="btn ghost" id="reset-check-btn">チェック解除</button>';
+    html += '<div class="op-row two">';
+    html += '<button class="btn ghost'+(view.mdOpen?' on':'')+'" id="md-open-btn">テキスト出力</button>';
     html += '<button class="btn ghost" id="csv-export-btn">CSV出力</button>';
-    if(!locked) html += '<button class="btn ghost" id="csv-import-btn">CSV取込</button>';
     html += '</div>';
+    if(!locked){
+      html += '<div class="op-row two">';
+      html += '<button class="btn ghost" id="reset-check-btn">チェック解除</button>';
+      html += '<button class="btn ghost" id="csv-import-btn">CSV取込</button>';
+      html += '</div>';
+    }
+    if(view.mdOpen) html += renderMdPanel(mode, entry);
     html += '<input type="file" id="csv-import-input" accept=".csv,text/csv" style="display:none;">';
 
     html += '<div class="op-label">予定の操作</div>';
@@ -3175,6 +3191,78 @@
   }
   var EYE_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   var EYE_OFF_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+
+  // ---------- テキスト出力（Markdown）：LINEなどにそのまま送れる持ち物リスト ----------
+  var MD_OPT_KEY = 'gp-md-opt-v1';
+  var mdOpt = {unchecked:false, kind:'all', num:true, hidden:false};
+  try{ var mo = JSON.parse(localStorage.getItem(MD_OPT_KEY)||'null'); if(mo && typeof mo==='object'){ mdOpt.unchecked = mo.unchecked===true; mdOpt.num = mo.num!==false; mdOpt.hidden = mo.hidden===true; if(['all','bring','rental','hand'].indexOf(mo.kind)!==-1) mdOpt.kind = mo.kind; } }catch(e){}
+  function saveMdOpt(){ try{ localStorage.setItem(MD_OPT_KEY, JSON.stringify(mdOpt)); }catch(e){} }
+  function buildEntryMarkdown(mode, entry){
+    var ck = state.checks[checkKey(mode, entry.id)] || {};
+    var items = itemsForEntry(mode, entry).filter(function(it){
+      if(!mdOpt.hidden && isHiddenForEntry(it, entry)) return false;
+      var k = itemKind(it, entry);
+      if(mdOpt.kind!=='all' && k!==mdOpt.kind) return false;
+      if(mdOpt.unchecked){
+        if(k==='rental') return mdOpt.kind==='rental';
+        var notDone = !ck[it.id] || (k==='hand' && !ck[handedKey(it.id)]);
+        if(!notDone) return false;
+      }
+      return true;
+    });
+    var lines = [];
+    lines.push('# '+entry.name);
+    var meta = [];
+    if(entry.date){ var dl = entry.date.replace(/-/g,'/') + dowShort(entry.date); var tr = timeRange(entry); if(tr) dl += ' ' + tr.replace('–','〜'); meta.push(dl); }
+    if(entry.artist) meta.push(entry.artist);
+    if(meta.length) lines.push(meta.join(' ／ '));
+    if(entry.roles && entry.roles.length) lines.push('パート：'+entry.roles.join(' / '));
+    var cond = [];
+    if(mdOpt.unchecked) cond.push('未チェックだけ');
+    if(mdOpt.kind!=='all') cond.push({bring:'持込',rental:'借りる',hand:'渡す'}[mdOpt.kind]+'だけ');
+    if(cond.length) lines.push('（'+cond.join('・')+'）');
+    lines.push('');
+    if(!items.length){ lines.push('（該当する持ち物はありません）'); return lines.join('\n'); }
+    var gs = groupItemsByRole(items), n = 0;
+    gs.forEach(function(g, gi){
+      if(gs.length>1){ if(gi>0) lines.push(''); lines.push('## '+g.label); }
+      g.items.forEach(function(it){
+        n++;
+        var k = itemKind(it, entry);
+        var tag = k==='rental' ? '（借りる）' : (k==='hand' ? '（渡す）' : '');
+        var done = k==='rental' ? false : (k==='hand' ? !!(ck[it.id] && ck[handedKey(it.id)]) : !!ck[it.id]);
+        lines.push((mdOpt.num ? n+'. ' : '- ') + effectiveItemName(it, entry) + tag + (done ? ' ✓' : ''));
+      });
+    });
+    lines.push('');
+    lines.push('全'+n+'件');
+    return lines.join('\n');
+  }
+  function renderMdPanel(mode, entry){
+    var md = buildEntryMarkdown(mode, entry);
+    var h = '<div class="panel md-panel">';
+    h += '<div class="panel-label">テキスト出力（Markdown）</div>';
+    h += '<p class="hint" style="margin-top:0;">LINEやメモにそのまま貼れる形です。絞り込んでから送れます。</p>';
+    h += '<div class="filter-row md-opts">';
+    [['all','すべて'],['bring','持込'],['rental','借りる'],['hand','渡す']].forEach(function(k){
+      h += '<span class="chip'+(mdOpt.kind===k[0]?' on':'')+'" data-md-kind="'+k[0]+'">'+k[1]+'</span>';
+    });
+    h += '</div>';
+    h += '<div class="filter-row md-opts">';
+    h += '<span class="chip'+(mdOpt.unchecked?' on':'')+'" data-md-opt="unchecked">未チェックだけ</span>';
+    h += '<span class="chip'+(mdOpt.num?' on':'')+'" data-md-opt="num">連番</span>';
+    h += '<span class="chip'+(mdOpt.hidden?' on':'')+'" data-md-opt="hidden">非表示も入れる</span>';
+    h += '</div>';
+    h += '<textarea id="md-text" readonly rows="10" class="md-text">'+esc(md)+'</textarea>';
+    h += '<div class="op-row" style="margin-top:8px;">';
+    h += '<button class="btn" id="md-share-btn">送る</button>';
+    h += '<button class="btn ghost" id="md-copy-btn">コピー</button>';
+    h += '<button class="btn ghost" id="md-save-btn">.md保存</button>';
+    h += '</div>';
+    h += '<button class="btn ghost block" id="md-close-btn" style="margin-top:6px;">閉じる</button>';
+    h += '</div>';
+    return h;
+  }
 
   function renderCustomItemForm(mode){
     var html = '<div class="panel">';
@@ -3861,6 +3949,40 @@
         render();
       };
     }
+
+    var mdOpenBtn = document.getElementById('md-open-btn');
+    if(mdOpenBtn){
+      mdOpenBtn.onclick = function(){
+        view.mdOpen = !view.mdOpen;
+        render();
+        var mp = document.querySelector('.md-panel');
+        if(mp && mp.scrollIntoView) mp.scrollIntoView({block:'nearest'});
+      };
+    }
+    document.querySelectorAll('[data-md-opt]').forEach(function(c){
+      c.onclick = function(){ var k = c.dataset.mdOpt; mdOpt[k] = !mdOpt[k]; saveMdOpt(); render(); };
+    });
+    document.querySelectorAll('[data-md-kind]').forEach(function(c){
+      c.onclick = function(){ mdOpt.kind = c.dataset.mdKind; saveMdOpt(); render(); };
+    });
+    var mdText = function(){ var t = document.getElementById('md-text'); return t ? t.value : ''; };
+    var mdShare = document.getElementById('md-share-btn');
+    if(mdShare){
+      mdShare.onclick = function(){
+        var text = mdText();
+        if(navigator.share){
+          navigator.share({text:text}).catch(function(err){ if(err && err.name==='AbortError') return; copyTextToClipboard(text, '送れなかったので、コピーしました。LINEなどに貼り付けてください'); });
+        } else {
+          copyTextToClipboard(text, 'この端末では直接送れないので、コピーしました。LINEなどに貼り付けてください');
+        }
+      };
+    }
+    var mdCopy = document.getElementById('md-copy-btn');
+    if(mdCopy){ mdCopy.onclick = function(){ copyTextToClipboard(mdText(), 'コピーしました'); }; }
+    var mdSave = document.getElementById('md-save-btn');
+    if(mdSave){ mdSave.onclick = function(){ downloadText('mochimono-list_'+view.mode+'_'+fileTag()+'.md', mdText(), 'text/markdown'); }; }
+    var mdClose = document.getElementById('md-close-btn');
+    if(mdClose){ mdClose.onclick = function(){ view.mdOpen = false; render(); }; }
 
     var csvExportBtn = document.getElementById('csv-export-btn');
     if(csvExportBtn){
