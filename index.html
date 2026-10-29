@@ -290,7 +290,7 @@
   .toast.show{opacity:1;transform:translate(-50%, 0);pointer-events:auto;}
   .toast-undo{margin-left:12px;font-family:inherit;font-size:13px;font-weight:800;color:inherit;background:none;border:none;padding:2px 4px;cursor:pointer;text-decoration:underline;}
   .meter{touch-action:pan-y;}
-  .meter.meter-gone{transition:transform .18s ease, opacity .18s ease;opacity:0;}
+  .meter.meter-gone{transition:transform .18s ease;}
   #pin-bar:empty{display:none;}
   #pin-bar{background:var(--bg);border-bottom:1px solid var(--seam);padding:8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));}
   .pin-bar-inner{max-width:448px;margin:0 auto;}
@@ -526,7 +526,8 @@
   .sort-row .chip{margin:0;}
   .past-toggle{display:flex;align-items:center;gap:8px;font-size:13px;margin:-2px 0 10px;cursor:pointer;color:var(--cream-dim);}
   .past-toggle input{width:auto;margin:0;}
-  .meter{background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:10px 14px 12px;margin:2px 0 12px;position:sticky;top:6px;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+  .meter{background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:10px 14px 12px;margin:0;position:relative;z-index:1;}
+  .swipe-wrap.meter-wrap{border-radius:12px;margin:2px 0 12px;position:sticky;top:6px;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.06);}
   .meter-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px;}
   .meter-msg{font-size:13px;font-weight:700;color:var(--cream);}
   .meter-num{font-size:12.5px;color:var(--cream-dim);font-variant-numeric:tabular-nums;white-space:nowrap;}
@@ -644,7 +645,8 @@
     .nav button{padding:6px 2px;}
     .container{padding-top:10px;}
     #pin-bar{padding-top:5px;padding-bottom:5px;}
-    .meter{top:4px;padding:7px 12px 9px;}
+    .meter{padding:7px 12px 9px;}
+    .swipe-wrap.meter-wrap{top:4px;}
   }
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -672,12 +674,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.36.1';
+  var APP_VERSION = '1.36.2';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-29';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.36.2': [
+      '進捗カードのスワイプを、持ち物の非表示と同じ動きにそろえました。左にスワイプすると、後ろに青い「非表示」が見えます'
+    ],
     '1.36.1': [
       '持ち物の絞り込みを1行にまとめました。「未チェック」「持込」「借りる」「渡す」を押すと絞り込み、もう一度押すと解除します'
     ],
@@ -1850,10 +1855,12 @@
     var pct = total ? Math.round(done/total*100) : 0;
     var complete = total>0 && done>=total;
     var msg = complete ? '準備完了！忘れ物ゼロ 🎉' : (pct>=67 ? 'あと少し！' : (pct>=34 ? 'いい調子' : (done>0 ? 'スタート！' : 'チェックしていこう')));
-    var h = '<div class="meter'+(complete?' complete':'')+'">';
+    // 持ち物の行と同じ作り：左にスワイプすると、後ろから青い「非表示」が見える
+    var h = '<div class="swipe-wrap meter-wrap"><div class="swipe-bg hide">非表示</div>';
+    h += '<div class="meter'+(complete?' complete':'')+'">';
     h += '<div class="meter-top"><span class="meter-msg">'+esc(msg)+'</span><span class="meter-num"><b>'+done+'</b> / '+total+'（'+pct+'%）'+(hand && hand.total ? '<span class="meter-hand'+(hand.done>=hand.total?' ok':'')+'">渡す '+hand.done+'/'+hand.total+'</span>' : '')+'</span></div>';
     h += '<div class="meter-track"><div class="meter-fill" style="width:'+pct+'%;background:'+meterColor(pct)+';"></div></div>';
-    h += '</div>';
+    h += '</div></div>';
     return h;
   }
   // 持ち物の進捗カード（「チェックしていこう」など）を出すかどうか。設定の「表示設定」で切り替え（このブラウザだけの設定）
@@ -2579,33 +2586,33 @@
           mMoved = true;
           try{ meterEl.setPointerCapture(mPid); }catch(_){}
         }
-        mdx = dx;
+        mdx = Math.min(0, dx);   // 持ち物の非表示と同じく、左方向だけ
+        meterEl.parentNode.classList.add('sw-on');
         meterEl.style.transition = 'none';
-        meterEl.style.transform = 'translateX('+dx+'px)';
-        meterEl.style.opacity = String(Math.max(0.25, 1 - Math.abs(dx)/260));
+        meterEl.style.transform = 'translateX('+mdx+'px)';
       });
       var mEnd = function(){
         if(!mOn) return;
         mOn = false;
         if(!mMoved) return;
-        if(Math.abs(mdx) > 90){
+        if(mdx < -90){
           meterEl.style.transition = '';
           meterEl.classList.add('meter-gone');
-          meterEl.style.transform = 'translateX('+(mdx>0?'110%':'-110%')+')';
+          meterEl.style.transform = 'translateX(-110%)';
           setTimeout(function(){
             showMeter = false;
             try{ localStorage.setItem(SHOW_METER_KEY, '0'); }catch(_){}
             render();
-            showToast('進捗カードを非表示にしました（設定 →「表示設定」でも戻せます）', function(){
+            showToast('進捗カードを非表示にしました（設定 →「表示設定」からも戻せます）', function(){
               showMeter = true;
               try{ localStorage.setItem(SHOW_METER_KEY, '1'); }catch(_){}
               render();
             });
           }, 170);
         } else {
-          meterEl.style.transition = 'transform .15s ease, opacity .15s ease';
+          meterEl.style.transition = 'transform .15s ease';
           meterEl.style.transform = '';
-          meterEl.style.opacity = '';
+          setTimeout(function(){ if(meterEl.parentNode) meterEl.parentNode.classList.remove('sw-on'); }, 160);
         }
       };
       meterEl.addEventListener('pointerup', mEnd);
