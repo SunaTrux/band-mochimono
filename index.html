@@ -676,12 +676,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.37.0';
+  var APP_VERSION = '1.37.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-29';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.37.1': [
+      '持ち物の編集画面の見出しと説明を「このリストだけの編集」に変え、短くしました'
+    ],
     '1.37.0': [
       '持ち物リストの見出し（「持ち物チェックリスト」「含める持ち物を選ぶ」）をなくし、「持ち物を編集」は絞り込みの行の右端の鉛筆アイコンにしました'
     ],
@@ -3130,8 +3133,8 @@
     var html = '';
 
     html += '<div class="panel">';
-    html += '<div class="panel-label">このリストに含まれている</div>';
-    html += '<p class="hint">持ち物名の変更・「持込／借りる／渡す」・表示/非表示は、この'+modeLabel(mode)+'だけの設定です（他の予定や「設定」タブの持ち物一覧には影響しません）。いずれもトグルになってます。チェックリストで「非表示にする」を押した持ち物は、ここの「表示」ボタンで元に戻せます。</p>';
+    html += '<div class="panel-label">このリストだけの編集</div>';
+    html += '<p class="hint">持ち物名の変更・持込／借りる／渡す・表示／非表示を編集できます。<br>この予定だけの編集です。<br>マスタの編集は設定からできます。</p>';
     var hiddenCount = included.filter(function(it){ return isHiddenForEntry(it, entry); }).length;
     html += '<label style="display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:13px;cursor:pointer;"><input type="checkbox" id="show-hidden-toggle"'+(view.showHiddenInEdit?' checked':'')+' style="width:auto;margin:0;"> 非表示の持ち物も表示する（'+hiddenCount+'件）</label>';
     if(included.length===0){
