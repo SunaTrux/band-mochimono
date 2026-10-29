@@ -687,12 +687,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.38.1';
+  var APP_VERSION = '1.38.2';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-29';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.38.2': [
+      '進捗カード（「チェックしていこう」など）は、初期値を「表示しない」にしました。出したいときは設定 →「表示設定」で選べます'
+    ],
     '1.38.1': [
       'リストのアイコンで開く編集画面を、「外す」と「追加」だけのシンプルな形にしました（名前・持込／借りる／渡す・非表示は、チェックリストの各行から）'
     ],
@@ -1894,8 +1897,8 @@
   }
   // 持ち物の進捗カード（「チェックしていこう」など）を出すかどうか。設定の「表示設定」で切り替え（このブラウザだけの設定）
   var SHOW_METER_KEY = 'gp-show-meter-v1';
-  var showMeter = true;
-  try{ showMeter = localStorage.getItem(SHOW_METER_KEY)!=='0'; }catch(e){}
+  var showMeter = false;   // 初期値は表示しない（設定で「表示する」を選んだときだけ出す）
+  try{ showMeter = localStorage.getItem(SHOW_METER_KEY)==='1'; }catch(e){}
   function miniMeter(done, total){
     if(!total) return '';
     var pct = Math.round(done/total*100);
