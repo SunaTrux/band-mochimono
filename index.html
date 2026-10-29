@@ -416,7 +416,9 @@
   #master-list.searching .group-toggle{pointer-events:none;}
   #master-list.searching .group-toggle .group-chev{visibility:hidden;}
   .mrow.s-miss, .mg.s-empty{display:none !important;}
-  .filter-row.kind-row{margin-top:-4px;gap:5px;flex-wrap:nowrap;}
+  .filter-row.kind-row{gap:5px;flex-wrap:nowrap;}
+  @media (max-width:340px){ .filter-row.kind-row{flex-wrap:wrap;} .kind-sep{display:none;} }
+  .kind-sep{width:1px;align-self:stretch;margin:3px 2px;background:var(--seam);flex-shrink:0;}
   .filter-row.kind-row .chip{padding:5px 8px;font-size:11.5px;white-space:nowrap;}
   .filter-row.kind-row .sort-label{white-space:nowrap;flex-shrink:0;}
   .kind-row .kc{opacity:.75;font-variant-numeric:tabular-nums;}
@@ -670,12 +672,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.36.0';
+  var APP_VERSION = '1.36.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'バンドマン持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-29';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.36.1': [
+      '持ち物の絞り込みを1行にまとめました。「未チェック」「持込」「借りる」「渡す」を押すと絞り込み、もう一度押すと解除します'
+    ],
     '1.36.0': [
       '持ち物チェックリストの「種類」で、持込・借りる・渡すを絞り込めるようにしました',
       '「レンタル」を「借りる」という言い方に変えました'
@@ -1420,7 +1425,7 @@
     ['📌 ピン留め', '右スワイプで先頭に表示。持ち物のピンは画面上部にも出るので、買う物のメモにも。'],
     ['持込・借りる・渡す', '持ち物ごとに切り替え。借りる物（スタジオや会場で借りる）はチェック不要、返す物・あげる物は「渡した」までチェック。「種類」で絞り込みも。'],
     ['🔒 ロック', '本番前に、チェックや持ち物をうっかり変えないように固定できます。'],
-    ['未チェックだけ', '残りの持ち物だけを表示して、出かける直前の確認に。'],
+    ['未チェック・種類の絞り込み', '「未チェック」で残りだけ、「持込・借りる・渡す」で種類ごとに表示。もう一度押すと解除。'],
     ['この内容で新規作成', '前の予定の持ち物をまるごとコピーして使い回せます。'],
     ['CSV・バックアップ', '表計算アプリで編集したり、機種変更のときにデータを移したりできます。']
   ];
@@ -2650,8 +2655,15 @@
     }
     document.querySelectorAll('[data-kind-filter]').forEach(function(c){
       c.onclick = function(){
-        kindFilter = c.dataset.kindFilter;
+        kindFilter = (kindFilter===c.dataset.kindFilter) ? 'all' : c.dataset.kindFilter;   // もう一度押すと解除
         try{ localStorage.setItem(KIND_FILTER_KEY, kindFilter); }catch(e){}
+        render();
+      };
+    });
+    document.querySelectorAll('[data-check-toggle]').forEach(function(c){
+      c.onclick = function(){
+        uncheckedOnly = !uncheckedOnly;
+        try{ localStorage.setItem(UNCHECKED_KEY, uncheckedOnly?'1':'0'); }catch(e){}
         render();
       };
     });
@@ -2898,21 +2910,19 @@
       var allVisibleCount = visibleItems.length;
       var hiddenList = items.filter(function(it){ return isHiddenForEntry(it, entry); });
       if(items.length>0){
-        html += '<div class="filter-row"><span class="sort-label">表示</span>';
-        html += '<span class="chip'+(!uncheckedOnly?' on':'')+'" data-check-filter="all">すべて</span>';
-        html += '<span class="chip'+(uncheckedOnly?' on':'')+'" data-check-filter="unchecked">未チェックだけ（'+(bringItems.length-done)+'）</span>';
-        if(hiddenList.length){
-          html += '<label class="filter-check"><input type="checkbox" id="show-hidden-list"'+(showHiddenList?' checked':'')+'> 非表示も表示（'+hiddenList.length+'）</label>';
-        }
-        html += '</div>';
+        // 絞り込みは1行に：「未チェック」と種類（持込・借りる・渡す）。押すとオン、もう一度押すとオフ
         var kc = {bring:0, rental:0, hand:0};
         items.forEach(function(it){ if(!isHiddenForEntry(it, entry) || showHiddenList) kc[itemKind(it, entry)]++; });
-        html += '<div class="filter-row kind-row"><span class="sort-label">種類</span>';
-        html += '<span class="chip'+(kindFilter==='all'?' on':'')+'" data-kind-filter="all">すべて</span>';
+        html += '<div class="filter-row kind-row">';
+        html += '<span class="chip'+(uncheckedOnly?' on':'')+'" data-check-toggle="1" title="未チェックの物だけ表示">未チェック <span class="kc">'+(bringItems.length-done)+'</span></span>';
+        html += '<span class="kind-sep" aria-hidden="true"></span>';
         [['bring','持込'],['rental','借りる'],['hand','渡す']].forEach(function(k){
           html += '<span class="chip'+(kindFilter===k[0]?' on':'')+'" data-kind-filter="'+k[0]+'">'+k[1]+' <span class="kc">'+kc[k[0]]+'</span></span>';
         });
         html += '</div>';
+        if(hiddenList.length){
+          html += '<div class="filter-row"><label class="filter-check"><input type="checkbox" id="show-hidden-list"'+(showHiddenList?' checked':'')+'> 非表示も表示（'+hiddenList.length+'）</label></div>';
+        }
       }
       // 未チェックだけ：チェック済みとレンタル（チェック不要）を隠す
       if(uncheckedOnly && kindFilter!=='rental'){ visibleItems = visibleItems.filter(function(it){ return isBringForEntry(it, entry) && (!ck[it.id] || (isHandForEntry(it, entry) && !ck[handedKey(it.id)])); }); }
@@ -2930,9 +2940,9 @@
       if(items.length===0){
         html += '<div class="empty">まだ持ち物がありません。「持ち物を編集」から追加してください。</div>';
       } else if(kindFilter!=='all' && beforeKind>0 && visibleItems.length===0){
-        html += '<div class="empty">'+({bring:'持込',rental:'借りる',hand:'渡す'}[kindFilter])+'の持ち物'+(uncheckedOnly?'で未チェックの物':'')+'はありません。<br>「種類」の「すべて」に切り替えると、ほかの持ち物も表示します。</div>';
+        html += '<div class="empty">'+({bring:'持込',rental:'借りる',hand:'渡す'}[kindFilter])+'の持ち物'+(uncheckedOnly?'で未チェックの物':'')+'はありません。<br>選んでいる種類をもう一度押すと、ほかの持ち物も表示します。</div>';
       } else if(uncheckedOnly && allVisibleCount>0 && visibleItems.length===0){
-        html += '<div class="empty">未チェックの持ち物はありません 🎉<br>「すべて」に切り替えると、チェック済みの持ち物も表示します。</div>';
+        html += '<div class="empty">未チェックの持ち物はありません 🎉<br>「未チェック」をもう一度押すと、チェック済みの持ち物も表示します。</div>';
       } else if(visibleItems.length===0){
         html += '<div class="empty">表示できる持ち物がありません（全て非表示中）。上の「非表示も表示」から戻せます。</div>';
       } else {
