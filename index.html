@@ -14,9 +14,9 @@
 <!-- 公開版（github.io）では、通信先を自分のサイトとGoogleフォントだけに制限する（万一おかしな文字列が混ざっても、データを外部へ送れないようにする） -->
 <script>(function(){var h=location.hostname;if(/\.github\.io$/.test(h)||h==='localhost'||h==='127.0.0.1'){var m=document.createElement('meta');m.httpEquiv='Content-Security-Policy';m.content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self' data:; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'";document.head.appendChild(m);}})();</script>
 <script>(function(){var t="auto";try{t=localStorage.getItem("gp-theme-v1")||"auto";}catch(e){}if(t!=="light"&&t!=="dark"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}document.documentElement.setAttribute("data-theme",t);})();</script>
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=1">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=1">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=1">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=2">
 <link rel="manifest" href="manifest.webmanifest">
 <title>プレイヤーズ持ち物リスト</title>
 <style>
@@ -682,7 +682,7 @@
 
 <div id="top-notice"></div>
 <div class="header">
-  <h1><svg class="title-ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3.6" width="5.2" height="5.2" rx="1.2" style="fill:var(--amber)"/><path d="M3.8 6.3l1.1 1.1 1.7-1.9" style="stroke:var(--bg)" stroke-width="1.4"/><path d="M10.5 6.2H21.5" style="stroke:var(--amber)" stroke-width="2.3"/><rect x="2.9" y="10.2" width="4.4" height="4.4" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 12.4H19.5" stroke="currentColor" stroke-width="2.3"/><rect x="2.9" y="16.4" width="4.4" height="4.4" rx="1" style="stroke:var(--cream-dim)" stroke-width="1.5"/><path d="M10.5 18.6H17" style="stroke:var(--cream-dim)" stroke-width="2.3"/></svg>プレイヤーズ持ち物リスト</h1>
+  <h1><svg class="title-ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(9 12 12.5)"><path d="M12 5.4C13.2 2.6 16 1.6 19 1.8" style="stroke:var(--cream-dim)" stroke-width="1.3"/><path d="M5.6 7.2L8.4 4H15.6L18.4 7.2V20.4a1.2 1.2 0 0 1-1.2 1.2H6.8a1.2 1.2 0 0 1-1.2-1.2Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="6.6" r="1.1" fill="currentColor"/><rect x="8" y="9.6" width="3.8" height="3.8" rx=".9" style="fill:var(--amber)"/><path d="M8.9 11.5l.9.9 1.3-1.5" style="stroke:var(--bg)" stroke-width="1.1"/><path d="M13.6 11.5H16" style="stroke:var(--amber)" stroke-width="2"/><rect x="8.3" y="15.3" width="3.2" height="3.2" rx=".8" stroke="currentColor" stroke-width="1.3"/><path d="M13.6 16.9H15.6" stroke="currentColor" stroke-width="2"/></g></svg>プレイヤーズ持ち物リスト</h1>
   <p>パートや予定に合わせて持ち物チェック</p>
 </div>
 
@@ -700,12 +700,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.41.0';
+  var APP_VERSION = '1.42.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-30';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.42.0': [
+      'アプリのアイコンを新しくしました。いろんな楽器と、持ち物チェックの荷札のデザインです。ホーム画面のアイコンは、追加し直すと新しくなります'
+    ],
     '1.41.0': [
       'アプリの名前を「プレイヤーズ持ち物リスト」に変えました。性別や編成（バンド・ソロ・セッション）を問わず使えるように。プレイヤーズセットリストの兄弟アプリです',
       'ホーム画面のアイコンを新しくしました（Mot-li）。ホーム画面での名前は「持ち物リスト」です。今のデータはそのまま使えます'
