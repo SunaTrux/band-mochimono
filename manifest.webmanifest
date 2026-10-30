@@ -1,0 +1,16 @@
+{
+  "name": "プレイヤーズ持ち物リスト",
+  "short_name": "持ち物リスト",
+  "description": "パートや予定に合わせて持ち物チェック。スタジオ・イベント・レコーディングの持ち物リスト",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14120F",
+  "theme_color": "#14120F",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

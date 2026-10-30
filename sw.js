@@ -1,8 +1,8 @@
-// バンドマン持ち物リスト Service Worker
+// プレイヤーズ持ち物リスト（旧：バンドマン持ち物リスト） Service Worker
 // 方針：ネット優先（最新版を取りに行く）→ 3秒以内に返事がない／オフラインなら保存済みの版で起動する。
 // アプリの更新は index.html の差し替えだけでOK。このファイルを変える必要はありません。
 const CACHE = 'band-mochimono-v1';
-const ASSETS = ['./', './index.html'];
+const ASSETS = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/apple-touch-icon.png'];
 const TIMEOUT_MS = 3000;
 
 self.addEventListener('install', (event) => {
