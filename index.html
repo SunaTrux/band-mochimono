@@ -706,12 +706,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.43.2';
+  var APP_VERSION = '1.43.3';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-31';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.43.3': [
+      '最初に入っているサンプルに「サンプルドラム個人練習」（スタジオ・ドラム）を追加し、サンプルイベントをギター＋ドラムにしました（新しく始めたとき・初期化したときに反映）'
+    ],
     '1.43.2': [
       'パート選択の「✎ 編集」からパート管理を開いたとき、「← パート選択に戻る」ボタンで元の画面に戻れるようにしました（選んでいたパートはそのまま）'
     ],
@@ -1318,10 +1321,11 @@
       roles: defaultRoles(),
       items: items,
       studios: [
-        {id:uid(), name:'サンプルスタジオ', roles:['ギター'], itemIds: computeAutoItemIds('studio', ['ギター'], items), updatedAt:Date.now()}
+        {id:uid(), name:'サンプルスタジオ', roles:['ギター'], itemIds: computeAutoItemIds('studio', ['ギター'], items), updatedAt:Date.now()},
+        {id:uid(), name:'サンプルドラム個人練習', roles:['ドラム'], itemIds: computeAutoItemIds('studio', ['ドラム'], items), updatedAt:Date.now()}
       ],
       lives: [
-        {id:uid(), name:'サンプルイベント', roles:['ドラム'], itemIds: computeAutoItemIds('live', ['ドラム'], items), updatedAt:Date.now()}
+        {id:uid(), name:'サンプルイベント', roles:['ギター','ドラム'], itemIds: computeAutoItemIds('live', ['ギター','ドラム'], items), updatedAt:Date.now()}
       ],
       recordings: [
         {id:uid(), name:'サンプルレコーディング', roles:['ボーカル'], itemIds: computeAutoItemIds('recording', ['ボーカル'], items), updatedAt:Date.now()}
