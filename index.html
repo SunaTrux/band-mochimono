@@ -706,12 +706,17 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.43.3';
+  var APP_VERSION = '1.44.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-31';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.44.0': [
+      '共通の持ち物の初期値に「汗拭き」を追加しました（今のデータには、画面上部の案内から取り込めます）',
+      '「作者に感想を送る」で、初期値のリクエスト（最初から入れてほしい持ち物・パートなど）も受け付けています',
+      '自分なりのパート・持ち物リストは、SNSで自由に公開・配布してOKです。使い方・ヘルプとテキスト出力に案内を入れました'
+    ],
     '1.43.3': [
       '最初に入っているサンプルに「サンプルドラム個人練習」（スタジオ・ドラム）を追加し、サンプルイベントをギター＋ドラムにしました（新しく始めたとき・初期化したときに反映）'
     ],
@@ -1199,7 +1204,7 @@
   // ユーザーが自分で直した持ち物は上書きしない：
   //   add …同じ名前の持ち物がもう無いときだけ追加（名前を変えて使っている場合も match で探して重複を防ぐ）
   //   set …初期値の名前のまま、その項目を自分で変えていない（when が真）ときだけ書き換える
-  var DEFAULTS_REV = 1;
+  var DEFAULTS_REV = 2;
   var DEFAULT_UPDATES = [
     {key:'add-towel', rev:1, type:'add', label:'「タオル」を追加',
       item:{name:'タオル', scope:['studio','live','recording'], roles:[]}},
@@ -1208,6 +1213,8 @@
     {key:'add-handoff', rev:1, type:'add', label:'「●●を●●へ」を追加（渡す：返すもの・あげるもの用）',
       item:{name:'●●を●●へ', scope:['studio','live','recording'], roles:[], bring:true, hand:true},
       match:function(it){ return /●●を●●へ/.test(it.name); }},
+    {key:'add-asefuki', rev:2, type:'add', label:'「汗拭き」を追加',
+      item:{name:'汗拭き', scope:['studio','live','recording'], roles:[]}},
     {key:'set-sashiire-hand', rev:1, type:'set', label:'「差し入れ・おみやげ」を「渡す」に',
       name:'差し入れ・おみやげ',
       when:function(it){ return it.hand!==true && it.bring!==false; },   // 持込のまま（借りる・渡すに自分で変えていない）
@@ -1309,6 +1316,7 @@
         {id:uid(), name:'筆記用具', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'ドリンク', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'タオル', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'汗拭き', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'差し入れ・おみやげ', scope:['studio','live','recording'], roles:[], bring:true, hand:true},
         {id:uid(), name:'●●を●●へ', scope:['studio','live','recording'], roles:[], bring:true, hand:true},
         {id:uid(), name:'ステージ衣装', scope:['live'], roles:[]},
@@ -1581,7 +1589,8 @@
     ['🔒 ロック', '本番前に、チェックや持ち物をうっかり変えないように固定できます。'],
     ['未チェック・種類の絞り込み', '「未チェック」で残りだけ、「持込・借りる・渡す」で種類ごとに表示。もう一度押すと解除。'],
     ['この内容で新規作成', '前の予定の持ち物をまるごとコピーして使い回せます。'],
-    ['CSV・バックアップ', '表計算アプリで編集したり、機種変更のときにデータを移したりできます。']
+    ['CSV・バックアップ', '表計算アプリで編集したり、機種変更のときにデータを移したりできます。'],
+    ['自分のリストはSNSで自由にシェアOK', '自分なりのパート・自分なりの持ち物リストは、テキスト出力（Markdown）などでSNSに投稿・配布して自由に使ってください。#プレイヤーズ持ち物リスト をつけてもらえると、みんなが現場にどんな物を持っていっているのか、見つけやすくなります。']
   ];
   var HELP_FAQ = [
     ['別の端末にデータを移したい', '設定 →「バックアップ・復元」で保存し、移したい端末で復元します。'],
@@ -2541,7 +2550,7 @@
       'データ初期化': (loadBeforeReset() ? '全データを削除・初期化前に戻す' : '全データを削除'),
       '使い方・ヘルプ': '特徴・使い方・便利な機能・ヘルプ',
       'このアプリを友達に勧める': 'URLと説明を送る',
-      '作者に感想を送る': '感想・使いにくいところ・不具合など',
+      '作者に感想を送る': '感想・初期値のリクエスト・不具合など',
       'アプリの更新': '最新版を確認 ・ v'+APP_VERSION
     };
     return map[key] || '';
@@ -3375,7 +3384,7 @@
     var md = buildEntryMarkdown(mode, entry);
     var h = '<div class="panel md-panel">';
     h += '<div class="panel-label">テキスト出力（Markdown）</div>';
-    h += '<p class="hint" style="margin-top:0;">LINEやメモにそのまま貼れる形です。絞り込んでから送れます。</p>';
+    h += '<p class="hint" style="margin-top:0;">LINEやメモにそのまま貼れる形です。絞り込んでから送れます。自分なりのリストは、SNSで公開・配布するのも自由です（#プレイヤーズ持ち物リスト）。</p>';
     h += '<div class="filter-row md-opts">';
     [['all','すべて'],['bring','持込'],['rental','借りる'],['hand','渡す']].forEach(function(k){
       h += '<span class="chip'+(mdOpt.kind===k[0]?' on':'')+'" data-md-kind="'+k[0]+'">'+k[1]+'</span>';
@@ -3715,6 +3724,7 @@
     html += '<div class="panel">';
     html += '<div class="panel-label">作者に感想を送る</div>';
     html += '<p class="hint" style="margin-top:0;">使ってみた感想や「ここが使いにくい」「動かない」などは、下のフォームから気軽にどうぞ。不具合の場合は、どの画面で何をしたかを書いてもらえると助かります。</p>';
+    html += '<p class="hint" style="margin-top:0;">「この持ち物を最初から入れてほしい」「このパートを候補に追加して」など、<b>初期値のリクエスト</b>も歓迎です。みんなが現場に持っていく物を、初期値に反映していきます。</p>';
     html += '<p class="hint" style="margin-top:0;">アプリのバージョンと使っている端末・ブラウザは、自動で一緒に送られます（'+esc('v'+APP_VERSION+' / '+feedbackDeviceInfo())+'）。名前や登録したデータは送られません。</p>';
     html += '<a class="btn block" href="'+esc(feedbackUrl())+'" id="feedback-link" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block;">感想を送る</a>';
     html += '</div>';
