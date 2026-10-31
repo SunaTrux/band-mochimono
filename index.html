@@ -332,6 +332,11 @@
   .update-notice ul{margin:0 0 8px;padding-left:18px;}
   .update-notice li{margin:2px 0;}
   .update-notice a{color:var(--cream-dim);font-size:12px;}
+  .defaults-desc{margin:0 0 8px;line-height:1.6;}
+  .defaults-row{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;}
+  .defaults-row input{width:18px;height:18px;margin:0;flex-shrink:0;accent-color:var(--amber);}
+  .defaults-btns{display:flex;gap:8px;margin-top:10px;}
+  .defaults-btns .btn{flex:1;font-size:13px;padding:8px 6px;}
   .update-close{position:absolute;top:6px;right:6px;width:32px;height:32px;border:none;background:none;color:var(--cream-dim);font-size:20px;cursor:pointer;}
   .panel.reg-panel{padding-top:8px;}
   .reg-title{font-size:15px;font-weight:700;color:var(--cream);letter-spacing:.02em;}
@@ -700,12 +705,16 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.42.1';
+  var APP_VERSION = '1.43.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-31';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.43.0': [
+      'アプリの更新で持ち物の初期値が増えた・変わったとき、「取り込みますか？」と聞くようにしました。取り込むものは選べて、自分で直した持ち物は上書きしません',
+      'バックアップから戻したあとも、そのデータに入っていない新しい初期値を取り込めます。設定 →「アプリの更新」の「新しい初期値を確認」からも、いつでも確認できます'
+    ],
     '1.42.1': [
       '持ち物マスタの初期値で「差し入れ・おみやげ」を「渡す」にしました（新しく始めたとき・初期化したときに反映。今のデータは持ち物マスタで切り替えできます）'
     ],
@@ -1175,6 +1184,73 @@
     return ['ギター','ベース','ドラム','ボーカル','キーボード'];
   }
 
+  // ---------- 初期値の更新（アプリの更新で持ち物マスタの初期値を変えたとき、既存のデータに取り込めるようにする） ----------
+  // rev：初期値の版。state.defaultsRev より新しいものを、取り込むか選んでもらう。初期値を変えたら1つ追加して DEFAULTS_REV を上げる。
+  // ユーザーが自分で直した持ち物は上書きしない：
+  //   add …同じ名前の持ち物がもう無いときだけ追加（名前を変えて使っている場合も match で探して重複を防ぐ）
+  //   set …初期値の名前のまま、その項目を自分で変えていない（when が真）ときだけ書き換える
+  var DEFAULTS_REV = 1;
+  var DEFAULT_UPDATES = [
+    {key:'add-towel', rev:1, type:'add', label:'「タオル」を追加',
+      item:{name:'タオル', scope:['studio','live','recording'], roles:[]}},
+    {key:'add-sashiire', rev:1, type:'add', label:'「差し入れ・おみやげ」を追加（渡す）',
+      item:{name:'差し入れ・おみやげ', scope:['studio','live','recording'], roles:[], bring:true, hand:true}},
+    {key:'add-handoff', rev:1, type:'add', label:'「●●を●●へ」を追加（渡す：返すもの・あげるもの用）',
+      item:{name:'●●を●●へ', scope:['studio','live','recording'], roles:[], bring:true, hand:true},
+      match:function(it){ return /●●を●●へ/.test(it.name); }},
+    {key:'set-sashiire-hand', rev:1, type:'set', label:'「差し入れ・おみやげ」を「渡す」に',
+      name:'差し入れ・おみやげ',
+      when:function(it){ return it.hand!==true && it.bring!==false; },   // 持込のまま（借りる・渡すに自分で変えていない）
+      apply:function(it){ it.bring = true; it.hand = true; }}
+  ];
+  function defaultUpdateTarget(u){
+    var list = masterItems();
+    if(u.type==='add'){
+      var f = u.match || function(it){ return it.name===u.item.name; };
+      return list.some(f) ? null : true;
+    }
+    var hit = list.filter(function(it){ return it.name===u.name; })[0];
+    return (hit && u.when(hit)) ? hit : null;
+  }
+  // 取り込める初期値の更新（all=true なら、前に見送ったものも含めて全部）
+  function pendingDefaultUpdates(all){
+    var from = all ? 0 : (state.defaultsRev||0);
+    var addNames = [];
+    return DEFAULT_UPDATES.filter(function(u){
+      if(u.rev <= from) return false;
+      // 追加と同時に入る持ち物への set は、追加側に含まれるので出さない
+      if(u.type==='set' && addNames.indexOf(u.name)!==-1) return false;
+      var ok = !!defaultUpdateTarget(u);
+      if(ok && u.type==='add') addNames.push(u.item.name);
+      return ok;
+    });
+  }
+  function applyDefaultUpdates(keys){
+    var n = 0;
+    DEFAULT_UPDATES.forEach(function(u){
+      if(keys.indexOf(u.key)===-1) return;
+      var t = defaultUpdateTarget(u);
+      if(!t) return;
+      if(u.type==='add'){
+        if(state.items.length >= LIMIT.items) return;
+        var ni = {id:uid(), name:u.item.name, scope:u.item.scope.slice(), roles:u.item.roles.slice()};
+        if(u.item.bring===false) ni.bring = false; else if(u.item.bring===true) ni.bring = true;
+        if(u.item.hand) ni.hand = true;
+        state.items.push(ni);
+      } else {
+        u.apply(t);
+      }
+      n++;
+    });
+    return n;
+  }
+  function finishDefaultUpdates(){
+    state.defaultsRev = DEFAULTS_REV;
+    view.defaultsShowAll = false;
+    view.defaultsPick = null;
+    saveState();
+  }
+
   function defaultState(){
     var items = [
         {id:uid(), name:'ギター本体', scope:['studio','live','recording'], roles:['ギター']},
@@ -1231,6 +1307,7 @@
     ];
     return {
       schemaVersion: SCHEMA_VERSION,
+      defaultsRev: DEFAULTS_REV,
       roles: defaultRoles(),
       items: items,
       studios: [
@@ -1340,6 +1417,7 @@
     out.defaultRoles = cleanTextList(p.defaultRoles);
     out.hiddenRoles = cleanTextList(p.hiddenRoles);
     if(typeof p.tagline==='string') out.tagline = cleanText(p.tagline, 60);
+    if(typeof p.defaultsRev==='number' && isFinite(p.defaultsRev) && p.defaultsRev>=0) out.defaultsRev = Math.min(9999, Math.floor(p.defaultsRev));
     var itemIds = Object.create(null);
     out.items = [];
     p.items.slice(0, MAX_LIST).forEach(function(it){
@@ -1496,6 +1574,7 @@
   ];
   var HELP_FAQ = [
     ['別の端末にデータを移したい', '設定 →「バックアップ・復元」で保存し、移したい端末で復元します。'],
+    ['アプリの更新で増えた持ち物を入れたい', '設定 →「アプリの更新」の「新しい初期値を確認」で、取り込むものを選べます。自分で直した持ち物は上書きしません。'],
     ['間違えて全データを初期化した', '設定 →「データ初期化」の「初期化前に戻す」で元に戻せます。'],
     ['持ち物を消さずに隠したい', 'チェックリストで左スワイプ。「非表示も表示」から戻せます。'],
     ['新しいバージョンにならない', '設定 →「アプリの更新」の「更新を確認」を押してください。'],
@@ -1618,6 +1697,22 @@
       h += '<ul>'+RELEASE_NOTES[v].map(function(n){ return '<li>'+esc(n)+'</li>'; }).join('')+'</ul>';
     });
     h += '<a href="https://github.com/sunatrux/band-mochimono/blob/main/CHANGELOG.md" target="_blank" rel="noopener">すべての更新履歴を見る</a>';
+    h += '</div>';
+    return h;
+  }
+
+  function renderDefaultsNotice(){
+    var list = pendingDefaultUpdates(!!view.defaultsShowAll);
+    if(!list.length) return '';
+    if(!view.defaultsPick){ view.defaultsPick = {}; list.forEach(function(u){ view.defaultsPick[u.key] = true; }); }
+    var h = '<div class="update-notice defaults-notice">';
+    h += '<button class="update-close" id="defaults-close-btn" aria-label="閉じる">×</button>';
+    h += '<div class="update-title">新しい持ち物の初期値があります</div>';
+    h += '<p class="defaults-desc">アプリの更新で、持ち物マスタの初期値が変わりました。取り込むものを選んでください。自分で名前や「持込／借りる／渡す」を変えた持ち物はそのままです。</p>';
+    list.forEach(function(u){
+      h += '<label class="defaults-row"><input type="checkbox" data-defaults-pick="'+esc(u.key)+'"'+(view.defaultsPick[u.key]!==false?' checked':'')+'> <span>'+esc(u.label)+'</span></label>';
+    });
+    h += '<div class="defaults-btns"><button class="btn ghost" id="defaults-skip-btn">今回は見送る</button><button class="btn" id="defaults-apply-btn">選んで取り込む</button></div>';
     h += '</div>';
     return h;
   }
@@ -2629,7 +2724,7 @@
       }
     }
     // バージョンのお知らせは画面の一番上（ヘッダーより上）に出す
-    var notice = renderNewVersionBar() + renderUpdateNotice();
+    var notice = renderNewVersionBar() + renderUpdateNotice() + renderDefaultsNotice();
     var topNotice = document.getElementById('top-notice');
     if(topNotice){ topNotice.innerHTML = notice; }
     document.body.classList.toggle('has-top-notice', !!notice);
@@ -2767,6 +2862,23 @@
     if(regToggle){ regToggle.onclick = function(){ var isOpen = regToggle.classList.contains('open'); view.regOpen[view.mode] = isOpen ? 'closed' : true; render(); }; }
     var updClose = document.getElementById('update-close-btn');
     if(updClose){ updClose.onclick = function(){ markVersionSeen(); render(); }; }
+    document.querySelectorAll('[data-defaults-pick]').forEach(function(cb){
+      cb.onchange = function(){ if(!view.defaultsPick) view.defaultsPick = {}; view.defaultsPick[cb.dataset.defaultsPick] = cb.checked; };
+    });
+    var defApply = document.getElementById('defaults-apply-btn');
+    if(defApply){ defApply.onclick = function(){
+      var pick = view.defaultsPick || {};
+      var keys = pendingDefaultUpdates(!!view.defaultsShowAll).map(function(u){ return u.key; }).filter(function(k){ return pick[k]!==false; });
+      var n = applyDefaultUpdates(keys);
+      finishDefaultUpdates();
+      render();
+      showToast(n ? ('初期値を'+n+'件取り込みました') : '取り込むものはありませんでした');
+    }; }
+    var defSkip = document.getElementById('defaults-skip-btn');
+    var defClose = document.getElementById('defaults-close-btn');
+    var skipDefaults = function(){ finishDefaultUpdates(); render(); showToast('取り込みませんでした。設定 →「アプリの更新」の「新しい初期値を確認」からあとで取り込めます'); };
+    if(defSkip) defSkip.onclick = skipDefaults;
+    if(defClose) defClose.onclick = skipDefaults;
     bindEvents();
   }
 
@@ -3611,6 +3723,8 @@
       if(uc.state==='error') html += '<p class="update-msg ng">確認できませんでした。ネットにつながっているか確かめて、もう一度お試しください。</p>';
       if(uc.state==='unsupported') html += '<p class="update-msg">この画面（プレビューなど）では確認できません。公開版のアプリで確認してください。</p>';
     }
+    html += '<button class="btn ghost block" id="defaults-check-btn" style="margin-top:12px;">新しい初期値を確認</button>';
+    html += '<p class="hint" style="margin:6px 0 0;">アプリの更新で増えた・変わった持ち物の初期値を、今のデータに取り込めます（自分で直した持ち物はそのまま）。</p>';
     html += '</div>';
 
     html += '<div style="text-align:center;color:var(--cream-dim);font-size:10.5px;letter-spacing:.05em;padding:6px 0 18px;">Powered by SunaTrux</div>';
@@ -4864,6 +4978,14 @@
         render();
       };
     }
+
+    var defCheck = document.getElementById('defaults-check-btn');
+    if(defCheck){ defCheck.onclick = function(){
+      if(!pendingDefaultUpdates(true).length){ showToast('取り込める新しい初期値はありません'); return; }
+      view.defaultsShowAll = true; view.defaultsPick = null;
+      render();
+      window.scrollTo(0,0);
+    }; }
 
     var resetConfirmBtn = document.getElementById('reset-confirm-btn');
     if(resetConfirmBtn){
