@@ -337,6 +337,7 @@
   .defaults-row input{width:18px;height:18px;margin:0;flex-shrink:0;accent-color:var(--amber);}
   .defaults-btns{display:flex;gap:8px;margin-top:10px;}
   .defaults-btns .btn{flex:1;font-size:13px;padding:8px 6px;}
+  .role-return-btn{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;padding:6px 12px;margin:0 0 12px;color:var(--cream);border-color:var(--amber);}
   .update-close{position:absolute;top:6px;right:6px;width:32px;height:32px;border:none;background:none;color:var(--cream-dim);font-size:20px;cursor:pointer;}
   .panel.reg-panel{padding-top:8px;}
   .reg-title{font-size:15px;font-weight:700;color:var(--cream);letter-spacing:.02em;}
@@ -705,12 +706,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.43.1';
+  var APP_VERSION = '1.43.2';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-31';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.43.2': [
+      'パート選択の「✎ 編集」からパート管理を開いたとき、「← パート選択に戻る」ボタンで元の画面に戻れるようにしました（選んでいたパートはそのまま）'
+    ],
     '1.43.1': [
       '予定の画面の上のカードで、日付が未設定のときは「日付未設定」の行を出さないようにしました'
     ],
@@ -3582,6 +3586,9 @@
     html += '<div class="set-group">パート</div>';
     html += '<div class="panel">';
     html += '<div class="panel-label">パートを管理</div>';
+    if(view.roleReturn && MODES.indexOf(view.roleReturn.mode)!==-1){
+      html += '<button class="btn ghost role-return-btn" id="role-return-btn">← '+esc(modeLabel(view.roleReturn.mode))+'のパート選択に戻る</button>';
+    }
     if(state.roles.length>0){
       var defs = state.defaultRoles || [];
       html += '<label class="small">いつものパート（予定の登録時に最初から選んでおく・複数可）</label>';
@@ -3752,8 +3759,23 @@
         render();
       };
     }
+    var roleReturnBtn = document.getElementById('role-return-btn');
+    if(roleReturnBtn){
+      roleReturnBtn.onclick = function(){
+        var m = view.roleReturn.mode;
+        view.roleReturn = null;
+        view.mode = m;
+        view.selectedByMode[m] = null;
+        // 選んでいたパートはそのまま（削除・非表示にしたパートだけ外す）
+        view.newEntryRoles = view.newEntryRoles.filter(function(r){ return state.roles.indexOf(r)!==-1 && !isRoleHidden(r); });
+        render();
+        window.scrollTo(0, 0);
+      };
+    }
+
     document.querySelectorAll('.nav button').forEach(function(b){
       b.onclick = function(){
+        view.roleReturn = null;
         view.mode = b.dataset.mode;
         view.infoOpen = false;
         view.editMode = false;
@@ -3830,6 +3852,7 @@
     var roleEditChip = document.getElementById('role-edit-chip');
     if(roleEditChip){
       roleEditChip.onclick = function(){
+        view.roleReturn = {mode: view.mode};   // パート管理から「戻る」で予定の登録（パート選択）に戻れるように
         view.mode = 'items';
         view.infoOpen = false;
         view.editMode = false;
