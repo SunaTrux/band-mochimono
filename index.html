@@ -700,12 +700,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.42.0';
+  var APP_VERSION = '1.42.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
-  var APP_RELEASE_DATE = '2026-10-30';
+  var APP_RELEASE_DATE = '2026-10-31';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.42.1': [
+      '持ち物マスタの初期値で「差し入れ・おみやげ」を「渡す」にしました（新しく始めたとき・初期化したときに反映。今のデータは持ち物マスタで切り替えできます）'
+    ],
     '1.42.0': [
       'アプリのアイコンを新しくしました。いろんな楽器と、持ち物チェックの荷札のデザインです。ホーム画面のアイコンは、追加し直すと新しくなります'
     ],
@@ -1220,7 +1223,7 @@
         {id:uid(), name:'筆記用具', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'ドリンク', scope:['studio','live','recording'], roles:[]},
         {id:uid(), name:'タオル', scope:['studio','live','recording'], roles:[]},
-        {id:uid(), name:'差し入れ・おみやげ', scope:['studio','live','recording'], roles:[]},
+        {id:uid(), name:'差し入れ・おみやげ', scope:['studio','live','recording'], roles:[], bring:true, hand:true},
         {id:uid(), name:'●●を●●へ', scope:['studio','live','recording'], roles:[], bring:true, hand:true},
         {id:uid(), name:'ステージ衣装', scope:['live'], roles:[]},
         {id:uid(), name:'物販', scope:['live'], roles:[]},
