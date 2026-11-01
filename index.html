@@ -338,6 +338,17 @@
   .defaults-btns{display:flex;gap:8px;margin-top:10px;}
   .defaults-btns .btn{flex:1;font-size:13px;padding:8px 6px;}
   .role-return-btn{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;padding:6px 12px;margin:0 0 12px;color:var(--cream);border-color:var(--amber);}
+  .install-bar{display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:6px 6px 6px 8px;margin-bottom:12px;}
+  .install-bar-main{flex:1;display:flex;align-items:center;gap:10px;background:none;border:none;padding:2px;color:var(--cream);font-family:inherit;font-size:14px;font-weight:700;text-align:left;cursor:pointer;}
+  .install-bar-ic{width:36px;height:36px;border-radius:8px;flex-shrink:0;}
+  .install-bar-close{width:36px;height:36px;border:none;background:none;color:var(--cream-dim);font-size:22px;cursor:pointer;flex-shrink:0;}
+  .install-bar-wrap{margin-bottom:12px;}
+  .install-guide{background:var(--panel);border:1px solid var(--amber);border-radius:12px;padding:12px 14px;margin-top:10px;font-size:13px;}
+  .install-bar-wrap .install-guide{margin-top:0;}
+  .install-guide-t{font-weight:700;color:var(--amber);margin-bottom:6px;}
+  .install-guide ol{margin:0 0 8px;padding-left:20px;line-height:1.7;}
+  .install-guide-note{margin:0 0 10px;color:var(--cream-dim);font-size:12px;line-height:1.6;}
+  .install-guide .btn{font-size:13px;padding:6px 14px;}
   .update-close{position:absolute;top:6px;right:6px;width:32px;height:32px;border:none;background:none;color:var(--cream-dim);font-size:20px;cursor:pointer;}
   .panel.reg-panel{padding-top:8px;}
   .reg-title{font-size:15px;font-weight:700;color:var(--cream);letter-spacing:.02em;}
@@ -706,12 +717,16 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.44.1';
+  var APP_VERSION = '1.45.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-10-31';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.45.0': [
+      'ブラウザで開いたとき、画面の上に「アプリとしてホーム画面に追加」の案内を出すようにしました（×で閉じると2週間は出ません）',
+      '設定の「その他」に「ホーム画面に追加」を追加。Androidなどはそのまま追加画面が開き、iPhoneは手順を表示します'
+    ],
     '1.44.1': [
       '「作者に感想を送る」の初期値リクエストの案内文を調整しました'
     ],
@@ -1568,6 +1583,89 @@
   if(IS_HOSTED && 'serviceWorker' in navigator){
     try{ navigator.serviceWorker.register('sw.js').catch(function(){}); }catch(e){}
   }
+
+  // ---------- ホーム画面に追加（ブラウザで開いたときの案内バーと、設定のボタン） ----------
+  // Android・PCのChrome系：ブラウザの「インストール」画面をそのまま出す（beforeinstallprompt）
+  // iPhone・iPad：ブラウザからは追加できないので、共有ボタンからの手順を案内する
+  var INSTALL_DISMISS_KEY = 'gp-install-dismiss-v1';
+  var INSTALL_TEST = /[?&]installtest=1/.test(location.search);   // 確認用
+  var deferredInstall = null;
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferredInstall = e;
+    if(typeof render==='function' && state) render();
+  });
+  window.addEventListener('appinstalled', function(){
+    deferredInstall = null; view.installGuide = null;
+    if(typeof render==='function') render();
+    showToast('ホーム画面に追加しました');
+  });
+  function isStandalone(){
+    try{ if(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true; }catch(e){}
+    return navigator.standalone===true;
+  }
+  function installPlatform(){
+    var ua = navigator.userAgent || '';
+    if(/Line\/|FBAN|FBAV|Instagram|Twitter|MicroMessenger/i.test(ua)) return 'inapp';
+    if(/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'ios';
+    if(/Android/.test(ua)) return 'android';
+    return 'pc';
+  }
+  function installBarVisible(){
+    if(!(IS_HOSTED || INSTALL_TEST) || isStandalone()) return false;
+    try{ if(window.top!==window.self) return false; }catch(e){ return false; }
+    var p = installPlatform();
+    if(p==='pc' && !deferredInstall) return false;   // PCは、ブラウザがインストールに対応しているときだけ
+    var t = 0;
+    try{ t = parseInt(localStorage.getItem(INSTALL_DISMISS_KEY)||'0', 10) || 0; }catch(e){}
+    return !t || (Date.now() - t) > 14*24*3600*1000;   // ×で閉じたら2週間は出さない
+  }
+  function dismissInstallBar(){
+    try{ localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); }catch(e){}
+  }
+  function startInstall(where){
+    if(deferredInstall){
+      var ev = deferredInstall;
+      ev.prompt();
+      if(ev.userChoice && ev.userChoice.then){
+        ev.userChoice.then(function(r){ if(r && r.outcome==='accepted'){ deferredInstall = null; } render(); });
+      }
+      return;
+    }
+    view.installGuide = (view.installGuide===where) ? null : where;
+    render();
+  }
+  function renderInstallGuide(){
+    var p = installPlatform();
+    var steps;
+    if(p==='inapp'){
+      steps = ['今はアプリの中のブラウザ（LINEなど）で開いています。ホーム画面に追加するには、SafariやChromeで開き直してください', '右上（または右下）のメニューから「ブラウザで開く」「Safariで開く」を選びます', '開いたら、もう一度この案内のボタンを押してください'];
+    } else if(p==='ios'){
+      steps = ['画面下（または上）の共有ボタン <b>□↑</b> を押します（見当たらないときは「…」から）', 'メニューを下にスクロールして「<b>ホーム画面に追加</b>」を選びます', '右上の「追加」を押すと、ホーム画面に「持ち物リスト」のアイコンができます'];
+    } else if(p==='android'){
+      steps = ['ブラウザ右上のメニュー <b>⋮</b> を押します', '「<b>ホーム画面に追加</b>」または「<b>アプリをインストール</b>」を選びます', '「追加」「インストール」を押すと、ホーム画面にアイコンができます'];
+    } else {
+      steps = ['Chrome・Edge：アドレスバーの右端のインストールのアイコン、またはメニューの「アプリをインストール」', 'Mac の Safari：メニューの「ファイル」→「Dockに追加」', 'スマホのホーム画面に置きたいときは、スマホでこのページを開いてください'];
+    }
+    var h = '<div class="install-guide">';
+    h += '<div class="install-guide-t">ホーム画面に追加する手順</div><ol>';
+    steps.forEach(function(t){ h += '<li>'+t+'</li>'; });   // 固定の文だけ（入力値は入らない）
+    h += '</ol><p class="install-guide-note">追加すると、アプリのように全画面で開けて、電波の弱い会場でも使えます。</p>';
+    if(p==='ios' || p==='inapp'){
+      h += '<p class="install-guide-note" style="color:var(--amber);">⚠ iPhone・iPadでは、ブラウザで使っていたデータはホーム画面のアプリに引き継がれません。登録済みのデータがあるときは、先に 設定 →「バックアップ・復元」でバックアップし、ホーム画面のアプリで「復元」してください。</p>';
+    }
+    h += '<button class="btn ghost" id="install-guide-close">閉じる</button></div>';
+    return h;
+  }
+  function renderInstallBar(){
+    if(view.installGuide==='bar') return '<div class="install-bar-wrap">'+renderInstallGuide()+'</div>';
+    if(!installBarVisible()) return '';
+    var h = '<div class="install-bar">';
+    h += '<button class="install-bar-main" id="install-bar-btn"><img src="icons/icon-192.png?v=2" alt="" class="install-bar-ic"><span>アプリとしてホーム画面に追加</span></button>';
+    h += '<button class="install-bar-close" id="install-bar-close" aria-label="閉じる">×</button>';
+    h += '</div>';
+    return h;
+  }
   function cmpVersion(a, b){
     var x = String(a).split('.'), y = String(b).split('.');
     for(var i=0;i<3;i++){ var d = (parseInt(x[i],10)||0) - (parseInt(y[i],10)||0); if(d) return d; }
@@ -1596,6 +1694,7 @@
     ['自分のリストはSNSで自由にシェアOK', '自分なりのパート・自分なりの持ち物リストは、テキスト出力（Markdown）などでSNSに投稿・配布して自由に使ってください。#プレイヤーズ持ち物リスト をつけてもらえると、みんなが現場にどんな物を持っていっているのか、見つけやすくなります。']
   ];
   var HELP_FAQ = [
+    ['アプリのように使いたい', '設定 →「ホーム画面に追加」から。iPhoneは共有ボタン →「ホーム画面に追加」です（iPhoneはデータが引き継がれないので、先にバックアップ→アプリで復元）。'],
     ['別の端末にデータを移したい', '設定 →「バックアップ・復元」で保存し、移したい端末で復元します。'],
     ['アプリの更新で増えた持ち物を入れたい', '設定 →「アプリの更新」の「新しい初期値を確認」で、取り込むものを選べます。自分で直した持ち物は上書きしません。'],
     ['間違えて全データを初期化した', '設定 →「データ初期化」の「初期化前に戻す」で元に戻せます。'],
@@ -2551,6 +2650,7 @@
       'パートを管理': n(state.roles)+'件・いつものパート・非表示',
       'バックアップ・復元': '全データを1つのファイルに保存・復元',
       'データ初期化': (loadBeforeReset() ? '全データを削除・初期化前に戻す' : '全データを削除'),
+      'ホーム画面に追加': isStandalone() ? '追加済み' : 'アプリのように使う',
       '使い方・ヘルプ': '特徴・使い方・便利な機能・ヘルプ',
       'このアプリを友達に勧める': 'URLと説明を送る',
       '作者に感想を送る': '感想・初期値のリクエスト・不具合など',
@@ -2747,7 +2847,7 @@
       }
     }
     // バージョンのお知らせは画面の一番上（ヘッダーより上）に出す
-    var notice = renderNewVersionBar() + renderUpdateNotice() + renderDefaultsNotice();
+    var notice = renderInstallBar() + renderNewVersionBar() + renderUpdateNotice() + renderDefaultsNotice();
     var topNotice = document.getElementById('top-notice');
     if(topNotice){ topNotice.innerHTML = notice; }
     document.body.classList.toggle('has-top-notice', !!notice);
@@ -2883,6 +2983,11 @@
     }
     var regToggle = document.getElementById('reg-toggle-btn');
     if(regToggle){ regToggle.onclick = function(){ var isOpen = regToggle.classList.contains('open'); view.regOpen[view.mode] = isOpen ? 'closed' : true; render(); }; }
+    var instBtn = document.getElementById('install-bar-btn');
+    if(instBtn){ instBtn.onclick = function(){ startInstall('bar'); }; }
+    var instClose = document.getElementById('install-bar-close');
+    if(instClose){ instClose.onclick = function(){ dismissInstallBar(); render(); showToast('設定 →「ホーム画面に追加」からいつでも追加できます'); }; }
+    document.querySelectorAll('#install-guide-close').forEach(function(b){ b.onclick = function(){ view.installGuide = null; render(); }; });
     var updClose = document.getElementById('update-close-btn');
     if(updClose){ updClose.onclick = function(){ markVersionSeen(); render(); }; }
     document.querySelectorAll('[data-defaults-pick]').forEach(function(cb){
@@ -3712,6 +3817,16 @@
     html += '</div>';
 
     html += '<div class="set-group">その他</div>';
+    html += '<div class="panel">';
+    html += '<div class="panel-label">ホーム画面に追加</div>';
+    if(isStandalone()){
+      html += '<p class="update-msg ok" style="margin:0;">✓ ホーム画面のアプリで開いています</p>';
+    } else {
+      html += '<p class="hint" style="margin-top:0;line-height:1.7;">ホーム画面に追加すると、アプリのように全画面で開けて、電波の弱い会場でも使えます。</p>';
+      html += '<button class="btn block" id="install-set-btn">ホーム画面に追加</button>';
+      if(view.installGuide==='settings') html += renderInstallGuide();
+    }
+    html += '</div>';
     html += renderHelpPanel();
     html += '<div class="panel">';
     html += '<div class="panel-label">このアプリを友達に勧める</div>';
@@ -5025,6 +5140,9 @@
       render();
       window.scrollTo(0,0);
     }; }
+
+    var instSet = document.getElementById('install-set-btn');
+    if(instSet){ instSet.onclick = function(){ startInstall('settings'); }; }
 
     var resetConfirmBtn = document.getElementById('reset-confirm-btn');
     if(resetConfirmBtn){
