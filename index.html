@@ -588,6 +588,9 @@
   .mini-meter{height:5px;border-radius:999px;background:var(--field-bg);border:1px solid var(--seam);overflow:hidden;margin-top:6px;width:120px;max-width:100%;}
   .mini-meter i{display:block;height:100%;border-radius:999px;}
   .swipe-wrap.info-wrap{border-radius:12px;}
+  /* 持ち物リストをスクロールしても、予定のカードは上に固定（上の隙間は背景色で埋めて、下の行が透けないように） */
+  body.is-detail .swipe-wrap.info-wrap{position:sticky;top:6px;z-index:6;box-shadow:0 -6px 0 0 var(--bg), 0 3px 10px rgba(0,0,0,.10);}
+  body.is-detail .swipe-wrap.meter-wrap{top:calc(var(--info-h, 0px) + 12px);box-shadow:0 -6px 0 0 var(--bg), 0 3px 10px rgba(0,0,0,.10);}
   .swipe-wrap.info-wrap > .info-swipe{background:transparent;}
   .info-card.info-pinned{border-color:var(--amber);}
   .info-card{display:flex;align-items:flex-start;gap:10px;background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:14px 14px 14px 16px;}
@@ -717,12 +720,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.45.0';
+  var APP_VERSION = '1.45.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
-  var APP_RELEASE_DATE = '2026-10-31';
+  var APP_RELEASE_DATE = '2026-11-03';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.45.1': [
+      '持ち物リストをスクロールしても、予定のカード（名前・パート・日付）が画面の上に固定されるようにしました'
+    ],
     '1.45.0': [
       'ブラウザで開いたとき、画面の上に「アプリとしてホーム画面に追加」の案内を出すようにしました（×で閉じると2週間は出ません）',
       '設定の「その他」に「ホーム画面に追加」を追加。Androidなどはそのまま追加画面が開き、iPhoneは手順を表示します'
@@ -2856,6 +2862,13 @@
       try{ history.scrollRestoration = 'manual'; }catch(e){}
       window.scrollTo(0,0);
       window.addEventListener('load', function(){ setTimeout(function(){ window.scrollTo(0,0); }, 0); });
+    }
+    // 予定のカードが上に固定されるので、進捗カードはその下に並べて固定する
+    var infoWrapEl = document.querySelector('body.is-detail #app .info-wrap');
+    if(infoWrapEl){
+      var setInfoH = function(){ document.documentElement.style.setProperty('--info-h', infoWrapEl.offsetHeight+'px'); };
+      setInfoH();
+      if(window.ResizeObserver){ if(window.__infoRO) window.__infoRO.disconnect(); window.__infoRO = new ResizeObserver(setInfoH); window.__infoRO.observe(infoWrapEl); }
     }
     // 進捗カードは左右どちらかにスワイプで非表示（直後は「元に戻す」、設定でも切り替え可）
     var meterEl = document.querySelector('#app .meter');
