@@ -338,11 +338,16 @@
   .defaults-btns{display:flex;gap:8px;margin-top:10px;}
   .defaults-btns .btn{flex:1;font-size:13px;padding:8px 6px;}
   .role-return-btn{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;padding:6px 12px;margin:0 0 12px;color:var(--cream);border-color:var(--amber);}
-  .install-bar{display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:6px 6px 6px 8px;margin-bottom:12px;}
+  #install-host{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:0 max(12px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));pointer-events:none;}
+  #install-host:empty{display:none;}
+  body.has-install-bar .toast{bottom:calc(90px + env(safe-area-inset-bottom, 0px));}
+  #install-host > *{max-width:448px;margin:0 auto;pointer-events:auto;}
+  body.has-install-bar{padding-bottom:84px;}
+  .install-bar{display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--amber);border-radius:14px;padding:6px 6px 6px 8px;box-shadow:0 6px 20px rgba(0,0,0,.22);}
   .install-bar-main{flex:1;display:flex;align-items:center;gap:10px;background:none;border:none;padding:2px;color:var(--cream);font-family:inherit;font-size:14px;font-weight:700;text-align:left;cursor:pointer;}
   .install-bar-ic{width:36px;height:36px;border-radius:8px;flex-shrink:0;}
   .install-bar-close{width:36px;height:36px;border:none;background:none;color:var(--cream-dim);font-size:22px;cursor:pointer;flex-shrink:0;}
-  .install-bar-wrap{margin-bottom:12px;}
+  .install-bar-wrap{max-height:70vh;overflow:auto;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.25);}
   .install-guide{background:var(--panel);border:1px solid var(--amber);border-radius:12px;padding:12px 14px;margin-top:10px;font-size:13px;}
   .install-bar-wrap .install-guide{margin-top:0;}
   .install-guide-t{font-weight:700;color:var(--amber);margin-bottom:6px;}
@@ -378,6 +383,15 @@
   .set-menu-item .t{display:block;font-size:14px;font-weight:700;letter-spacing:.02em;}
   .set-menu-item .s{display:block;font-size:11px;color:var(--cream-dim);margin-top:2px;line-height:1.4;}
   @media (hover:hover){ .set-menu-item:hover:not(.on){background:var(--panel-raised);} }
+  /* PC：マウスを乗せたときの反応と、キーボード（Tab）で移動したときの枠（アプリ定型13） */
+  @media (hover:hover) and (pointer:fine){
+    .btn:hover:not(:disabled), .chip:hover, .nav button:hover, .backbtn:hover, .reg-toggle:hover, .info-toggle:hover, .group-toggle:hover, .acc-head:hover, .update-btn:hover:not(:disabled), .install-bar-main:hover{filter:brightness(1.06);}
+    .btn:hover:not(:disabled), .chip:hover, .nav button:hover:not(.active), .backbtn:hover{box-shadow:0 0 0 1px var(--amber) inset;}
+    .del-x:hover, .update-close:hover, .install-bar-close:hover{color:var(--red);}
+    button, .chip, [role="button"], label{cursor:pointer;}
+  }
+  :focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+  input:focus-visible, textarea:focus-visible, select:focus-visible{outline-offset:0;}
   .set-menu-item.on{background:var(--amber);color:#1c1b19;}
   .set-menu-item.on .s{color:rgba(28,27,25,.72);}
   .set-pane{min-width:0;}
@@ -707,6 +721,7 @@
 <body>
 
 <div id="top-notice"></div>
+<div id="install-host"></div>
 <div class="header">
   <h1><svg class="title-ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(9 12 12.5)"><path d="M12 5.4C13.2 2.6 16 1.6 19 1.8" style="stroke:var(--cream-dim)" stroke-width="1.3"/><path d="M5.6 7.2L8.4 4H15.6L18.4 7.2V20.4a1.2 1.2 0 0 1-1.2 1.2H6.8a1.2 1.2 0 0 1-1.2-1.2Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="6.6" r="1.1" fill="currentColor"/><rect x="8" y="9.6" width="3.8" height="3.8" rx=".9" style="fill:var(--amber)"/><path d="M8.9 11.5l.9.9 1.3-1.5" style="stroke:var(--bg)" stroke-width="1.1"/><path d="M13.6 11.5H16" style="stroke:var(--amber)" stroke-width="2"/><rect x="8.3" y="15.3" width="3.2" height="3.2" rx=".8" stroke="currentColor" stroke-width="1.3"/><path d="M13.6 16.9H15.6" stroke="currentColor" stroke-width="2"/></g></svg>プレイヤーズ持ち物リスト</h1>
   <p>パートや予定に合わせて持ち物チェック</p>
@@ -726,12 +741,18 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.46.0';
+  var APP_VERSION = '1.47.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-11-04';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.47.0': [
+      'バックアップからの復元・CSVの一括取り込みも、直後なら「↩ 復元前に戻す」「↩ CSVの取り込み前に戻す」で元に戻せるようにしました',
+      '全データの初期化の確認に「先にバックアップを保存する」ボタンを追加しました',
+      'ホーム画面に追加の案内は、画面の下に出すように。2回目以降に開いたときだけ・お知らせと重ならないときだけ出し、×で閉じると30日は出ません',
+      'PCで、ボタンにマウスを乗せたときの反応と、Tabキーで移動したときの枠を表示。Escキーで開いている画面や確認を閉じられます'
+    ],
     '1.46.0': [
       'PCで開いたとき、設定の「その他」に「スマホで開く」を追加。QRコードをスマホのカメラで読み取ると、このアプリがスマホで開きます'
     ],
@@ -742,7 +763,7 @@
       '持ち物リストをスクロールしても、予定のカード（名前・パート・日付）が画面の上に固定されるようにしました'
     ],
     '1.45.0': [
-      'ブラウザで開いたとき、画面の上に「アプリとしてホーム画面に追加」の案内を出すようにしました（×で閉じると2週間は出ません）',
+      'ブラウザで開いたとき、「アプリとしてホーム画面に追加」の案内を出すようにしました',
       '設定の「その他」に「ホーム画面に追加」を追加。Androidなどはそのまま追加画面が開き、iPhoneは手順を表示します'
     ],
     '1.44.1': [
@@ -1557,17 +1578,46 @@
     }
   }
 
-  // 「全データを初期化」の直前のデータを1つだけ取っておく（「初期化前に戻す」用）
+  // 「全データの初期化」「バックアップから復元」「CSVの一括取り込み」の直前のデータを1つだけ取っておく（「○○前に戻す」用）
+  // kind：'reset'（初期化）／'restore'（復元）／'csv'（CSV取り込み）。新しい操作をすると、前の分は上書き（戻せるのは直前の1回だけ）
   var BEFORE_RESET_KEY = STORAGE_KEY + '-before-reset';
-  function saveBeforeReset(){
-    try{ localStorage.setItem(BEFORE_RESET_KEY, JSON.stringify({at: Date.now(), data: state})); }catch(e){}
+  var UNDO_LABELS = {
+    reset:   {btn:'初期化前に戻す', did:'に初期化', what:'初期化する前のデータ', after:'初期化したあと'},
+    restore: {btn:'復元前に戻す', did:'に復元', what:'バックアップから復元する前のデータ', after:'復元したあと'},
+    csv:     {btn:'CSVの取り込み前に戻す', did:'に取り込み', what:'CSVを取り込む前のデータ', after:'取り込んだあと'}
+  };
+  function saveBeforeReset(kind){
+    try{ localStorage.setItem(BEFORE_RESET_KEY, JSON.stringify({at: Date.now(), kind: (UNDO_LABELS[kind] ? kind : 'reset'), data: state})); }catch(e){}
   }
-  function loadBeforeReset(){
+  function loadBeforeReset(kind){
     try{
       var o = JSON.parse(localStorage.getItem(BEFORE_RESET_KEY) || 'null');
-      if(o && o.data && typeof o.at==='number') return o;
+      if(o && o.data && typeof o.at==='number'){
+        if(!UNDO_LABELS[o.kind]) o.kind = 'reset';
+        if(!kind || o.kind===kind) return o;
+      }
     }catch(e){}
     return null;
+  }
+  // 各パネルに出す「↩ ○○前に戻す」ボタン（と確認）
+  function renderUndoBlock(kind){
+    var before = loadBeforeReset(kind);
+    if(!before) return '';
+    var L = UNDO_LABELS[kind];
+    var bd = new Date(before.at);
+    var bdStr = isNaN(bd.getTime()) ? '' : (bd.getFullYear()+'/'+(bd.getMonth()+1)+'/'+bd.getDate()+' '+('0'+bd.getHours()).slice(-2)+':'+('0'+bd.getMinutes()).slice(-2));
+    var h = '';
+    if(view.confirmUndoReset){
+      h += '<p class="hint" style="color:var(--amber);margin-top:12px;">'+L.what+'（'+esc(bdStr)+L.did+'）に戻しますか？'+L.after+'に登録・チェックした内容は消えます。戻したあとは取り消せません。</p>';
+      h += '<div class="row-between" style="margin-bottom:0;">';
+      h += '<button class="btn ghost" id="undo-reset-cancel" style="flex:1;margin-right:8px;">キャンセル</button>';
+      h += '<button class="btn" id="undo-reset-confirm" style="flex:1;">元に戻す</button>';
+      h += '</div>';
+    } else {
+      h += '<button class="btn ghost block" id="undo-reset-btn" style="margin-top:10px;">↩ '+L.btn+'（'+esc(bdStr)+L.did+'）</button>';
+      h += '<p class="hint" style="margin:4px 0 0;font-size:11.5px;">戻せるのは直前の1回だけです。</p>';
+    }
+    return h;
   }
 
   var lastSaveErrorAt = 0;
@@ -1606,6 +1656,9 @@
   // Android・PCのChrome系：ブラウザの「インストール」画面をそのまま出す（beforeinstallprompt）
   // iPhone・iPad：ブラウザからは追加できないので、共有ボタンからの手順を案内する
   var INSTALL_DISMISS_KEY = 'gp-install-dismiss-v1';
+  var LAUNCH_COUNT_KEY = 'gp-launch-count-v1';
+  var launchCount = 0;   // 何回目の起動か（案内バーは2回目以降に出す。最初は中身を見てもらう）
+  try{ launchCount = (parseInt(localStorage.getItem(LAUNCH_COUNT_KEY)||'0', 10) || 0) + 1; localStorage.setItem(LAUNCH_COUNT_KEY, String(Math.min(launchCount, 9999))); }catch(e){}
   var INSTALL_TEST = /[?&]installtest=1/.test(location.search);   // 確認用
   var deferredInstall = null;
   window.addEventListener('beforeinstallprompt', function(e){
@@ -1632,11 +1685,13 @@
   function installBarVisible(){
     if(!(IS_HOSTED || INSTALL_TEST) || isStandalone()) return false;
     try{ if(window.top!==window.self) return false; }catch(e){ return false; }
-    var p = installPlatform();
-    if(p==='pc' && !deferredInstall) return false;   // PCは、ブラウザがインストールに対応しているときだけ
+    if(installPlatform()==='pc' || isPCScreen()) return false;   // PCでは出さない（設定から追加はできる）
+    if(launchCount < 2 && !INSTALL_TEST) return false;          // 初回は出さない
+    if(seenVersion!==APP_VERSION) return false;                  // アップデートのお知らせと同時には出さない
+    if(pendingDefaultUpdates(!!view.defaultsShowAll).length) return false;   // 初期値の取り込み案内とも重ねない
     var t = 0;
     try{ t = parseInt(localStorage.getItem(INSTALL_DISMISS_KEY)||'0', 10) || 0; }catch(e){}
-    return !t || (Date.now() - t) > 14*24*3600*1000;   // ×で閉じたら2週間は出さない
+    return !t || (Date.now() - t) > 30*24*3600*1000;   // ×で閉じたら30日は出さない
   }
   function dismissInstallBar(){
     try{ localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); }catch(e){}
@@ -1736,6 +1791,7 @@
     ['別の端末にデータを移したい', '設定 →「バックアップ・復元」で保存し、移したい端末で復元します。'],
     ['アプリの更新で増えた持ち物を入れたい', '設定 →「アプリの更新」の「新しい初期値を確認」で、取り込むものを選べます。自分で直した持ち物は上書きしません。'],
     ['間違えて全データを初期化した', '設定 →「データ初期化」の「初期化前に戻す」で元に戻せます。'],
+    ['間違えて復元・CSV取り込みをした', '直後なら「バックアップ・復元」の「復元前に戻す」、「持ち物の一括管理」の「CSVの取り込み前に戻す」で元に戻せます（直前の1回だけ）。'],
     ['持ち物を消さずに隠したい', 'チェックリストで左スワイプ。「非表示も表示」から戻せます。'],
     ['新しいバージョンにならない', '設定 →「アプリの更新」の「更新を確認」を押してください。'],
     ['困ったとき・要望があるとき', '設定 →「作者に感想を送る」から気軽にどうぞ。']
@@ -2687,7 +2743,7 @@
       '持ち物の一括管理': 'CSVでまとめて書き出し・取り込み',
       'パートを管理': n(state.roles)+'件・いつものパート・非表示',
       'バックアップ・復元': '全データを1つのファイルに保存・復元',
-      'データ初期化': (loadBeforeReset() ? '全データを削除・初期化前に戻す' : '全データを削除'),
+      'データ初期化': (loadBeforeReset('reset') ? '全データを削除・初期化前に戻す' : '全データを削除'),
       'スマホで開く': 'QRコードを読み取ってスマホで開く',
       'ホーム画面に追加': isStandalone() ? '追加済み' : 'アプリのように使う',
       '使い方・ヘルプ': '特徴・使い方・便利な機能・ヘルプ',
@@ -2886,7 +2942,14 @@
       }
     }
     // バージョンのお知らせは画面の一番上（ヘッダーより上）に出す
-    var notice = renderInstallBar() + renderNewVersionBar() + renderUpdateNotice() + renderDefaultsNotice();
+    var notice = renderNewVersionBar() + renderUpdateNotice() + renderDefaultsNotice();
+    // ホーム画面に追加の案内は、画面の下に固定で出す
+    var instHost = document.getElementById('install-host');
+    if(instHost){
+      var instHtml = renderInstallBar();
+      instHost.innerHTML = instHtml;
+      document.body.classList.toggle('has-install-bar', !!instHtml);
+    }
     var topNotice = document.getElementById('top-notice');
     if(topNotice){ topNotice.innerHTML = notice; }
     document.body.classList.toggle('has-top-notice', !!notice);
@@ -3747,6 +3810,7 @@
       html += '<button class="btn ghost" id="items-import-btn" style="flex:1;">一括取り込み<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:5px;"><path d="M12 15V3"/><path d="M7 10l5 5 5-5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>';
       html += '</div>';
       html += '<input type="file" id="items-import-input" accept=".csv,text/csv" style="display:none;">';
+      html += renderUndoBlock('csv');
     }
     html += '</div>';
 
@@ -3831,6 +3895,7 @@
     html += '</div>';
     html += '<input type="file" id="backup-import-input" accept=".json,application/json" style="display:none;">';
     if(view.backupDone){ html += '<p class="hint" style="color:var(--teal);margin-top:0;">'+esc(view.backupDone)+'</p>'; }
+    html += renderUndoBlock('restore');
     html += '</div>';
     }
 
@@ -3839,6 +3904,8 @@
     html += '<p class="hint" style="margin-top:0;">持ち物・スタジオ・イベント・レコーディング・チェック状態をすべて削除して、最初の状態に戻します。</p>';
     if(view.confirmReset){
       html += '<p class="hint" style="color:var(--red);">本当に全ての持ち物・スタジオ・イベント・レコーディング・チェック状態を削除しますか？（直後なら「初期化前に戻す」で元に戻せます）</p>';
+      html += '<button class="btn ghost block" id="reset-backup-btn" style="margin-bottom:10px;">先にバックアップを保存する</button>';
+      if(view.backupDone){ html += '<p class="hint" style="color:var(--teal);margin-top:-4px;">'+esc(view.backupDone)+'</p>'; }
       html += '<div class="row-between" style="margin-bottom:0;">';
       html += '<button class="btn ghost" id="reset-cancel-btn" style="flex:1;margin-right:8px;">キャンセル</button>';
       html += '<button class="btn danger" id="reset-confirm-btn" style="flex:1;">削除する</button>';
@@ -3846,20 +3913,7 @@
     } else {
       html += '<button class="btn danger block" id="reset-all-btn">全データを初期化</button>';
     }
-    var before = loadBeforeReset();
-    if(before){
-      var bd = new Date(before.at);
-      var bdStr = isNaN(bd.getTime()) ? '' : (bd.getFullYear()+'/'+(bd.getMonth()+1)+'/'+bd.getDate()+' '+('0'+bd.getHours()).slice(-2)+':'+('0'+bd.getMinutes()).slice(-2));
-      if(view.confirmUndoReset){
-        html += '<p class="hint" style="color:var(--amber);margin-top:12px;">初期化する前のデータ（'+esc(bdStr)+'に初期化）に戻しますか？初期化したあとに登録・チェックした内容は消えます。</p>';
-        html += '<div class="row-between" style="margin-bottom:0;">';
-        html += '<button class="btn ghost" id="undo-reset-cancel" style="flex:1;margin-right:8px;">キャンセル</button>';
-        html += '<button class="btn" id="undo-reset-confirm" style="flex:1;">元に戻す</button>';
-        html += '</div>';
-      } else {
-        html += '<button class="btn ghost block" id="undo-reset-btn" style="margin-top:10px;">↩ 初期化前に戻す（'+esc(bdStr)+'に初期化）</button>';
-      }
-    }
+    html += renderUndoBlock('reset');
     html += '</div>';
 
     html += '<div class="set-group">その他</div>';
@@ -4987,10 +5041,13 @@
     var itemsImportConfirm = document.getElementById('items-import-confirm');
     if(itemsImportConfirm){
       itemsImportConfirm.onclick = function(){
+        saveBeforeReset('csv');
+        view.confirmUndoReset = false;
         applyItemsImportPlan(view.itemsImportPlan);
         view.itemsImportPlan = null;
         saveState();
         render();
+        showToast('取り込みました。間違えたときは「↩ CSVの取り込み前に戻す」で元に戻せます');
       };
     }
 
@@ -5123,15 +5180,16 @@
       };
     });
 
+    var doBackupExport = function(){
+      var bkName = tsName('mochimono-backup_'+placeSlug()+'_', '_v'+APP_VERSION+'.json');
+      downloadText(bkName, buildBackup(), 'application/json');
+      view.backupDone = 'バックアップファイルを保存しました（ファイル名：'+bkName+'）。';
+      render();
+    };
     var backupExportBtn = document.getElementById('backup-export-btn');
-    if(backupExportBtn){
-      backupExportBtn.onclick = function(){
-        var bkName = tsName('mochimono-backup_'+placeSlug()+'_', '_v'+APP_VERSION+'.json');
-        downloadText(bkName, buildBackup(), 'application/json');
-        view.backupDone = 'バックアップファイルを保存しました（ファイル名：'+bkName+'）。';
-        render();
-      };
-    }
+    if(backupExportBtn){ backupExportBtn.onclick = doBackupExport; }
+    var resetBackupBtn = document.getElementById('reset-backup-btn');
+    if(resetBackupBtn){ resetBackupBtn.onclick = doBackupExport; }
     var backupImportBtn = document.getElementById('backup-import-btn');
     var backupImportInput = document.getElementById('backup-import-input');
     if(backupImportBtn && backupImportInput){
@@ -5157,9 +5215,9 @@
     var backupRestoreConfirm = document.getElementById('backup-restore-confirm');
     if(backupRestoreConfirm){
       backupRestoreConfirm.onclick = function(){
-        if(view.backupPlan && view.backupPlan.obj){ applyBackup(view.backupPlan); }
+        if(view.backupPlan && view.backupPlan.obj){ saveBeforeReset('restore'); view.confirmUndoReset = false; applyBackup(view.backupPlan); }
         view.backupPlan = null;
-        view.backupDone = 'バックアップから復元しました。';
+        view.backupDone = 'バックアップから復元しました。間違えたときは「↩ 復元前に戻す」で元に戻せます。';
         render();
       };
     }
@@ -5194,7 +5252,9 @@
     var resetConfirmBtn = document.getElementById('reset-confirm-btn');
     if(resetConfirmBtn){
       resetConfirmBtn.onclick = function(){
-        saveBeforeReset();
+        saveBeforeReset('reset');
+        view.confirmUndoReset = false;
+        view.backupDone = '';
         state = defaultState();
         view.selectedByMode = {studio:null, live:null, recording:null};
         view.confirmReset = false;
@@ -5213,9 +5273,10 @@
       undoResetConfirm.onclick = function(){
         view.confirmUndoReset = false;
         var b = loadBeforeReset();
+        var L = UNDO_LABELS[(b && b.kind) || 'reset'];
         var clean = null;
         try{ clean = b ? sanitizeState(b.data) : null; }catch(e){ clean = null; }
-        if(!clean){ showToast('初期化前のデータを読み込めませんでした'); render(); return; }
+        if(!clean){ showToast('元のデータを読み込めませんでした'); render(); return; }
         try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(clean)); }catch(e){}
         state = loadState();
         saveState();
@@ -5223,10 +5284,34 @@
         MODES.forEach(function(m){ view.selectedByMode[m] = null; });
         view.newEntryRoles = defaultEntryRoles();
         render();
-        showToast('↩ 初期化する前のデータに戻しました');
+        view.backupDone = '';
+        showToast('↩ '+L.what+'に戻しました');
       };
     }
   }
+
+  // PC：Escで開いている確認・小窓・パネルを閉じる（なければ予定から一覧へ戻る）（アプリ定型13）
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Escape' || e.defaultPrevented) return;
+    var a = document.activeElement;
+    if(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;   // 入力中は各入力欄の動き（取り消しなど）に任せる
+    var v = view, changed = true;
+    if(v.installGuide) v.installGuide = null;
+    else if(v.confirmUndoReset) v.confirmUndoReset = false;
+    else if(v.confirmReset) v.confirmReset = false;
+    else if(v.backupPlan) v.backupPlan = null;
+    else if(v.itemsImportPlan) v.itemsImportPlan = null;
+    else if(v.entryImportPlan) v.entryImportPlan = null;
+    else if(v.confirmDeleteEntry) v.confirmDeleteEntry = false;
+    else if(v.mdOpen) v.mdOpen = false;
+    else if(v.csvFallbackOpen) v.csvFallbackOpen = false;
+    else if(v.infoOpen) v.infoOpen = false;
+    else if(v.editMode) v.editMode = false;
+    else if(v.roleReturn && v.mode==='items'){ var m = v.roleReturn.mode; v.roleReturn = null; v.mode = m; v.selectedByMode[m] = null; }
+    else if(v.mode!=='items' && v.selectedByMode[v.mode]){ v.selectedByMode[v.mode] = null; }
+    else changed = false;
+    if(changed){ e.preventDefault(); render(); }
+  });
 
   render();
 })();
