@@ -750,12 +750,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.48.2';
+  var APP_VERSION = '1.48.3';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-11-06';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.48.3': [
+      '設定を整理：「表示設定」を「表示」グループに、「持ち物の一括管理（CSV）」を「データ」に、「アプリの更新」を「その他」の中に移しました'
+    ],
     '1.48.2': [
       '設定の「その他」を「共有」と「その他」に分けました。共有：友達に勧める・パートの共有・作者に感想を送る／その他：ホーム画面に追加・使い方・ヘルプ'
     ],
@@ -2961,7 +2964,7 @@
       'このアプリを友達に勧める': 'URLと説明を送る',
       'パートの共有': 'パートの持ち物セットをリンクで共有',
       '作者に感想を送る': '感想・初期値のリクエスト・不具合など',
-      'アプリの更新': '最新版を確認 ・ v'+APP_VERSION
+      'アプリの更新': 'v'+APP_VERSION+'・最新版の確認・新しい初期値'
     };
     return map[key] || '';
   }
@@ -3921,6 +3924,7 @@
 
   function renderItemsView(){
     var html = '';
+    html += '<div class="set-group">表示</div>';
     html += '<div class="panel">';
     html += '<div class="panel-label">表示設定</div>';
     html += '<label class="small">テーマ</label>';
@@ -4019,38 +4023,6 @@
     }
     html += '</div>';
 
-    html += '<div class="panel">';
-    html += '<div class="panel-label">持ち物の一括管理</div>';
-    if(view.itemsImportPlan){
-      var plan = view.itemsImportPlan;
-      if(plan.looksEntry){
-        html += '<p class="hint" style="color:var(--red);font-weight:700;">⚠ これは「予定のCSV出力」ファイルのようです。取り込むと、このファイルに無い持ち物'+plan.removedItems.length+'件が持ち物マスタから削除され、登録済みの予定からも外れます。予定に取り込むつもりなら、キャンセルして予定の画面の「CSV取込」を使ってください。</p>';
-      }
-      if(plan.fileName){ html += '<p class="hint" style="color:var(--cream);">'+describeFileName(plan.fileName)+'</p>'; }
-      html += '<p class="hint" style="color:var(--red);">更新 '+plan.updated+'件 ／ 新規追加 '+plan.created+'件 ／ 削除 '+plan.removedItems.length+'件 になります。この内容で取り込みますか？</p>';
-      if(plan.createdNames && plan.createdNames.length){ html += '<p class="hint"><b style="color:var(--amber);">新しく追加される持ち物</b>：'+namesPreviewList(plan.createdNames)+'</p>'; }
-      if(plan.updatedNames && plan.updatedNames.length){ html += '<p class="hint"><b>用途・パート・持込/借りる/渡すがCSVの内容で上書きされる持ち物</b>：'+namesPreviewList(plan.updatedNames)+'</p>'; }
-      if(plan.removedItems.length>0){
-        html += '<p class="hint">削除される持ち物：'+plan.removedItems.map(function(it){ return esc(it.name); }).join('、')+'（登録済みの予定からも外れます）</p>';
-      }
-      if(plan.newRoles && plan.newRoles.length>0){
-        html += '<p class="hint">新しく追加されるパート：'+plan.newRoles.map(esc).join('、')+'</p>';
-      }
-      html += '<div class="row-between" style="margin-bottom:0;">';
-      html += '<button class="btn ghost" id="items-import-cancel" style="flex:1;margin-right:8px;">キャンセル</button>';
-      html += '<button class="btn danger" id="items-import-confirm" style="flex:1;">取り込む</button>';
-      html += '</div>';
-    } else {
-      html += '<p class="hint">全ての持ち物をCSVで書き出し・まとめて整理できます。取り込み時、CSVに無い名前の持ち物は削除されます。</p>';
-      html += '<div class="row-between" style="margin-bottom:0;">';
-      html += '<button class="btn ghost" id="items-export-btn" style="flex:1;margin-right:8px;">一括出力<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:5px;"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>';
-      html += '<button class="btn ghost" id="items-import-btn" style="flex:1;">一括取り込み<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:5px;"><path d="M12 15V3"/><path d="M7 10l5 5 5-5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>';
-      html += '</div>';
-      html += '<input type="file" id="items-import-input" accept=".csv,text/csv" style="display:none;">';
-      html += renderUndoBlock('csv');
-    }
-    html += '</div>';
-
     html += '<div class="set-group">パート</div>';
     html += '<div class="panel">';
     html += '<div class="panel-label">パートを管理</div>';
@@ -4136,6 +4108,38 @@
     html += '</div>';
     }
 
+    html += '<div class="panel">';
+    html += '<div class="panel-label">持ち物の一括管理</div>';
+    if(view.itemsImportPlan){
+      var plan = view.itemsImportPlan;
+      if(plan.looksEntry){
+        html += '<p class="hint" style="color:var(--red);font-weight:700;">⚠ これは「予定のCSV出力」ファイルのようです。取り込むと、このファイルに無い持ち物'+plan.removedItems.length+'件が持ち物マスタから削除され、登録済みの予定からも外れます。予定に取り込むつもりなら、キャンセルして予定の画面の「CSV取込」を使ってください。</p>';
+      }
+      if(plan.fileName){ html += '<p class="hint" style="color:var(--cream);">'+describeFileName(plan.fileName)+'</p>'; }
+      html += '<p class="hint" style="color:var(--red);">更新 '+plan.updated+'件 ／ 新規追加 '+plan.created+'件 ／ 削除 '+plan.removedItems.length+'件 になります。この内容で取り込みますか？</p>';
+      if(plan.createdNames && plan.createdNames.length){ html += '<p class="hint"><b style="color:var(--amber);">新しく追加される持ち物</b>：'+namesPreviewList(plan.createdNames)+'</p>'; }
+      if(plan.updatedNames && plan.updatedNames.length){ html += '<p class="hint"><b>用途・パート・持込/借りる/渡すがCSVの内容で上書きされる持ち物</b>：'+namesPreviewList(plan.updatedNames)+'</p>'; }
+      if(plan.removedItems.length>0){
+        html += '<p class="hint">削除される持ち物：'+plan.removedItems.map(function(it){ return esc(it.name); }).join('、')+'（登録済みの予定からも外れます）</p>';
+      }
+      if(plan.newRoles && plan.newRoles.length>0){
+        html += '<p class="hint">新しく追加されるパート：'+plan.newRoles.map(esc).join('、')+'</p>';
+      }
+      html += '<div class="row-between" style="margin-bottom:0;">';
+      html += '<button class="btn ghost" id="items-import-cancel" style="flex:1;margin-right:8px;">キャンセル</button>';
+      html += '<button class="btn danger" id="items-import-confirm" style="flex:1;">取り込む</button>';
+      html += '</div>';
+    } else {
+      html += '<p class="hint">全ての持ち物をCSVで書き出し・まとめて整理できます。取り込み時、CSVに無い名前の持ち物は削除されます。</p>';
+      html += '<div class="row-between" style="margin-bottom:0;">';
+      html += '<button class="btn ghost" id="items-export-btn" style="flex:1;margin-right:8px;">一括出力<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:5px;"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>';
+      html += '<button class="btn ghost" id="items-import-btn" style="flex:1;">一括取り込み<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-left:5px;"><path d="M12 15V3"/><path d="M7 10l5 5 5-5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>';
+      html += '</div>';
+      html += '<input type="file" id="items-import-input" accept=".csv,text/csv" style="display:none;">';
+      html += renderUndoBlock('csv');
+    }
+    html += '</div>';
+
     html += '<div class="panel set-danger">';
     html += '<div class="panel-label">データ初期化</div>';
     html += '<p class="hint" style="margin-top:0;">持ち物・スタジオ・イベント・レコーディング・チェック状態をすべて削除して、最初の状態に戻します。</p>';
@@ -4205,12 +4209,11 @@
     }
     html += '</div>';
     html += renderHelpPanel();
-
-    // アプリの更新（アコーディオンにしない、常に表示）
+    // アプリの更新（その他のパネルの1つ）
     var uc = view.updateCheck || {};
-    html += '<div class="update-box">';
-    html += '<div class="update-title">アプリの更新</div>';
-    html += '<p class="hint" style="margin:6px 0 12px;line-height:1.7;">ホーム画面のアプリは、閉じても裏で止まっているだけで、自動では新しくなりません。開いたときに最新版を確認しますが、すぐ知りたいときはここで確認できます。</p>';
+    html += '<div class="panel">';
+    html += '<div class="panel-label">アプリの更新</div>';
+    html += '<p class="hint" style="margin:0 0 12px;line-height:1.7;">ホーム画面のアプリは、閉じても裏で止まっているだけで、自動では新しくなりません。開いたときに最新版を確認しますが、すぐ知りたいときはここで確認できます。</p>';
     if(uc.state==='new'){
       html += '<p class="update-msg new">新しいバージョン v'+esc(uc.version)+' があります（今は v'+esc(APP_VERSION)+'）</p>';
       html += '<button class="btn block" id="update-now-btn">今すぐ更新する</button>';
@@ -4223,6 +4226,7 @@
     html += '<button class="btn ghost block" id="defaults-check-btn" style="margin-top:12px;">新しい初期値を確認</button>';
     html += '<p class="hint" style="margin:6px 0 0;">アプリの更新で増えた・変わった持ち物の初期値を、今のデータに取り込めます（自分で直した持ち物はそのまま）。</p>';
     html += '</div>';
+
 
     html += '<div style="text-align:center;color:var(--cream-dim);font-size:10.5px;letter-spacing:.05em;padding:6px 0 18px;">Powered by SunaTrux</div>';
     html += '<div style="text-align:center;color:var(--cream-dim);font-size:12px;padding:0 0 22px;">バージョン '+APP_VERSION+'（'+APP_RELEASE_DATE+'）<br><a href="https://github.com/sunatrux/band-mochimono/blob/main/CHANGELOG.md" target="_blank" rel="noopener" style="color:var(--cream-dim);">更新履歴</a></div>';
