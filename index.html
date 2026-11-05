@@ -609,8 +609,11 @@
   .swipe-wrap.info-wrap{border-radius:12px;}
   /* 持ち物リストをスクロールしても、予定のカードは上に固定（上の隙間は背景色で埋めて、下の行が透けないように） */
   /* ホーム画面のアプリ（iPhone）は時計・電池の帯の下まで画面が広がるので、その分（safe-area）下げて固定する */
-  body.is-detail .swipe-wrap.info-wrap{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 6px);z-index:6;box-shadow:0 calc(-6px - env(safe-area-inset-top, 0px)) 0 0 var(--bg), 0 3px 10px rgba(0,0,0,.10);}
-  body.is-detail .swipe-wrap.meter-wrap{top:calc(env(safe-area-inset-top, 0px) + var(--info-h, 0px) + 12px);box-shadow:0 -6px 0 0 var(--bg), 0 3px 10px rgba(0,0,0,.10);}
+  /* 上の帯を背景色で覆うのは、実際に上に貼りついている（stuck）ときだけ。ふだんは「← 一覧」の行などを隠さない */
+  body.is-detail .swipe-wrap.info-wrap{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 6px);z-index:6;}
+  body.is-detail .swipe-wrap.info-wrap.stuck{box-shadow:0 calc(-6px - env(safe-area-inset-top, 0px)) 0 0 var(--bg), 0 3px 10px rgba(0,0,0,.10);}
+  body.is-detail .swipe-wrap.meter-wrap{top:calc(env(safe-area-inset-top, 0px) + var(--info-h, 0px) + 12px);}
+  body.is-detail .swipe-wrap.meter-wrap.stuck{box-shadow:0 -6px 0 0 var(--bg), 0 3px 10px rgba(0,0,0,.10);}
   .swipe-wrap.info-wrap > .info-swipe{background:transparent;}
   .info-card.info-pinned{border-color:var(--amber);}
   .info-card{display:flex;align-items:flex-start;gap:10px;background:var(--panel);border:1px solid var(--seam);border-radius:12px;padding:14px 14px 14px 16px;}
@@ -741,12 +744,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.47.0';
+  var APP_VERSION = '1.47.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
-  var APP_RELEASE_DATE = '2026-11-04';
+  var APP_RELEASE_DATE = '2026-11-05';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.47.1': [
+      'ホーム画面のアプリで、予定の画面の「← 一覧」の行が見えなくなっていたのを直しました'
+    ],
     '1.47.0': [
       'バックアップからの復元・CSVの一括取り込みも、直後なら「↩ 復元前に戻す」「↩ CSVの取り込み前に戻す」で元に戻せるようにしました',
       '全データの初期化の確認に「先にバックアップを保存する」ボタンを追加しました',
@@ -2966,6 +2972,7 @@
       setInfoH();
       if(window.ResizeObserver){ if(window.__infoRO) window.__infoRO.disconnect(); window.__infoRO = new ResizeObserver(setInfoH); window.__infoRO.observe(infoWrapEl); }
     }
+    updateStuck();
     // 進捗カードは左右どちらかにスワイプで非表示（直後は「元に戻す」、設定でも切り替え可）
     var meterEl = document.querySelector('#app .meter');
     if(meterEl){
@@ -5289,6 +5296,17 @@
       };
     }
   }
+
+  // 固定表示のカードが、いま上に貼りついているかどうか（貼りついているときだけ上の帯を覆う）
+  function updateStuck(){
+    ['.info-wrap', '.meter-wrap'].forEach(function(sel){
+      var el = document.querySelector('body.is-detail #app '+sel);
+      if(!el) return;
+      var top = parseFloat(getComputedStyle(el).top) || 0;
+      el.classList.toggle('stuck', window.pageYOffset > 0 && el.getBoundingClientRect().top <= top + 0.5);
+    });
+  }
+  window.addEventListener('scroll', updateStuck, {passive:true});
 
   // PC：Escで開いている確認・小窓・パネルを閉じる（なければ予定から一覧へ戻る）（アプリ定型13）
   document.addEventListener('keydown', function(e){
