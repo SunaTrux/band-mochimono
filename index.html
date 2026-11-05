@@ -333,6 +333,8 @@
   .update-notice li{margin:2px 0;}
   .update-notice a{color:var(--cream-dim);font-size:12px;}
   .defaults-desc{margin:0 0 8px;line-height:1.6;}
+  .set-import-list{max-height:260px;overflow:auto;border:1px solid var(--seam);border-radius:10px;padding:4px 10px;background:var(--bg);}
+  .share-preview{font-size:12.5px;line-height:1.7;max-height:120px;overflow:auto;border:1px solid var(--seam);border-radius:10px;padding:8px 10px;background:var(--bg);overflow-wrap:anywhere;}
   .defaults-row{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;}
   .defaults-row input{width:18px;height:18px;margin:0;flex-shrink:0;accent-color:var(--amber);}
   .defaults-btns{display:flex;gap:8px;margin-top:10px;}
@@ -747,12 +749,16 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.47.2';
+  var APP_VERSION = '1.48.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
-  var APP_RELEASE_DATE = '2026-11-05';
+  var APP_RELEASE_DATE = '2026-11-06';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.48.0': [
+      'パートごとの持ち物セットを、リンクにして共有できるようにしました（設定 →「パートを管理」の共有アイコン）。SNSやLINEで送ると、受け取った人は自分のアプリに取り込めます',
+      '受け取ったときは、取り込む持ち物と取り込み先のパートを選べます。同じ名前の持ち物は上書きせず、取り込んだあとも元に戻せます'
+    ],
     '1.47.2': [
       'ホーム画面のアプリで、上に固定した予定のカードに時計の帯のぼかしがかからないよう、少し下に固定するようにしました'
     ],
@@ -1596,7 +1602,8 @@
   var UNDO_LABELS = {
     reset:   {btn:'初期化前に戻す', did:'に初期化', what:'初期化する前のデータ', after:'初期化したあと'},
     restore: {btn:'復元前に戻す', did:'に復元', what:'バックアップから復元する前のデータ', after:'復元したあと'},
-    csv:     {btn:'CSVの取り込み前に戻す', did:'に取り込み', what:'CSVを取り込む前のデータ', after:'取り込んだあと'}
+    csv:     {btn:'CSVの取り込み前に戻す', did:'に取り込み', what:'CSVを取り込む前のデータ', after:'取り込んだあと'},
+    set:     {btn:'持ち物セットの取り込み前に戻す', did:'に取り込み', what:'持ち物セットを取り込む前のデータ', after:'取り込んだあと'}
   };
   function saveBeforeReset(kind){
     try{ localStorage.setItem(BEFORE_RESET_KEY, JSON.stringify({at: Date.now(), kind: (UNDO_LABELS[kind] ? kind : 'reset'), data: state})); }catch(e){}
@@ -1701,6 +1708,7 @@
     if(launchCount < 2 && !INSTALL_TEST) return false;          // 初回は出さない
     if(seenVersion!==APP_VERSION) return false;                  // アップデートのお知らせと同時には出さない
     if(pendingDefaultUpdates(!!view.defaultsShowAll).length) return false;   // 初期値の取り込み案内とも重ねない
+    if(view.setImport) return false;
     var t = 0;
     try{ t = parseInt(localStorage.getItem(INSTALL_DISMISS_KEY)||'0', 10) || 0; }catch(e){}
     return !t || (Date.now() - t) > 30*24*3600*1000;   // ×で閉じたら30日は出さない
@@ -1796,6 +1804,7 @@
     ['未チェック・種類の絞り込み', '「未チェック」で残りだけ、「持込・借りる・渡す」で種類ごとに表示。もう一度押すと解除。'],
     ['この内容で新規作成', '前の予定の持ち物をまるごとコピーして使い回せます。'],
     ['CSV・バックアップ', '表計算アプリで編集したり、機種変更のときにデータを移したりできます。'],
+    ['パートの持ち物セットを共有', '設定 →「パートを管理」で、パートの横の共有アイコンを押すと、そのパートの持ち物を1つのリンクにできます。SNSやLINEで送ると、受け取った人は自分のアプリに取り込めます（同じ名前の持ち物は上書きしません）。'],
     ['自分のリストはSNSで自由にシェアOK', '自分なりのパート・自分なりの持ち物リストは、テキスト出力（Markdown）などでSNSに投稿・配布して自由に使ってください。#プレイヤーズ持ち物リスト をつけてもらえると、みんなが現場にどんな物を持っていっているのか、見つけやすくなります。']
   ];
   var HELP_FAQ = [
@@ -1928,6 +1937,189 @@
     h += '</div>';
     return h;
   }
+
+  // ---------- パートの持ち物セットを共有（リンクで渡して、相手のアプリに取り込む） ----------
+  // リンク：公開URL#set=<符号>。中身は {a:'pml', v:1, r:パート名, by:作成者名, it:[[名前, 用途(s/l/r), 種類(0持込/1借りる/2渡す), 共通なら1]]}
+  // 対応ブラウザでは圧縮（z.）、それ以外はそのまま（j.）を base64url で。データは外部に送らず、リンクの中だけに入る
+  var SET_MAX_ITEMS = 300, SET_MAX_CODE = 30000, SHARE_BY_KEY = 'gp-share-by-v1';
+  function b64urlFromBytes(bytes){
+    var bin = ''; for(var i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+  function bytesFromB64url(str){
+    var b = str.replace(/-/g,'+').replace(/_/g,'/'); while(b.length%4) b += '=';
+    var bin = atob(b), out = new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function streamBytes(bytes, stream){
+    return new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer().then(function(ab){ return new Uint8Array(ab); });
+  }
+  function encodeSet(obj){
+    var bytes = new TextEncoder().encode(JSON.stringify(obj));
+    if(window.CompressionStream){
+      try{ return streamBytes(bytes, new CompressionStream('deflate-raw')).then(function(z){ return 'z.'+b64urlFromBytes(z); }, function(){ return 'j.'+b64urlFromBytes(bytes); }); }catch(e){}
+    }
+    return Promise.resolve('j.'+b64urlFromBytes(bytes));
+  }
+  function decodeSet(code){
+    try{
+      if(typeof code!=='string' || code.length > SET_MAX_CODE) return Promise.reject(new Error('long'));
+      var kind = code.slice(0,2), bytes = bytesFromB64url(code.slice(2));
+      var p = (kind==='z.') ? (window.DecompressionStream ? streamBytes(bytes, new DecompressionStream('deflate-raw')) : Promise.reject(new Error('nozip')))
+            : (kind==='j.' ? Promise.resolve(bytes) : Promise.reject(new Error('kind')));
+      return p.then(function(b){ return JSON.parse(new TextDecoder().decode(b)); });
+    }catch(e){ return Promise.reject(e); }
+  }
+  // 受け取った中身を検査して、決まった形・長さの値だけを残す（アプリ定型10）
+  function cleanSet(o){
+    if(!o || typeof o!=='object' || o.a!=='pml' || !Array.isArray(o.it)) return null;
+    var role = cleanText(o.r, LIMIT.role).trim();
+    if(!role) return null;
+    var seen = {}, items = [];
+    o.it.slice(0, SET_MAX_ITEMS).forEach(function(x){
+      if(!Array.isArray(x)) return;
+      var name = cleanText(x[0], LIMIT.name).trim();
+      if(!name || seen[name]) return;
+      seen[name] = 1;
+      var sc = String(x[1]||''), scope = [];
+      if(sc.indexOf('s')!==-1) scope.push('studio');
+      if(sc.indexOf('l')!==-1) scope.push('live');
+      if(sc.indexOf('r')!==-1) scope.push('recording');
+      if(!scope.length) scope = ['studio','live','recording'];
+      var k = (x[2]===1 || x[2]===2) ? x[2] : 0;
+      items.push({name:name, scope:scope, kind:k, common: x[3]===1});
+    });
+    if(!items.length) return null;
+    return {role: role, by: cleanText(o.by, 30).trim(), items: items};
+  }
+  function setItemsForRole(role, withCommon){
+    return masterItems().filter(function(it){
+      var rs = it.roles || [];
+      return rs.indexOf(role)!==-1 || (withCommon && !rs.length);
+    });
+  }
+  function buildSetPayload(role, withCommon, by){
+    return {a:'pml', v:1, r:role, by:by||'', it: setItemsForRole(role, withCommon).map(function(it){
+      var sc = (it.scope||[]).map(function(x){ return x==='studio'?'s':x==='live'?'l':x==='recording'?'r':''; }).join('');
+      var k = it.hand ? 2 : (it.bring===false ? 1 : 0);
+      var row = [it.name, sc, k]; if(!(it.roles||[]).length) row.push(1);
+      return row;
+    })};
+  }
+  function shareRoleSet(role, mode){
+    var by = view.shareBy || '';
+    try{ localStorage.setItem(SHARE_BY_KEY, by); }catch(e){}
+    var payload = buildSetPayload(role, !!view.shareWithCommon, by);
+    if(!payload.it.length){ showToast('このパートの持ち物がありません'); return; }
+    encodeSet(payload).then(function(code){
+      var url = APP_PUBLIC_URL + '#set=' + code;
+      var text = (by ? by+'の' : '') + '「'+role+'」の持ち物セット（'+payload.it.length+'件）です。リンクを開くと、プレイヤーズ持ち物リストに取り込めます。 #プレイヤーズ持ち物リスト';
+      if(mode==='share' && navigator.share){
+        navigator.share({text: text, url: url}).catch(function(err){ if(err && err.name==='AbortError') return; copyTextToClipboard(text+'\n'+url, 'リンクをコピーしました。SNSやLINEに貼り付けてください'); });
+      } else {
+        copyTextToClipboard(text+'\n'+url, 'リンクをコピーしました。SNSやLINEに貼り付けてください');
+      }
+    });
+  }
+  function renderRoleSharePanel(role){
+    var own = setItemsForRole(role, false), common = masterItems().filter(function(it){ return !(it.roles||[]).length; });
+    var list = setItemsForRole(role, !!view.shareWithCommon);
+    var h = '<div class="panel share-set" style="margin:6px 0 8px;border-color:var(--amber);">';
+    h += '<p class="hint" style="margin-top:0;color:var(--cream);"><b>「'+esc(role)+'」の持ち物セットを共有</b></p>';
+    h += '<p class="hint">このパートの持ち物を1つのリンクにします。SNSやLINEで送ると、受け取った人は自分のアプリに取り込めます。</p>';
+    h += '<label class="defaults-row"><input type="checkbox" id="share-with-common"'+(view.shareWithCommon?' checked':'')+'> <span>共通の持ち物も入れる（'+common.length+'件）</span></label>';
+    h += '<label class="small" style="margin-top:6px;">作成者名（SNSの名前など・空でもOK）</label>';
+    h += '<input type="text" id="share-by" maxlength="30" placeholder="例：〇〇（ギター）" value="'+esc(view.shareBy||'')+'">';
+    h += '<p class="hint" style="margin-bottom:4px;">相手に見える内容（'+list.length+'件）：持ち物の名前・用途・持込／借りる／渡す・作成者名だけです。予定やチェックの状態は入りません。</p>';
+    h += '<div class="share-preview">'+(list.length ? list.map(function(it){ return esc(it.name); }).join('、') : '（このパートの持ち物がありません）')+'</div>';
+    h += '<div class="row-between" style="margin:10px 0 0;gap:8px;">';
+    h += '<button class="btn ghost" data-role-share-close="1" style="flex:1;">閉じる</button>';
+    h += '<button class="btn ghost" data-role-share-copy="'+esc(role)+'" style="flex:1;">コピー</button>';
+    h += '<button class="btn" data-role-share-go="'+esc(role)+'" style="flex:1;">共有する</button>';
+    h += '</div></div>';
+    return h;
+  }
+  // 受け取ったときのカード（画面上部）
+  function renderSetImportNotice(){
+    var si = view.setImport;
+    if(!si) return '';
+    var h = '<div class="update-notice defaults-notice set-import">';
+    h += '<button class="update-close" id="set-import-close" aria-label="閉じる">×</button>';
+    if(si.error){
+      h += '<div class="update-title">持ち物セットを読み込めませんでした</div>';
+      h += '<p class="defaults-desc">'+esc(si.error)+'</p>';
+      h += '</div>';
+      return h;
+    }
+    h += '<div class="update-title">🎁 持ち物セットが届きました</div>';
+    h += '<p class="defaults-desc">'+(si.by ? '<b>'+esc(si.by)+'</b> さんの' : '')+'「'+esc(si.role)+'」の持ち物セット（'+si.items.length+'件）です。取り込むものを選んでください。</p>';
+    h += '<label class="small">取り込み先のパート</label>';
+    h += '<input type="text" id="set-import-role" maxlength="'+LIMIT.role+'" value="'+esc(si.target)+'">';
+    h += '<p class="hint" id="set-import-role-hint" style="margin:4px 0 8px;">'+esc(setTargetHint(si.target))+'</p>';
+    h += '<div class="set-import-list">';
+    si.items.forEach(function(x, i){
+      var tag = x.common ? '共通' : (x.kind===2 ? '渡す' : x.kind===1 ? '借りる' : '');
+      h += '<label class="defaults-row"><input type="checkbox" data-set-pick="'+i+'"'+(si.pick[i]!==false?' checked':'')+'> <span>'+esc(x.name)+(tag?' <span class="hidden-tag">'+tag+'</span>':'')+'</span></label>';
+    });
+    h += '</div>';
+    h += '<p class="hint" style="margin:8px 0 0;">同じ名前の持ち物がすでにあるときは、パートを付け足すだけで、自分で決めた内容は変えません。取り込んだあとも「↩ 持ち物セットの取り込み前に戻す」（設定 → パートを管理）で戻せます。</p>';
+    h += '<div class="defaults-btns"><button class="btn ghost" id="set-import-cancel">取り込まない</button><button class="btn" id="set-import-apply">選んで取り込む</button></div>';
+    h += '</div>';
+    return h;
+  }
+  function setTargetHint(t){
+    t = (t||'').trim();
+    if(!t) return '取り込み先のパート名を入れてください。';
+    return state.roles.indexOf(t)!==-1 ? '今ある「'+t+'」に追加します。' : '新しいパート「'+t+'」として追加します。';
+  }
+  function applySetImport(){
+    var si = view.setImport; if(!si || si.error) return;
+    var role = cleanText(si.target, LIMIT.role).trim();
+    if(!role){ showToast('取り込み先のパート名を入れてください'); return; }
+    saveBeforeReset('set');
+    view.confirmUndoReset = false;
+    if(state.roles.indexOf(role)===-1){
+      if(state.roles.length >= LIMIT.roles){ limitReached('roles'); return; }
+      state.roles.push(role);
+    }
+    var added = 0, linked = 0;
+    si.items.forEach(function(x, i){
+      if(si.pick[i]===false) return;
+      var hit = masterItems().filter(function(it){ return it.name===x.name; })[0];
+      if(hit){
+        if(!x.common && (hit.roles||[]).length && hit.roles.indexOf(role)===-1){ hit.roles.push(role); linked++; }
+        return;
+      }
+      if(state.items.length >= LIMIT.items) return;
+      var ni = {id:uid(), name:x.name, scope:x.scope.slice(), roles: x.common ? [] : [role]};
+      if(x.kind===1) ni.bring = false;
+      if(x.kind===2){ ni.bring = true; ni.hand = true; }
+      state.items.push(ni); added++;
+    });
+    view.setImport = null;
+    saveState();
+    render();
+    showToast('「'+role+'」に'+added+'件を追加'+(linked?'、'+linked+'件にパートを付け足し':'')+'ました');
+  }
+  // 起動時（と、開いたままリンクを開いたとき）：#set=... があれば読み込む
+  function checkSetHash(){
+    var m = /^#set=([A-Za-z0-9._-]+)$/.exec(location.hash || '');
+    if(!m && /^#set=/.test(location.hash||'')) m = [null, ''];
+    if(!m) return;
+    try{ if(history.replaceState) history.replaceState(null, '', location.pathname + location.search); }catch(e){}
+    decodeSet(m[1]).then(function(o){
+      var c = cleanSet(o);
+      if(!c){ view.setImport = {error:'リンクの中身が正しくないようです。送ってくれた人に、もう一度リンクを送ってもらってください。'}; }
+      else { c.target = c.role; c.pick = {}; view.setImport = c; }
+      render(); window.scrollTo(0,0);
+    }, function(){
+      view.setImport = {error:'リンクが途中で切れているか、このブラウザでは開けない形式です。リンク全体をコピーして、SafariやChromeで開いてみてください。'};
+      render();
+    });
+  }
+  checkSetHash();
+  window.addEventListener('hashchange', checkSetHash);
 
   function renderDefaultsNotice(){
     var list = pendingDefaultUpdates(!!view.defaultsShowAll);
@@ -2954,7 +3146,7 @@
       }
     }
     // バージョンのお知らせは画面の一番上（ヘッダーより上）に出す
-    var notice = renderNewVersionBar() + renderUpdateNotice() + renderDefaultsNotice();
+    var notice = renderNewVersionBar() + renderSetImportNotice() + renderUpdateNotice() + renderDefaultsNotice();
     // ホーム画面に追加の案内は、画面の下に固定で出す
     var instHost = document.getElementById('install-host');
     if(instHost){
@@ -3115,6 +3307,29 @@
     document.querySelectorAll('[data-defaults-pick]').forEach(function(cb){
       cb.onchange = function(){ if(!view.defaultsPick) view.defaultsPick = {}; view.defaultsPick[cb.dataset.defaultsPick] = cb.checked; };
     });
+    // 届いた持ち物セットの取り込み
+    document.querySelectorAll('[data-set-pick]').forEach(function(cb){
+      cb.onchange = function(){ if(view.setImport && view.setImport.pick) view.setImport.pick[cb.dataset.setPick] = cb.checked; };
+    });
+    var setRoleIn = document.getElementById('set-import-role');
+    if(setRoleIn){
+      // 入力のたびに作り直すと入力中の文字が消えるので、案内の文だけ書き換える
+      setRoleIn.oninput = function(){
+        if(!view.setImport) return;
+        view.setImport.target = cleanText(setRoleIn.value, LIMIT.role).trim();
+        var hEl = document.getElementById('set-import-role-hint');
+        if(hEl) hEl.textContent = setTargetHint(view.setImport.target);
+      };
+    }
+    var setApply = document.getElementById('set-import-apply');
+    if(setApply){ setApply.onclick = function(){
+      if(setRoleIn && view.setImport) view.setImport.target = cleanText(setRoleIn.value, LIMIT.role).trim();
+      applySetImport();
+    }; }
+    var setCancel = document.getElementById('set-import-cancel'), setClose = document.getElementById('set-import-close');
+    var dropSet = function(){ view.setImport = null; render(); };
+    if(setCancel) setCancel.onclick = dropSet;
+    if(setClose) setClose.onclick = dropSet;
     var defApply = document.getElementById('defaults-apply-btn');
     if(defApply){ defApply.onclick = function(){
       var pick = view.defaultsPick || {};
@@ -3561,6 +3776,7 @@
     if(view.renamingItem!==it.id) return normalHtml;
     return '<div class="rename-box"><input type="text" class="rename-input" id="rename-input" maxlength="'+LIMIT.name+'" value="'+esc(effectiveItemName(it, entry))+'" data-rename-for="'+it.id+'" enterkeyhint="done" aria-label="持ち物の名前（この予定だけ）"><button class="icon-btn rename-ok" id="rename-ok" aria-label="名前を決定" title="決定"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button></div>';
   }
+  var SHARE_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
   var EYE_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   var EYE_OFF_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
 
@@ -3855,18 +4071,20 @@
     html += '<input type="text" id="role-name" maxlength="'+LIMIT.role+'" placeholder="例: サポートキーボード">';
     html += '<button class="btn block" id="add-role-btn">+ パートを追加</button>';
     if(state.roles.length>0){
-      html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更。右スワイプ →（PCでは目のアイコン）で表示／非表示を切り替え（非表示のパートは予定の登録時のパート選択に出なくなります）。</p>';
+      html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更。右スワイプ →（PCでは目のアイコン）で表示／非表示を切り替え（非表示のパートは予定の登録時のパート選択に出なくなります）。共有のアイコンで、そのパートの持ち物セットをリンクにしてSNSなどで共有できます。</p>';
       state.roles.forEach(function(r, i){
         var hid = isRoleHidden(r);
         html += '<div class="swipe-wrap"><button class="swipe-bg del" data-role-del="'+esc(r)+'">削除</button><div class="swipe-bg pin role-hide-bg">'+(hid?'表示に戻す':'非表示')+'</div><div class="item-row swipe-row'+(hid?' role-hidden':'')+'" data-swipe-row="role-'+i+'" data-swipe-kind="del" data-swipe-right="role-hide" data-role-name="'+esc(r)+'">';
         html += '<div class="item-name">'+esc(r)+(hid?' <span class="hidden-tag">非表示中</span>':'')+'</div>';
         html += '<div style="display:flex;gap:4px;align-items:center;">';
         html += '<button class="icon-btn swipe-alt'+(hid?' restore-btn':'')+'" data-role-unhide="'+esc(r)+'" aria-label="'+(hid?'表示に戻す':'非表示にする')+'" title="'+(hid?'表示に戻す（今は非表示）':'非表示にする')+'">'+(hid?EYE_OFF_SVG:EYE_SVG)+'</button>';
+        html += '<button class="icon-btn" data-role-share="'+esc(r)+'" aria-label="「'+esc(r)+'」の持ち物セットを共有" title="持ち物セットを共有">'+SHARE_SVG+'</button>';
         html += '<button class="btn ghost" data-role-up="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===0?' disabled':'')+'>▲</button>';
         html += '<button class="btn ghost" data-role-down="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===state.roles.length-1?' disabled':'')+'>▼</button>';
         html += '<button class="del-x" data-role-del="'+esc(r)+'" aria-label="削除">×</button>';
         html += '</div>';
         html += '</div></div>';
+        if(view.roleShare===r) html += renderRoleSharePanel(r);
         if(view.confirmRoleDel===r){
           var usedN = state.items.filter(function(it){ return (it.roles||[]).indexOf(r)!==-1; }).length;
           html += '<div class="panel" style="margin:6px 0 8px;border-color:var(--red);">';
@@ -3878,6 +4096,7 @@
         }
       });
     }
+    html += renderUndoBlock('set');
     html += '</div>';
 
     html += '<div class="set-group">データ</div>';
@@ -5149,6 +5368,25 @@
       };
     });
 
+    document.querySelectorAll('[data-role-share]').forEach(function(b){
+      b.onclick = function(){
+        var r = b.dataset.roleShare;
+        if(view.roleShare===r){ view.roleShare = null; }
+        else {
+          view.roleShare = r;
+          if(view.shareBy===undefined || view.shareBy===null){ try{ view.shareBy = localStorage.getItem(SHARE_BY_KEY) || ''; }catch(e){ view.shareBy = ''; } }
+        }
+        render();
+      };
+    });
+    document.querySelectorAll('[data-role-share-close]').forEach(function(b){ b.onclick = function(){ view.roleShare = null; render(); }; });
+    var shareCommon = document.getElementById('share-with-common');
+    if(shareCommon){ shareCommon.onchange = function(){ view.shareWithCommon = shareCommon.checked; render(); }; }
+    var shareByIn = document.getElementById('share-by');
+    if(shareByIn){ shareByIn.oninput = function(){ view.shareBy = cleanText(shareByIn.value, 30); }; }
+    document.querySelectorAll('[data-role-share-copy]').forEach(function(b){ b.onclick = function(){ shareRoleSet(b.dataset.roleShareCopy, 'copy'); }; });
+    document.querySelectorAll('[data-role-share-go]').forEach(function(b){ b.onclick = function(){ shareRoleSet(b.dataset.roleShareGo, 'share'); }; });
+
     document.querySelectorAll('[data-role-unhide]').forEach(function(b){
       b.onclick = function(){ toggleRoleHidden(b.dataset.roleUnhide); render(); };
     });
@@ -5321,6 +5559,8 @@
     if(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;   // 入力中は各入力欄の動き（取り消しなど）に任せる
     var v = view, changed = true;
     if(v.installGuide) v.installGuide = null;
+    else if(v.setImport) v.setImport = null;
+    else if(v.roleShare) v.roleShare = null;
     else if(v.confirmUndoReset) v.confirmUndoReset = false;
     else if(v.confirmReset) v.confirmReset = false;
     else if(v.backupPlan) v.backupPlan = null;
