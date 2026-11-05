@@ -333,6 +333,7 @@
   .update-notice li{margin:2px 0;}
   .update-notice a{color:var(--cream-dim);font-size:12px;}
   .defaults-desc{margin:0 0 8px;line-height:1.6;}
+  .chip .group-count{margin-left:6px;opacity:.7;font-size:.9em;}
   .set-import-list{max-height:260px;overflow:auto;border:1px solid var(--seam);border-radius:10px;padding:4px 10px;background:var(--bg);}
   .share-preview{font-size:12.5px;line-height:1.7;max-height:120px;overflow:auto;border:1px solid var(--seam);border-radius:10px;padding:8px 10px;background:var(--bg);overflow-wrap:anywhere;}
   .defaults-row{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;}
@@ -749,14 +750,17 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.48.0';
+  var APP_VERSION = '1.48.1';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-11-06';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.48.1': [
+      'パートの共有は、設定の「このアプリを友達に勧める」の下の「パートを共有する」からに変更しました'
+    ],
     '1.48.0': [
-      'パートごとの持ち物セットを、リンクにして共有できるようにしました（設定 →「パートを管理」の共有アイコン）。SNSやLINEで送ると、受け取った人は自分のアプリに取り込めます',
+      'パートごとの持ち物セットを、リンクにして共有できるようにしました（設定 →「パートを共有する」）。SNSやLINEで送ると、受け取った人は自分のアプリに取り込めます',
       '受け取ったときは、取り込む持ち物と取り込み先のパートを選べます。同じ名前の持ち物は上書きせず、取り込んだあとも元に戻せます'
     ],
     '1.47.2': [
@@ -1804,7 +1808,7 @@
     ['未チェック・種類の絞り込み', '「未チェック」で残りだけ、「持込・借りる・渡す」で種類ごとに表示。もう一度押すと解除。'],
     ['この内容で新規作成', '前の予定の持ち物をまるごとコピーして使い回せます。'],
     ['CSV・バックアップ', '表計算アプリで編集したり、機種変更のときにデータを移したりできます。'],
-    ['パートの持ち物セットを共有', '設定 →「パートを管理」で、パートの横の共有アイコンを押すと、そのパートの持ち物を1つのリンクにできます。SNSやLINEで送ると、受け取った人は自分のアプリに取り込めます（同じ名前の持ち物は上書きしません）。'],
+    ['パートの持ち物セットを共有', '設定 →「パートを共有する」でパートを選ぶと、そのパートの持ち物を1つのリンクにできます。SNSやLINEで送ると、受け取った人は自分のアプリに取り込めます（同じ名前の持ち物は上書きしません）。'],
     ['自分のリストはSNSで自由にシェアOK', '自分なりのパート・自分なりの持ち物リストは、テキスト出力（Markdown）などでSNSに投稿・配布して自由に使ってください。#プレイヤーズ持ち物リスト をつけてもらえると、みんなが現場にどんな物を持っていっているのか、見つけやすくなります。']
   ];
   var HELP_FAQ = [
@@ -2063,7 +2067,7 @@
       h += '<label class="defaults-row"><input type="checkbox" data-set-pick="'+i+'"'+(si.pick[i]!==false?' checked':'')+'> <span>'+esc(x.name)+(tag?' <span class="hidden-tag">'+tag+'</span>':'')+'</span></label>';
     });
     h += '</div>';
-    h += '<p class="hint" style="margin:8px 0 0;">同じ名前の持ち物がすでにあるときは、パートを付け足すだけで、自分で決めた内容は変えません。取り込んだあとも「↩ 持ち物セットの取り込み前に戻す」（設定 → パートを管理）で戻せます。</p>';
+    h += '<p class="hint" style="margin:8px 0 0;">同じ名前の持ち物がすでにあるときは、パートを付け足すだけで、自分で決めた内容は変えません。取り込んだあとも「↩ 持ち物セットの取り込み前に戻す」（設定 →「パートを共有する」）で戻せます。</p>';
     h += '<div class="defaults-btns"><button class="btn ghost" id="set-import-cancel">取り込まない</button><button class="btn" id="set-import-apply">選んで取り込む</button></div>';
     h += '</div>';
     return h;
@@ -2952,6 +2956,7 @@
       'ホーム画面に追加': isStandalone() ? '追加済み' : 'アプリのように使う',
       '使い方・ヘルプ': '特徴・使い方・便利な機能・ヘルプ',
       'このアプリを友達に勧める': 'URLと説明を送る',
+      'パートを共有する': 'パートの持ち物セットをリンクで共有',
       '作者に感想を送る': '感想・初期値のリクエスト・不具合など',
       'アプリの更新': '最新版を確認 ・ v'+APP_VERSION
     };
@@ -4071,20 +4076,18 @@
     html += '<input type="text" id="role-name" maxlength="'+LIMIT.role+'" placeholder="例: サポートキーボード">';
     html += '<button class="btn block" id="add-role-btn">+ パートを追加</button>';
     if(state.roles.length>0){
-      html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更。右スワイプ →（PCでは目のアイコン）で表示／非表示を切り替え（非表示のパートは予定の登録時のパート選択に出なくなります）。共有のアイコンで、そのパートの持ち物セットをリンクにしてSNSなどで共有できます。</p>';
+      html += '<p class="hint" style="margin-top:10px;">▲▼で並び順を変更。右スワイプ →（PCでは目のアイコン）で表示／非表示を切り替え（非表示のパートは予定の登録時のパート選択に出なくなります）。</p>';
       state.roles.forEach(function(r, i){
         var hid = isRoleHidden(r);
         html += '<div class="swipe-wrap"><button class="swipe-bg del" data-role-del="'+esc(r)+'">削除</button><div class="swipe-bg pin role-hide-bg">'+(hid?'表示に戻す':'非表示')+'</div><div class="item-row swipe-row'+(hid?' role-hidden':'')+'" data-swipe-row="role-'+i+'" data-swipe-kind="del" data-swipe-right="role-hide" data-role-name="'+esc(r)+'">';
         html += '<div class="item-name">'+esc(r)+(hid?' <span class="hidden-tag">非表示中</span>':'')+'</div>';
         html += '<div style="display:flex;gap:4px;align-items:center;">';
         html += '<button class="icon-btn swipe-alt'+(hid?' restore-btn':'')+'" data-role-unhide="'+esc(r)+'" aria-label="'+(hid?'表示に戻す':'非表示にする')+'" title="'+(hid?'表示に戻す（今は非表示）':'非表示にする')+'">'+(hid?EYE_OFF_SVG:EYE_SVG)+'</button>';
-        html += '<button class="icon-btn" data-role-share="'+esc(r)+'" aria-label="「'+esc(r)+'」の持ち物セットを共有" title="持ち物セットを共有">'+SHARE_SVG+'</button>';
         html += '<button class="btn ghost" data-role-up="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===0?' disabled':'')+'>▲</button>';
         html += '<button class="btn ghost" data-role-down="'+esc(r)+'" style="padding:4px 9px;font-size:12px;"'+(i===state.roles.length-1?' disabled':'')+'>▼</button>';
         html += '<button class="del-x" data-role-del="'+esc(r)+'" aria-label="削除">×</button>';
         html += '</div>';
         html += '</div></div>';
-        if(view.roleShare===r) html += renderRoleSharePanel(r);
         if(view.confirmRoleDel===r){
           var usedN = state.items.filter(function(it){ return (it.roles||[]).indexOf(r)!==-1; }).length;
           html += '<div class="panel" style="margin:6px 0 8px;border-color:var(--red);">';
@@ -4096,7 +4099,6 @@
         }
       });
     }
-    html += renderUndoBlock('set');
     html += '</div>';
 
     html += '<div class="set-group">データ</div>';
@@ -4170,6 +4172,24 @@
     html += '<button class="btn ghost" id="share-copy-btn" style="flex:1;">文章をコピー</button>';
     html += '</div>';
     if(view.shareText!==null && view.shareText!==defaultShareText()){ html += '<button class="btn ghost block" id="share-reset-btn" style="margin-top:8px;font-size:12px;">最初の文章に戻す</button>'; }
+    html += '</div>';
+
+    html += '<div class="panel">';
+    html += '<div class="panel-label">パートを共有する</div>';
+    html += '<p class="hint" style="margin-top:0;line-height:1.7;">自分なりに作ったパートの持ち物セットを、1つのリンクにしてSNSやLINEで共有できます。受け取った人は、自分のアプリに取り込めます。共有するパートを選んでください。</p>';
+    var shareRoles = state.roles.filter(function(r){ return setItemsForRole(r, false).length; });
+    if(view.roleShare && state.roles.indexOf(view.roleShare)===-1) view.roleShare = null;
+    if(shareRoles.length){
+      html += '<div class="chip-wrap">';
+      shareRoles.forEach(function(r){
+        html += '<button class="chip'+(view.roleShare===r?' on':'')+'" data-role-share="'+esc(r)+'">'+esc(r)+'<span class="group-count">'+setItemsForRole(r, false).length+'</span></button>';
+      });
+      html += '</div>';
+    } else {
+      html += '<p class="hint">パートが指定された持ち物がまだありません。</p>';
+    }
+    if(view.roleShare) html += renderRoleSharePanel(view.roleShare);
+    html += renderUndoBlock('set');
     html += '</div>';
 
     html += '<div class="panel">';
