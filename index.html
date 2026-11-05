@@ -750,12 +750,15 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.48.1';
+  var APP_VERSION = '1.48.2';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-11-06';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   var RELEASE_NOTES = {
+    '1.48.2': [
+      '設定の「その他」を「共有」と「その他」に分けました。共有：友達に勧める・パートの共有・作者に感想を送る／その他：ホーム画面に追加・使い方・ヘルプ'
+    ],
     '1.48.1': [
       'パートの共有は、設定の「このアプリを友達に勧める」の下の「パートを共有する」からに変更しました'
     ],
@@ -1808,7 +1811,7 @@
     ['未チェック・種類の絞り込み', '「未チェック」で残りだけ、「持込・借りる・渡す」で種類ごとに表示。もう一度押すと解除。'],
     ['この内容で新規作成', '前の予定の持ち物をまるごとコピーして使い回せます。'],
     ['CSV・バックアップ', '表計算アプリで編集したり、機種変更のときにデータを移したりできます。'],
-    ['パートの持ち物セットを共有', '設定 →「パートを共有する」でパートを選ぶと、そのパートの持ち物を1つのリンクにできます。SNSやLINEで送ると、受け取った人は自分のアプリに取り込めます（同じ名前の持ち物は上書きしません）。'],
+    ['パートの持ち物セットを共有', '設定 → 共有 →「パートの共有」でパートを選ぶと、そのパートの持ち物を1つのリンクにできます。SNSやLINEで送ると、受け取った人は自分のアプリに取り込めます（同じ名前の持ち物は上書きしません）。'],
     ['自分のリストはSNSで自由にシェアOK', '自分なりのパート・自分なりの持ち物リストは、テキスト出力（Markdown）などでSNSに投稿・配布して自由に使ってください。#プレイヤーズ持ち物リスト をつけてもらえると、みんなが現場にどんな物を持っていっているのか、見つけやすくなります。']
   ];
   var HELP_FAQ = [
@@ -2067,7 +2070,7 @@
       h += '<label class="defaults-row"><input type="checkbox" data-set-pick="'+i+'"'+(si.pick[i]!==false?' checked':'')+'> <span>'+esc(x.name)+(tag?' <span class="hidden-tag">'+tag+'</span>':'')+'</span></label>';
     });
     h += '</div>';
-    h += '<p class="hint" style="margin:8px 0 0;">同じ名前の持ち物がすでにあるときは、パートを付け足すだけで、自分で決めた内容は変えません。取り込んだあとも「↩ 持ち物セットの取り込み前に戻す」（設定 →「パートを共有する」）で戻せます。</p>';
+    h += '<p class="hint" style="margin:8px 0 0;">同じ名前の持ち物がすでにあるときは、パートを付け足すだけで、自分で決めた内容は変えません。取り込んだあとも「↩ 持ち物セットの取り込み前に戻す」（設定 →「パートの共有」）で戻せます。</p>';
     h += '<div class="defaults-btns"><button class="btn ghost" id="set-import-cancel">取り込まない</button><button class="btn" id="set-import-apply">選んで取り込む</button></div>';
     h += '</div>';
     return h;
@@ -2956,7 +2959,7 @@
       'ホーム画面に追加': isStandalone() ? '追加済み' : 'アプリのように使う',
       '使い方・ヘルプ': '特徴・使い方・便利な機能・ヘルプ',
       'このアプリを友達に勧める': 'URLと説明を送る',
-      'パートを共有する': 'パートの持ち物セットをリンクで共有',
+      'パートの共有': 'パートの持ち物セットをリンクで共有',
       '作者に感想を送る': '感想・初期値のリクエスト・不具合など',
       'アプリの更新': '最新版を確認 ・ v'+APP_VERSION
     };
@@ -4150,19 +4153,7 @@
     html += renderUndoBlock('reset');
     html += '</div>';
 
-    html += '<div class="set-group">その他</div>';
-    if(isPCScreen()) html += renderPhoneQrPanel();
-    html += '<div class="panel">';
-    html += '<div class="panel-label">ホーム画面に追加</div>';
-    if(isStandalone()){
-      html += '<p class="update-msg ok" style="margin:0;">✓ ホーム画面のアプリで開いています</p>';
-    } else {
-      html += '<p class="hint" style="margin-top:0;line-height:1.7;">ホーム画面に追加すると、アプリのように全画面で開けて、電波の弱い会場でも使えます。</p>';
-      html += '<button class="btn block" id="install-set-btn">ホーム画面に追加</button>';
-      if(view.installGuide==='settings') html += renderInstallGuide();
-    }
-    html += '</div>';
-    html += renderHelpPanel();
+    html += '<div class="set-group">共有</div>';
     html += '<div class="panel">';
     html += '<div class="panel-label">このアプリを友達に勧める</div>';
     html += '<p class="hint" style="margin-top:0;line-height:1.7;">友達に、このアプリのURLと簡単な説明を送れます。送る前に、文章を確認・書きかえできます。</p>';
@@ -4175,7 +4166,7 @@
     html += '</div>';
 
     html += '<div class="panel">';
-    html += '<div class="panel-label">パートを共有する</div>';
+    html += '<div class="panel-label">パートの共有</div>';
     html += '<p class="hint" style="margin-top:0;line-height:1.7;">自分なりに作ったパートの持ち物セットを、1つのリンクにしてSNSやLINEで共有できます。受け取った人は、自分のアプリに取り込めます。共有するパートを選んでください。</p>';
     var shareRoles = state.roles.filter(function(r){ return setItemsForRole(r, false).length; });
     if(view.roleShare && state.roles.indexOf(view.roleShare)===-1) view.roleShare = null;
@@ -4199,6 +4190,21 @@
     html += '<p class="hint" style="margin-top:0;">アプリのバージョンと使っている端末・ブラウザは、自動で一緒に送られます（'+esc('v'+APP_VERSION+' / '+feedbackDeviceInfo())+'）。名前や登録したデータは送られません。</p>';
     html += '<a class="btn block" href="'+esc(feedbackUrl())+'" id="feedback-link" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block;">感想を送る</a>';
     html += '</div>';
+
+
+    html += '<div class="set-group">その他</div>';
+    if(isPCScreen()) html += renderPhoneQrPanel();
+    html += '<div class="panel">';
+    html += '<div class="panel-label">ホーム画面に追加</div>';
+    if(isStandalone()){
+      html += '<p class="update-msg ok" style="margin:0;">✓ ホーム画面のアプリで開いています</p>';
+    } else {
+      html += '<p class="hint" style="margin-top:0;line-height:1.7;">ホーム画面に追加すると、アプリのように全画面で開けて、電波の弱い会場でも使えます。</p>';
+      html += '<button class="btn block" id="install-set-btn">ホーム画面に追加</button>';
+      if(view.installGuide==='settings') html += renderInstallGuide();
+    }
+    html += '</div>';
+    html += renderHelpPanel();
 
     // アプリの更新（アコーディオンにしない、常に表示）
     var uc = view.updateCheck || {};
