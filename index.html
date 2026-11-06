@@ -332,6 +332,17 @@
   .update-notice ul{margin:0 0 8px;padding-left:18px;}
   .update-notice li{margin:2px 0;}
   .update-notice a{color:var(--cream-dim);font-size:12px;}
+  .cl-head{margin:4px 2px 14px;}
+  .cl-title{font-size:20px;font-weight:800;color:var(--cream);}
+  .cl-now{font-size:12.5px;color:var(--cream-dim);margin-top:2px;}
+  .cl-card{background:var(--panel);border:1px solid var(--seam);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;}
+  .cl-card.now{border-color:var(--amber);}
+  .cl-ver{font-weight:800;color:var(--cream);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .cl-date{font-weight:500;font-size:12.5px;color:var(--cream-dim);}
+  .cl-badge{font-size:11px;font-weight:700;color:var(--amber);border:1px solid var(--amber);border-radius:999px;padding:1px 8px;}
+  .cl-card ul{margin:6px 0 0;padding-left:20px;font-size:13.5px;line-height:1.7;color:var(--cream);}
+  .cl-card li{margin:2px 0;overflow-wrap:anywhere;}
+  .linkbtn{background:none;border:none;padding:4px;color:var(--cream-dim);text-decoration:underline;font:inherit;cursor:pointer;}
   .defaults-desc{margin:0 0 8px;line-height:1.6;}
   .chip .group-count{margin-left:6px;opacity:.7;font-size:.9em;}
   .set-import-list{max-height:260px;overflow:auto;border:1px solid var(--seam);border-radius:10px;padding:4px 10px;background:var(--bg);}
@@ -750,12 +761,17 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.48.3';
+  var APP_VERSION = '1.48.4';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
-  var APP_RELEASE_DATE = '2026-11-06';
+  var APP_RELEASE_DATE = '2026-11-07';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
+  // 各バージョンの公開日（アプリ内の「更新履歴」画面に表示。バージョンを上げたら1行足す）
+  var RELEASE_DATES = {"1.48.4": "2026-11-07", "1.48.3": "2026-11-06", "1.48.2": "2026-11-06", "1.48.1": "2026-11-06", "1.48.0": "2026-11-06", "1.47.2": "2026-11-05", "1.47.1": "2026-11-05", "1.47.0": "2026-11-04", "1.46.0": "2026-11-04", "1.45.2": "2026-11-03", "1.45.1": "2026-11-03", "1.45.0": "2026-11-01", "1.44.1": "2026-10-31", "1.44.0": "2026-10-31", "1.43.3": "2026-10-31", "1.43.2": "2026-10-31", "1.43.1": "2026-10-31", "1.43.0": "2026-10-31", "1.42.1": "2026-10-31", "1.42.0": "2026-10-30", "1.41.0": "2026-10-30", "1.40.0": "2026-10-30", "1.39.0": "2026-10-29", "1.38.2": "2026-10-29", "1.38.1": "2026-10-29", "1.38.0": "2026-10-29", "1.37.1": "2026-10-29", "1.37.0": "2026-10-29", "1.36.2": "2026-10-29", "1.36.1": "2026-10-29", "1.36.0": "2026-10-29", "1.35.0": "2026-10-29", "1.34.6": "2026-10-29", "1.34.5": "2026-10-29", "1.34.4": "2026-10-29", "1.34.3": "2026-10-29", "1.34.2": "2026-10-29", "1.34.1": "2026-10-29", "1.34.0": "2026-10-29", "1.33.3": "2026-10-29", "1.33.2": "2026-10-29", "1.33.1": "2026-10-29", "1.33.0": "2026-10-28", "1.32.0": "2026-10-28", "1.31.2": "2026-10-28", "1.31.1": "2026-10-28", "1.31.0": "2026-10-28", "1.30.3": "2026-10-28", "1.30.2": "2026-10-27", "1.30.1": "2026-10-27", "1.30.0": "2026-10-27", "1.29.1": "2026-10-27", "1.29.0": "2026-10-27", "1.28.0": "2026-10-27", "1.27.2": "2026-10-27", "1.27.1": "2026-10-27", "1.27.0": "2026-10-25", "1.26.2": "2026-10-25", "1.26.1": "2026-10-25", "1.26.0": "2026-10-25", "1.25.0": "2026-10-25", "1.24.0": "2026-10-23", "1.23.1": "2026-10-23", "1.23.0": "2026-10-23", "1.22.0": "2026-10-23", "1.21.0": "2026-10-23", "1.20.1": "2026-10-23", "1.20.0": "2026-10-23", "1.19.2": "2026-10-23", "1.19.1": "2026-10-23", "1.19.0": "2026-10-23", "1.18.2": "2026-10-22", "1.18.1": "2026-10-21", "1.18.0": "2026-10-20", "1.17.2": "2026-10-19", "1.17.1": "2026-10-18", "1.17.0": "2026-10-18", "1.16.0": "2026-10-18", "1.15.1": "2026-10-18", "1.15.0": "2026-10-17", "1.14.0": "2026-10-17", "1.13.1": "2026-10-17", "1.13.0": "2026-10-17", "1.12.0": "2026-10-17", "1.11.2": "2026-10-17", "1.11.1": "2026-10-17", "1.11.0": "2026-10-17", "1.10.1": "2026-10-17", "1.10.0": "2026-10-17", "1.9.2": "2026-10-17", "1.9.1": "2026-10-17", "1.9.0": "2026-10-17", "1.8.2": "2026-10-17", "1.8.1": "2026-10-17", "1.8.0": "2026-10-17", "1.7.2": "2026-10-17", "1.7.1": "2026-10-17", "1.7.0": "2026-10-17", "1.6.0": "2026-10-17", "1.5.2": "2026-10-17", "1.5.1": "2026-10-16", "1.5.0": "2026-10-16", "1.4.0": "2026-10-16", "1.3.3": "2026-10-13", "1.3.2": "2026-10-13", "1.3.1": "2026-10-13", "1.3.0": "2026-10-12", "1.2.0": "2026-10-12", "1.1.0": "2026-10-12", "1.0.0": "2026-10-07"};
   var RELEASE_NOTES = {
+    '1.48.4': [
+      '更新履歴をアプリの中で見られるようにしました（設定 →「アプリの更新」の「更新履歴を見る」、または画面いちばん下の「更新履歴」）'
+    ],
     '1.48.3': [
       '設定を整理：「表示設定」を「表示」グループに、「持ち物の一括管理（CSV）」を「データ」に、「アプリの更新」を「その他」の中に移しました'
     ],
@@ -3922,7 +3938,34 @@
     return html;
   }
 
+  // ---------- 更新履歴（アプリの中で見られる画面） ----------
+  function versionCmp(a, b){
+    var x = a.split('.').map(Number), y = b.split('.').map(Number);
+    for(var i=0;i<3;i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0) - (y[i]||0); }
+    return 0;
+  }
+  function renderChangelogView(){
+    var vers = Object.keys(RELEASE_NOTES).sort(function(a,b){ return versionCmp(b,a); });
+    var show = view.changelogShow || 15;
+    var h = '<div class="backrow"><button class="backbtn" id="changelog-back">← 設定に戻る</button></div>';
+    h += '<div class="cl-head"><div class="cl-title">更新履歴</div><div class="cl-now">今のバージョン v'+esc(APP_VERSION)+'（'+esc(APP_RELEASE_DATE)+'）</div></div>';
+    vers.slice(0, show).forEach(function(v){
+      var d = RELEASE_DATES[v] || '';
+      h += '<div class="cl-card'+(v===APP_VERSION?' now':'')+'">';
+      h += '<div class="cl-ver">v'+esc(v)+(d?'<span class="cl-date">'+esc(d.replace(/-/g,'/'))+'</span>':'')+(v===APP_VERSION?'<span class="cl-badge">今のバージョン</span>':'')+'</div>';
+      h += '<ul>';
+      RELEASE_NOTES[v].forEach(function(t){ h += '<li>'+esc(t)+'</li>'; });
+      h += '</ul></div>';
+    });
+    if(vers.length > show){
+      h += '<button class="btn ghost block" id="changelog-more">もっと見る（残り'+(vers.length-show)+'件）</button>';
+    }
+    h += '<div style="height:24px;"></div>';
+    return h;
+  }
+
   function renderItemsView(){
+    if(view.changelog) return renderChangelogView();
     var html = '';
     html += '<div class="set-group">表示</div>';
     html += '<div class="panel">';
@@ -4223,13 +4266,14 @@
       if(uc.state==='error') html += '<p class="update-msg ng">確認できませんでした。ネットにつながっているか確かめて、もう一度お試しください。</p>';
       if(uc.state==='unsupported') html += '<p class="update-msg">この画面（プレビューなど）では確認できません。公開版のアプリで確認してください。</p>';
     }
-    html += '<button class="btn ghost block" id="defaults-check-btn" style="margin-top:12px;">新しい初期値を確認</button>';
+    html += '<button class="btn ghost block" id="changelog-open" style="margin-top:12px;">更新履歴を見る</button>';
+    html += '<button class="btn ghost block" id="defaults-check-btn" style="margin-top:8px;">新しい初期値を確認</button>';
     html += '<p class="hint" style="margin:6px 0 0;">アプリの更新で増えた・変わった持ち物の初期値を、今のデータに取り込めます（自分で直した持ち物はそのまま）。</p>';
     html += '</div>';
 
 
     html += '<div style="text-align:center;color:var(--cream-dim);font-size:10.5px;letter-spacing:.05em;padding:6px 0 18px;">Powered by SunaTrux</div>';
-    html += '<div style="text-align:center;color:var(--cream-dim);font-size:12px;padding:0 0 22px;">バージョン '+APP_VERSION+'（'+APP_RELEASE_DATE+'）<br><a href="https://github.com/sunatrux/band-mochimono/blob/main/CHANGELOG.md" target="_blank" rel="noopener" style="color:var(--cream-dim);">更新履歴</a></div>';
+    html += '<div style="text-align:center;color:var(--cream-dim);font-size:12px;padding:0 0 22px;">バージョン '+APP_VERSION+'（'+APP_RELEASE_DATE+'）<br><button class="linkbtn" id="changelog-open2">更新履歴</button></div>';
 
     return html;
   }
@@ -4271,6 +4315,7 @@
     document.querySelectorAll('.nav button').forEach(function(b){
       b.onclick = function(){
         view.roleReturn = null;
+        view.changelog = false;
         view.mode = b.dataset.mode;
         view.infoOpen = false;
         view.editMode = false;
@@ -5519,6 +5564,14 @@
       };
     }
 
+    ['changelog-open','changelog-open2'].forEach(function(id){
+      var b = document.getElementById(id);
+      if(b) b.onclick = function(){ view.changelog = true; view.changelogShow = 15; render(); window.scrollTo(0,0); };
+    });
+    var clBack = document.getElementById('changelog-back');
+    if(clBack) clBack.onclick = function(){ view.changelog = false; render(); window.scrollTo(0,0); };
+    var clMore = document.getElementById('changelog-more');
+    if(clMore) clMore.onclick = function(){ view.changelogShow = (view.changelogShow||15) + 20; render(); };
     var defCheck = document.getElementById('defaults-check-btn');
     if(defCheck){ defCheck.onclick = function(){
       if(!pendingDefaultUpdates(true).length){ showToast('取り込める新しい初期値はありません'); return; }
@@ -5589,6 +5642,7 @@
     if(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;   // 入力中は各入力欄の動き（取り消しなど）に任せる
     var v = view, changed = true;
     if(v.installGuide) v.installGuide = null;
+    else if(v.changelog && v.mode==='items') v.changelog = false;
     else if(v.setImport) v.setImport = null;
     else if(v.roleShare) v.roleShare = null;
     else if(v.confirmUndoReset) v.confirmUndoReset = false;
