@@ -542,6 +542,8 @@
   .swipe-wrap.entry-wrap > .entry-card{background:var(--panel-raised);margin-bottom:0;}
   .swipe-row{touch-action:pan-y;transition:transform .18s ease;}
   .swipe-row.swiping{transition:none;}
+  .my-tag{display:inline-block;font-size:10px;font-weight:700;line-height:1.5;color:var(--teal);border:1px solid var(--teal);border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:2px;white-space:nowrap;text-decoration:none;}
+  .check-label.done .my-tag{opacity:.6;}
   .local-tag{font-size:10px;color:var(--amber);border:1px solid var(--amber);border-radius:4px;padding:0 4px;margin-left:6px;white-space:nowrap;}
   .icon-btn{
     flex-shrink:0;
@@ -768,14 +770,17 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.49.2';
+  var APP_VERSION = '1.50.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-11-07';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   // 各バージョンの公開日（アプリ内の「更新履歴」画面に表示。バージョンを上げたら1行足す）
-  var RELEASE_DATES = {"1.49.2": "2026-11-07", "1.49.1": "2026-11-07", "1.49.0": "2026-11-07", "1.48.5": "2026-11-07", "1.48.4": "2026-11-07", "1.48.3": "2026-11-06", "1.48.2": "2026-11-06", "1.48.1": "2026-11-06", "1.48.0": "2026-11-06", "1.47.2": "2026-11-05", "1.47.1": "2026-11-05", "1.47.0": "2026-11-04", "1.46.0": "2026-11-04", "1.45.2": "2026-11-03", "1.45.1": "2026-11-03", "1.45.0": "2026-11-01", "1.44.1": "2026-10-31", "1.44.0": "2026-10-31", "1.43.3": "2026-10-31", "1.43.2": "2026-10-31", "1.43.1": "2026-10-31", "1.43.0": "2026-10-31", "1.42.1": "2026-10-31", "1.42.0": "2026-10-30", "1.41.0": "2026-10-30", "1.40.0": "2026-10-30", "1.39.0": "2026-10-29", "1.38.2": "2026-10-29", "1.38.1": "2026-10-29", "1.38.0": "2026-10-29", "1.37.1": "2026-10-29", "1.37.0": "2026-10-29", "1.36.2": "2026-10-29", "1.36.1": "2026-10-29", "1.36.0": "2026-10-29", "1.35.0": "2026-10-29", "1.34.6": "2026-10-29", "1.34.5": "2026-10-29", "1.34.4": "2026-10-29", "1.34.3": "2026-10-29", "1.34.2": "2026-10-29", "1.34.1": "2026-10-29", "1.34.0": "2026-10-29", "1.33.3": "2026-10-29", "1.33.2": "2026-10-29", "1.33.1": "2026-10-29", "1.33.0": "2026-10-28", "1.32.0": "2026-10-28", "1.31.2": "2026-10-28", "1.31.1": "2026-10-28", "1.31.0": "2026-10-28", "1.30.3": "2026-10-28", "1.30.2": "2026-10-27", "1.30.1": "2026-10-27", "1.30.0": "2026-10-27", "1.29.1": "2026-10-27", "1.29.0": "2026-10-27", "1.28.0": "2026-10-27", "1.27.2": "2026-10-27", "1.27.1": "2026-10-27", "1.27.0": "2026-10-25", "1.26.2": "2026-10-25", "1.26.1": "2026-10-25", "1.26.0": "2026-10-25", "1.25.0": "2026-10-25", "1.24.0": "2026-10-23", "1.23.1": "2026-10-23", "1.23.0": "2026-10-23", "1.22.0": "2026-10-23", "1.21.0": "2026-10-23", "1.20.1": "2026-10-23", "1.20.0": "2026-10-23", "1.19.2": "2026-10-23", "1.19.1": "2026-10-23", "1.19.0": "2026-10-23", "1.18.2": "2026-10-22", "1.18.1": "2026-10-21", "1.18.0": "2026-10-20", "1.17.2": "2026-10-19", "1.17.1": "2026-10-18", "1.17.0": "2026-10-18", "1.16.0": "2026-10-18", "1.15.1": "2026-10-18", "1.15.0": "2026-10-17", "1.14.0": "2026-10-17", "1.13.1": "2026-10-17", "1.13.0": "2026-10-17", "1.12.0": "2026-10-17", "1.11.2": "2026-10-17", "1.11.1": "2026-10-17", "1.11.0": "2026-10-17", "1.10.1": "2026-10-17", "1.10.0": "2026-10-17", "1.9.2": "2026-10-17", "1.9.1": "2026-10-17", "1.9.0": "2026-10-17", "1.8.2": "2026-10-17", "1.8.1": "2026-10-17", "1.8.0": "2026-10-17", "1.7.2": "2026-10-17", "1.7.1": "2026-10-17", "1.7.0": "2026-10-17", "1.6.0": "2026-10-17", "1.5.2": "2026-10-17", "1.5.1": "2026-10-16", "1.5.0": "2026-10-16", "1.4.0": "2026-10-16", "1.3.3": "2026-10-13", "1.3.2": "2026-10-13", "1.3.1": "2026-10-13", "1.3.0": "2026-10-12", "1.2.0": "2026-10-12", "1.1.0": "2026-10-12", "1.0.0": "2026-10-07"};
+  var RELEASE_DATES = {"1.50.0": "2026-11-07", "1.49.2": "2026-11-07", "1.49.1": "2026-11-07", "1.49.0": "2026-11-07", "1.48.5": "2026-11-07", "1.48.4": "2026-11-07", "1.48.3": "2026-11-06", "1.48.2": "2026-11-06", "1.48.1": "2026-11-06", "1.48.0": "2026-11-06", "1.47.2": "2026-11-05", "1.47.1": "2026-11-05", "1.47.0": "2026-11-04", "1.46.0": "2026-11-04", "1.45.2": "2026-11-03", "1.45.1": "2026-11-03", "1.45.0": "2026-11-01", "1.44.1": "2026-10-31", "1.44.0": "2026-10-31", "1.43.3": "2026-10-31", "1.43.2": "2026-10-31", "1.43.1": "2026-10-31", "1.43.0": "2026-10-31", "1.42.1": "2026-10-31", "1.42.0": "2026-10-30", "1.41.0": "2026-10-30", "1.40.0": "2026-10-30", "1.39.0": "2026-10-29", "1.38.2": "2026-10-29", "1.38.1": "2026-10-29", "1.38.0": "2026-10-29", "1.37.1": "2026-10-29", "1.37.0": "2026-10-29", "1.36.2": "2026-10-29", "1.36.1": "2026-10-29", "1.36.0": "2026-10-29", "1.35.0": "2026-10-29", "1.34.6": "2026-10-29", "1.34.5": "2026-10-29", "1.34.4": "2026-10-29", "1.34.3": "2026-10-29", "1.34.2": "2026-10-29", "1.34.1": "2026-10-29", "1.34.0": "2026-10-29", "1.33.3": "2026-10-29", "1.33.2": "2026-10-29", "1.33.1": "2026-10-29", "1.33.0": "2026-10-28", "1.32.0": "2026-10-28", "1.31.2": "2026-10-28", "1.31.1": "2026-10-28", "1.31.0": "2026-10-28", "1.30.3": "2026-10-28", "1.30.2": "2026-10-27", "1.30.1": "2026-10-27", "1.30.0": "2026-10-27", "1.29.1": "2026-10-27", "1.29.0": "2026-10-27", "1.28.0": "2026-10-27", "1.27.2": "2026-10-27", "1.27.1": "2026-10-27", "1.27.0": "2026-10-25", "1.26.2": "2026-10-25", "1.26.1": "2026-10-25", "1.26.0": "2026-10-25", "1.25.0": "2026-10-25", "1.24.0": "2026-10-23", "1.23.1": "2026-10-23", "1.23.0": "2026-10-23", "1.22.0": "2026-10-23", "1.21.0": "2026-10-23", "1.20.1": "2026-10-23", "1.20.0": "2026-10-23", "1.19.2": "2026-10-23", "1.19.1": "2026-10-23", "1.19.0": "2026-10-23", "1.18.2": "2026-10-22", "1.18.1": "2026-10-21", "1.18.0": "2026-10-20", "1.17.2": "2026-10-19", "1.17.1": "2026-10-18", "1.17.0": "2026-10-18", "1.16.0": "2026-10-18", "1.15.1": "2026-10-18", "1.15.0": "2026-10-17", "1.14.0": "2026-10-17", "1.13.1": "2026-10-17", "1.13.0": "2026-10-17", "1.12.0": "2026-10-17", "1.11.2": "2026-10-17", "1.11.1": "2026-10-17", "1.11.0": "2026-10-17", "1.10.1": "2026-10-17", "1.10.0": "2026-10-17", "1.9.2": "2026-10-17", "1.9.1": "2026-10-17", "1.9.0": "2026-10-17", "1.8.2": "2026-10-17", "1.8.1": "2026-10-17", "1.8.0": "2026-10-17", "1.7.2": "2026-10-17", "1.7.1": "2026-10-17", "1.7.0": "2026-10-17", "1.6.0": "2026-10-17", "1.5.2": "2026-10-17", "1.5.1": "2026-10-16", "1.5.0": "2026-10-16", "1.4.0": "2026-10-16", "1.3.3": "2026-10-13", "1.3.2": "2026-10-13", "1.3.1": "2026-10-13", "1.3.0": "2026-10-12", "1.2.0": "2026-10-12", "1.1.0": "2026-10-12", "1.0.0": "2026-10-07"};
   var RELEASE_NOTES = {
+    '1.50.0': [
+      '自分で追加した持ち物（初期値以外）に「マイ」の目印を付けました。持ち物マスタとチェックリストに表示され、マスタの検索で「マイ」と入れると絞り込めます'
+    ],
     '1.49.2': [
       'ホーム画面のアプリで、入力欄を選ぶと画面が上にずれすぎて入力欄が見えなくなることがあったのを直しました'
     ],
@@ -1387,6 +1392,20 @@
     view.defaultsPick = null;
     saveState();
   }
+
+  // 初期値の持ち物の名前（これ以外＝自分で追加した持ち物。マスタやチェックリストで「マイ」の目印を付ける）
+  var defaultItemNames = null;
+  function isCustomItem(it){
+    if(!defaultItemNames){
+      defaultItemNames = {};
+      try{ defaultState().items.forEach(function(x){ defaultItemNames[x.name] = 1; }); }catch(e){}
+      ROLE_PRESETS.forEach(function(p){ p.items.forEach(function(n){ defaultItemNames[n] = 1; }); });
+      DEFAULT_UPDATES.forEach(function(u){ if(u.item) defaultItemNames[u.item.name] = 1; if(u.name) defaultItemNames[u.name] = 1; });
+      ['借りてた●●を●●へ返す', '●●を●●へ返す'].forEach(function(n){ defaultItemNames[n] = 1; });   // 以前の初期値の名前
+    }
+    return !!it && !defaultItemNames[it.name];
+  }
+  function myTag(it){ return isCustomItem(it) ? ' <span class="my-tag" title="自分で追加した持ち物">マイ</span>' : ''; }
 
   function defaultState(){
     var items = [
@@ -3655,7 +3674,7 @@
           if(isHiddenForEntry(it, entry)){
             html += '<div class="swipe-wrap"><div class="check-row hidden-row">';
             html += '<div style="width:24px;flex-shrink:0;"></div>';
-            html += renamingLabel(it, entry, '<div class="check-label">'+esc(effectiveItemName(it, entry))+' <span class="hidden-tag">非表示中</span></div>');
+            html += renamingLabel(it, entry, '<div class="check-label">'+esc(effectiveItemName(it, entry))+myTag(it)+' <span class="hidden-tag">非表示中</span></div>');
             if(!locked){
               html += '<button class="icon-btn restore-btn" data-toggle-entry-visible="'+it.id+'" aria-label="表示に戻す" title="表示に戻す">'+EYE_SVG+'</button>';
               if(view.renamingItem!==it.id) html += '<button class="icon-btn row-pencil" data-rename-item="'+it.id+'" aria-label="名前を変える" title="名前を変える">'+ROW_PENCIL_SVG+'</button>';
@@ -3673,7 +3692,7 @@
             } else {
               html += '<div style="width:24px;flex-shrink:0;"></div>';
             }
-            html += '<div class="check-label'+(onL?' done':'')+'">'+esc(effectiveItemName(it, entry))+'</div>';
+            html += '<div class="check-label'+(onL?' done':'')+'">'+esc(effectiveItemName(it, entry))+myTag(it)+'</div>';
             if(isHandForEntry(it, entry)){ var hdL = !!ck[handedKey(it.id)]; html += '<span class="hand-btn'+(hdL?' on':'')+'">'+(hdL?'渡した ✓':'未渡し')+'</span>'; }
             html += '<span class="bring-tag" style="'+blL.style+'">'+blL.text+'</span>';
             html += '</div></div>';
@@ -3683,10 +3702,10 @@
           if(bringNow){
             var on = !!ck[it.id];
             html += '<div class="toggle'+(on?' on':'')+'" data-item="'+it.id+'"><div class="knob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>';
-            html += renamingLabel(it, entry, '<div class="check-label'+(on?' done':'')+'" data-item="'+it.id+'" style="cursor:pointer;">'+esc(effectiveItemName(it, entry))+'</div>');
+            html += renamingLabel(it, entry, '<div class="check-label'+(on?' done':'')+'" data-item="'+it.id+'" style="cursor:pointer;">'+esc(effectiveItemName(it, entry))+myTag(it)+'</div>');
           } else {
             html += '<div style="width:24px;flex-shrink:0;"></div>';
-            html += renamingLabel(it, entry, '<div class="check-label">'+esc(effectiveItemName(it, entry))+'</div>');
+            html += renamingLabel(it, entry, '<div class="check-label">'+esc(effectiveItemName(it, entry))+myTag(it)+'</div>');
           }
           if(view.renamingItem===it.id){ html += '</div></div>'; return; }
           var bl = bringLabel(it, entry);
@@ -4062,7 +4081,7 @@
       html += '<div class="master-search'+(view.masterQuery?' has-q':'')+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>';
       html += '<input type="search" id="master-search" value="'+esc(view.masterQuery||'')+'" placeholder="持ち物名・パート・用途で検索" maxlength="30" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="持ち物マスタを検索"><button type="button" class="ms-clear" id="master-search-clear" aria-label="入力を消す" title="入力を消す"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></div>';
       html += '<p class="hint master-hit" id="master-hit" style="display:none;"></p>';
-      if(mgs.length>1){ html += '<p class="hint master-guide" style="margin:0 0 4px;">パート名を選択すると一覧が開きます。</p>'; }
+      if(mgs.length>1){ html += '<p class="hint master-guide" style="margin:0 0 4px;">パート名を選択すると一覧が開きます。<span class="my-tag" style="margin-left:4px;">マイ</span> は自分で追加した持ち物です。</p>'; }
       html += '<div id="master-list">';
       mgs.forEach(function(g){
       var gOpen = mgs.length<=1 || !!view.openGroups[g.label];
@@ -4072,11 +4091,11 @@
       }
       html += '<div class="mg-body'+(gOpen?'':' closed')+'">';
       g.items.forEach(function(it){
-        var key = searchNorm(it.name+' '+(it.roles&&it.roles.length?it.roles.join(' '):'全パート共通 共通')+' '+scopeArrayLabel(it.scope)+' '+bringLabel(it, null).text);
+        var key = searchNorm(it.name+' '+(isCustomItem(it)?'マイ 自分で追加 ':'')+(it.roles&&it.roles.length?it.roles.join(' '):'全パート共通 共通')+' '+scopeArrayLabel(it.scope)+' '+bringLabel(it, null).text);
         html += '<div class="swipe-wrap mrow" data-skey="'+esc(key)+'"><button class="swipe-bg del" data-item-del="'+it.id+'">削除</button><div class="item-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="del" style="align-items:flex-start;">';
         html += '<div style="flex:1;min-width:0;">';
         html += '<input type="text" class="item-name-input" maxlength="'+LIMIT.name+'" data-item-master-rename="'+it.id+'" value="'+esc(it.name)+'">';
-        html += '<div class="item-meta">'+scopeArrayLabel(it.scope)+(it.roles&&it.roles.length? ' ・ '+it.roles.map(esc).join(' / ') : ' ・ 全パート共通')+'</div></div>';
+        html += '<div class="item-meta">'+(isCustomItem(it)?'<span class="my-tag" style="margin:0 6px 0 0;" title="自分で追加した持ち物">マイ</span>':'')+scopeArrayLabel(it.scope)+(it.roles&&it.roles.length? ' ・ '+it.roles.map(esc).join(' / ') : ' ・ 全パート共通')+'</div></div>';
         html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;margin-top:2px;">';
         var mbl = bringLabel(it, null);
         html += '<button class="btn ghost" data-toggle-bring="'+it.id+'" title="タップで 持込→借りる→渡す を切り替え" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+mbl.style+'">'+mbl.text+'</button>';
