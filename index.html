@@ -544,6 +544,7 @@
   .swipe-row.swiping{transition:none;}
   .my-tag{display:inline-block;font-size:10px;font-weight:700;line-height:1.5;color:var(--teal);border:1px solid var(--teal);border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:2px;white-space:nowrap;text-decoration:none;}
   .check-label.done .my-tag{opacity:.6;}
+  .my-tag.from-tag{color:var(--amber);border-color:var(--amber);font-weight:600;max-width:12em;overflow:hidden;text-overflow:ellipsis;}
   .local-tag{font-size:10px;color:var(--amber);border:1px solid var(--amber);border-radius:4px;padding:0 4px;margin-left:6px;white-space:nowrap;}
   .icon-btn{
     flex-shrink:0;
@@ -770,14 +771,17 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.50.2';
+  var APP_VERSION = '1.51.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-11-07';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   // 各バージョンの公開日（アプリ内の「更新履歴」画面に表示。バージョンを上げたら1行足す）
-  var RELEASE_DATES = {"1.50.2": "2026-11-07", "1.50.1": "2026-11-07", "1.50.0": "2026-11-07", "1.49.2": "2026-11-07", "1.49.1": "2026-11-07", "1.49.0": "2026-11-07", "1.48.5": "2026-11-07", "1.48.4": "2026-11-07", "1.48.3": "2026-11-06", "1.48.2": "2026-11-06", "1.48.1": "2026-11-06", "1.48.0": "2026-11-06", "1.47.2": "2026-11-05", "1.47.1": "2026-11-05", "1.47.0": "2026-11-04", "1.46.0": "2026-11-04", "1.45.2": "2026-11-03", "1.45.1": "2026-11-03", "1.45.0": "2026-11-01", "1.44.1": "2026-10-31", "1.44.0": "2026-10-31", "1.43.3": "2026-10-31", "1.43.2": "2026-10-31", "1.43.1": "2026-10-31", "1.43.0": "2026-10-31", "1.42.1": "2026-10-31", "1.42.0": "2026-10-30", "1.41.0": "2026-10-30", "1.40.0": "2026-10-30", "1.39.0": "2026-10-29", "1.38.2": "2026-10-29", "1.38.1": "2026-10-29", "1.38.0": "2026-10-29", "1.37.1": "2026-10-29", "1.37.0": "2026-10-29", "1.36.2": "2026-10-29", "1.36.1": "2026-10-29", "1.36.0": "2026-10-29", "1.35.0": "2026-10-29", "1.34.6": "2026-10-29", "1.34.5": "2026-10-29", "1.34.4": "2026-10-29", "1.34.3": "2026-10-29", "1.34.2": "2026-10-29", "1.34.1": "2026-10-29", "1.34.0": "2026-10-29", "1.33.3": "2026-10-29", "1.33.2": "2026-10-29", "1.33.1": "2026-10-29", "1.33.0": "2026-10-28", "1.32.0": "2026-10-28", "1.31.2": "2026-10-28", "1.31.1": "2026-10-28", "1.31.0": "2026-10-28", "1.30.3": "2026-10-28", "1.30.2": "2026-10-27", "1.30.1": "2026-10-27", "1.30.0": "2026-10-27", "1.29.1": "2026-10-27", "1.29.0": "2026-10-27", "1.28.0": "2026-10-27", "1.27.2": "2026-10-27", "1.27.1": "2026-10-27", "1.27.0": "2026-10-25", "1.26.2": "2026-10-25", "1.26.1": "2026-10-25", "1.26.0": "2026-10-25", "1.25.0": "2026-10-25", "1.24.0": "2026-10-23", "1.23.1": "2026-10-23", "1.23.0": "2026-10-23", "1.22.0": "2026-10-23", "1.21.0": "2026-10-23", "1.20.1": "2026-10-23", "1.20.0": "2026-10-23", "1.19.2": "2026-10-23", "1.19.1": "2026-10-23", "1.19.0": "2026-10-23", "1.18.2": "2026-10-22", "1.18.1": "2026-10-21", "1.18.0": "2026-10-20", "1.17.2": "2026-10-19", "1.17.1": "2026-10-18", "1.17.0": "2026-10-18", "1.16.0": "2026-10-18", "1.15.1": "2026-10-18", "1.15.0": "2026-10-17", "1.14.0": "2026-10-17", "1.13.1": "2026-10-17", "1.13.0": "2026-10-17", "1.12.0": "2026-10-17", "1.11.2": "2026-10-17", "1.11.1": "2026-10-17", "1.11.0": "2026-10-17", "1.10.1": "2026-10-17", "1.10.0": "2026-10-17", "1.9.2": "2026-10-17", "1.9.1": "2026-10-17", "1.9.0": "2026-10-17", "1.8.2": "2026-10-17", "1.8.1": "2026-10-17", "1.8.0": "2026-10-17", "1.7.2": "2026-10-17", "1.7.1": "2026-10-17", "1.7.0": "2026-10-17", "1.6.0": "2026-10-17", "1.5.2": "2026-10-17", "1.5.1": "2026-10-16", "1.5.0": "2026-10-16", "1.4.0": "2026-10-16", "1.3.3": "2026-10-13", "1.3.2": "2026-10-13", "1.3.1": "2026-10-13", "1.3.0": "2026-10-12", "1.2.0": "2026-10-12", "1.1.0": "2026-10-12", "1.0.0": "2026-10-07"};
+  var RELEASE_DATES = {"1.51.0": "2026-11-07", "1.50.2": "2026-11-07", "1.50.1": "2026-11-07", "1.50.0": "2026-11-07", "1.49.2": "2026-11-07", "1.49.1": "2026-11-07", "1.49.0": "2026-11-07", "1.48.5": "2026-11-07", "1.48.4": "2026-11-07", "1.48.3": "2026-11-06", "1.48.2": "2026-11-06", "1.48.1": "2026-11-06", "1.48.0": "2026-11-06", "1.47.2": "2026-11-05", "1.47.1": "2026-11-05", "1.47.0": "2026-11-04", "1.46.0": "2026-11-04", "1.45.2": "2026-11-03", "1.45.1": "2026-11-03", "1.45.0": "2026-11-01", "1.44.1": "2026-10-31", "1.44.0": "2026-10-31", "1.43.3": "2026-10-31", "1.43.2": "2026-10-31", "1.43.1": "2026-10-31", "1.43.0": "2026-10-31", "1.42.1": "2026-10-31", "1.42.0": "2026-10-30", "1.41.0": "2026-10-30", "1.40.0": "2026-10-30", "1.39.0": "2026-10-29", "1.38.2": "2026-10-29", "1.38.1": "2026-10-29", "1.38.0": "2026-10-29", "1.37.1": "2026-10-29", "1.37.0": "2026-10-29", "1.36.2": "2026-10-29", "1.36.1": "2026-10-29", "1.36.0": "2026-10-29", "1.35.0": "2026-10-29", "1.34.6": "2026-10-29", "1.34.5": "2026-10-29", "1.34.4": "2026-10-29", "1.34.3": "2026-10-29", "1.34.2": "2026-10-29", "1.34.1": "2026-10-29", "1.34.0": "2026-10-29", "1.33.3": "2026-10-29", "1.33.2": "2026-10-29", "1.33.1": "2026-10-29", "1.33.0": "2026-10-28", "1.32.0": "2026-10-28", "1.31.2": "2026-10-28", "1.31.1": "2026-10-28", "1.31.0": "2026-10-28", "1.30.3": "2026-10-28", "1.30.2": "2026-10-27", "1.30.1": "2026-10-27", "1.30.0": "2026-10-27", "1.29.1": "2026-10-27", "1.29.0": "2026-10-27", "1.28.0": "2026-10-27", "1.27.2": "2026-10-27", "1.27.1": "2026-10-27", "1.27.0": "2026-10-25", "1.26.2": "2026-10-25", "1.26.1": "2026-10-25", "1.26.0": "2026-10-25", "1.25.0": "2026-10-25", "1.24.0": "2026-10-23", "1.23.1": "2026-10-23", "1.23.0": "2026-10-23", "1.22.0": "2026-10-23", "1.21.0": "2026-10-23", "1.20.1": "2026-10-23", "1.20.0": "2026-10-23", "1.19.2": "2026-10-23", "1.19.1": "2026-10-23", "1.19.0": "2026-10-23", "1.18.2": "2026-10-22", "1.18.1": "2026-10-21", "1.18.0": "2026-10-20", "1.17.2": "2026-10-19", "1.17.1": "2026-10-18", "1.17.0": "2026-10-18", "1.16.0": "2026-10-18", "1.15.1": "2026-10-18", "1.15.0": "2026-10-17", "1.14.0": "2026-10-17", "1.13.1": "2026-10-17", "1.13.0": "2026-10-17", "1.12.0": "2026-10-17", "1.11.2": "2026-10-17", "1.11.1": "2026-10-17", "1.11.0": "2026-10-17", "1.10.1": "2026-10-17", "1.10.0": "2026-10-17", "1.9.2": "2026-10-17", "1.9.1": "2026-10-17", "1.9.0": "2026-10-17", "1.8.2": "2026-10-17", "1.8.1": "2026-10-17", "1.8.0": "2026-10-17", "1.7.2": "2026-10-17", "1.7.1": "2026-10-17", "1.7.0": "2026-10-17", "1.6.0": "2026-10-17", "1.5.2": "2026-10-17", "1.5.1": "2026-10-16", "1.5.0": "2026-10-16", "1.4.0": "2026-10-16", "1.3.3": "2026-10-13", "1.3.2": "2026-10-13", "1.3.1": "2026-10-13", "1.3.0": "2026-10-12", "1.2.0": "2026-10-12", "1.1.0": "2026-10-12", "1.0.0": "2026-10-07"};
   var RELEASE_NOTES = {
+    '1.51.0': [
+      'パートの持ち物セットを受け取ると、もらった持ち物に「from ○○」（送ってくれた人の名前）と表示されるようにしました。共有するときに「あなたの名前」を入れてください'
+    ],
     '1.50.2': [
       '予定の編集欄のパートにも「✎ 編集」を付けました。パート管理で新しいパートを追加して、「← 編集に戻る」で元の予定に戻れます'
     ],
@@ -1411,7 +1415,13 @@
     }
     return !!it && !defaultItemNames[it.name];
   }
-  function myTag(it){ return isCustomItem(it) ? ' <span class="my-tag" title="自分で追加した持ち物">マイ</span>' : ''; }
+  // 目印：持ち物セットでもらったもの＝「from ○○」、自分で追加したもの＝「マイ」
+  function myTagInner(it){
+    if(it && it.from) return '<span class="my-tag from-tag" title="'+esc(it.from)+'さんからもらった持ち物">from '+esc(it.from)+'</span>';
+    if(isCustomItem(it)) return '<span class="my-tag" title="自分で追加した持ち物">マイ</span>';
+    return '';
+  }
+  function myTag(it){ var t = myTagInner(it); return t ? ' '+t : ''; }
 
   function defaultState(){
     var items = [
@@ -1594,6 +1604,7 @@
       if(o.scope.length===0) o.scope = ['studio','live','recording'];
       if(it.bring===false) o.bring = false; else if(it.bring===true) o.bring = true;
       if(it.hand===true) o.hand = true;
+      if(typeof it.from==='string'){ var fr = cleanText(it.from, 30).trim(); if(fr) o.from = fr; }   // 持ち物セットでもらった持ち物：送ってくれた人の名前
       if(it.local===true){ o.local = true; var ow = cleanId(it.ownerId); if(ow) o.ownerId = ow; }
       out.items.push(o);
     });
@@ -2058,7 +2069,8 @@
       if(sc.indexOf('r')!==-1) scope.push('recording');
       if(!scope.length) scope = ['studio','live','recording'];
       var k = (x[2]===1 || x[2]===2) ? x[2] : 0;
-      items.push({name:name, scope:scope, kind:k, common: x[3]===1});
+      var fr = (typeof x[4]==='string') ? cleanText(x[4], 30).trim() : '';
+      items.push({name:name, scope:scope, kind:k, common: x[3]===1, from: fr});
     });
     if(!items.length) return null;
     return {role: role, by: cleanText(o.by, 30).trim(), items: items};
@@ -2073,7 +2085,8 @@
     return {a:'pml', v:1, r:role, by:by||'', it: setItemsForRole(role, withCommon).map(function(it){
       var sc = (it.scope||[]).map(function(x){ return x==='studio'?'s':x==='live'?'l':x==='recording'?'r':''; }).join('');
       var k = it.hand ? 2 : (it.bring===false ? 1 : 0);
-      var row = [it.name, sc, k]; if(!(it.roles||[]).length) row.push(1);
+      var row = [it.name, sc, k, (it.roles||[]).length ? 0 : 1];
+      if(it.from) row.push(it.from);   // もらった持ち物は、元の作者の名前をそのまま引き継ぐ
       return row;
     })};
   }
@@ -2099,9 +2112,10 @@
     h += '<p class="hint" style="margin-top:0;color:var(--cream);"><b>「'+esc(role)+'」の持ち物セットを共有</b></p>';
     h += '<p class="hint">このパートの持ち物を1つのリンクにします。SNSやLINEで送ると、受け取った人は自分のアプリに取り込めます。</p>';
     h += '<label class="defaults-row"><input type="checkbox" id="share-with-common"'+(view.shareWithCommon?' checked':'')+'> <span>共通の持ち物も入れる（'+common.length+'件）</span></label>';
-    h += '<label class="small" style="margin-top:6px;">作成者名（SNSの名前など・空でもOK）</label>';
-    h += '<input type="text" id="share-by" maxlength="30" placeholder="例：〇〇（ギター）" value="'+esc(view.shareBy||'')+'">';
-    h += '<p class="hint" style="margin-bottom:4px;">相手に見える内容（'+list.length+'件）：持ち物の名前・用途・持込／借りる／渡す・作成者名だけです。予定やチェックの状態は入りません。</p>';
+    h += '<label class="small" style="margin-top:6px;">あなたの名前（SNSの名前など）</label>';
+    h += '<input type="text" id="share-by" maxlength="30" placeholder="例：たろう" value="'+esc(view.shareBy||'')+'">';
+    h += '<p class="hint" style="margin-top:-2px;">受け取った人のアプリでは、自分で追加した持ち物（<span class="my-tag" style="margin:0;">マイ</span>）が <span class="my-tag from-tag" style="margin:0;">from '+esc(view.shareBy||'○○')+'</span> と表示されます。</p>';
+    h += '<p class="hint" style="margin-bottom:4px;">相手に見える内容（'+list.length+'件）：持ち物の名前・用途・持込／借りる／渡す・あなたの名前だけです。予定やチェックの状態は入りません。</p>';
     h += '<div class="share-preview">'+(list.length ? list.map(function(it){ return esc(it.name); }).join('、') : '（このパートの持ち物がありません）')+'</div>';
     h += '<div class="row-between" style="margin:10px 0 0;gap:8px;">';
     h += '<button class="btn ghost" data-role-share-close="1" style="flex:1;">閉じる</button>';
@@ -2163,6 +2177,8 @@
       }
       if(state.items.length >= LIMIT.items) return;
       var ni = {id:uid(), name:x.name, scope:x.scope.slice(), roles: x.common ? [] : [role]};
+      var fromName = x.from || si.by;
+      if(fromName) ni.from = fromName;   // 相手のアプリでは「from ○○」と表示
       if(x.kind===1) ni.bring = false;
       if(x.kind===2){ ni.bring = true; ni.hand = true; }
       state.items.push(ni); added++;
@@ -4088,7 +4104,7 @@
       html += '<div class="master-search'+(view.masterQuery?' has-q':'')+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>';
       html += '<input type="search" id="master-search" value="'+esc(view.masterQuery||'')+'" placeholder="持ち物名・パート・用途で検索" maxlength="30" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="持ち物マスタを検索"><button type="button" class="ms-clear" id="master-search-clear" aria-label="入力を消す" title="入力を消す"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></div>';
       html += '<p class="hint master-hit" id="master-hit" style="display:none;"></p>';
-      if(mgs.length>1){ html += '<p class="hint master-guide" style="margin:0 0 4px;">パート名を選択すると一覧が開きます。<span class="my-tag" style="margin-left:4px;">マイ</span> は自分で追加した持ち物です。</p>'; }
+      if(mgs.length>1){ html += '<p class="hint master-guide" style="margin:0 0 4px;">パート名を選択すると一覧が開きます。<span class="my-tag" style="margin-left:4px;">マイ</span> は自分で追加した持ち物、<span class="my-tag from-tag" style="margin-left:2px;">from ○○</span> は持ち物セットでもらった持ち物です。</p>'; }
       html += '<div id="master-list">';
       mgs.forEach(function(g){
       var gOpen = mgs.length<=1 || !!view.openGroups[g.label];
@@ -4098,11 +4114,11 @@
       }
       html += '<div class="mg-body'+(gOpen?'':' closed')+'">';
       g.items.forEach(function(it){
-        var key = searchNorm(it.name+' '+(isCustomItem(it)?'マイ 自分で追加 ':'')+(it.roles&&it.roles.length?it.roles.join(' '):'全パート共通 共通')+' '+scopeArrayLabel(it.scope)+' '+bringLabel(it, null).text);
+        var key = searchNorm(it.name+' '+(it.from?'from '+it.from+' ':'')+(!it.from && isCustomItem(it)?'マイ 自分で追加 ':'')+(it.roles&&it.roles.length?it.roles.join(' '):'全パート共通 共通')+' '+scopeArrayLabel(it.scope)+' '+bringLabel(it, null).text);
         html += '<div class="swipe-wrap mrow" data-skey="'+esc(key)+'"><button class="swipe-bg del" data-item-del="'+it.id+'">削除</button><div class="item-row swipe-row" data-swipe-row="'+it.id+'" data-swipe-kind="del" style="align-items:flex-start;">';
         html += '<div style="flex:1;min-width:0;">';
         html += '<input type="text" class="item-name-input" maxlength="'+LIMIT.name+'" data-item-master-rename="'+it.id+'" value="'+esc(it.name)+'">';
-        html += '<div class="item-meta">'+(isCustomItem(it)?'<span class="my-tag" style="margin:0 6px 0 0;" title="自分で追加した持ち物">マイ</span>':'')+scopeArrayLabel(it.scope)+(it.roles&&it.roles.length? ' ・ '+it.roles.map(esc).join(' / ') : ' ・ 全パート共通')+'</div></div>';
+        html += '<div class="item-meta">'+myTagInner(it).replace('class="my-tag','style="margin:0 6px 0 0;" class="my-tag')+scopeArrayLabel(it.scope)+(it.roles&&it.roles.length? ' ・ '+it.roles.map(esc).join(' / ') : ' ・ 全パート共通')+'</div></div>';
         html += '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0;margin-top:2px;">';
         var mbl = bringLabel(it, null);
         html += '<button class="btn ghost" data-toggle-bring="'+it.id+'" title="タップで 持込→借りる→渡す を切り替え" style="padding:4px 8px;font-size:11px;white-space:nowrap;'+mbl.style+'">'+mbl.text+'</button>';
@@ -5545,7 +5561,10 @@
     var shareCommon = document.getElementById('share-with-common');
     if(shareCommon){ shareCommon.onchange = function(){ view.shareWithCommon = shareCommon.checked; render(); }; }
     var shareByIn = document.getElementById('share-by');
-    if(shareByIn){ shareByIn.oninput = function(){ view.shareBy = cleanText(shareByIn.value, 30); }; }
+    if(shareByIn){ shareByIn.oninput = function(){
+      view.shareBy = cleanText(shareByIn.value, 30);
+      var ft = document.querySelector('.share-set .from-tag'); if(ft) ft.textContent = 'from '+(view.shareBy.trim()||'○○');
+    }; }
     document.querySelectorAll('[data-role-share-copy]').forEach(function(b){ b.onclick = function(){ shareRoleSet(b.dataset.roleShareCopy, 'copy'); }; });
     document.querySelectorAll('[data-role-share-go]').forEach(function(b){ b.onclick = function(){ shareRoleSet(b.dataset.roleShareGo, 'share'); }; });
 
