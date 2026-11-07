@@ -343,6 +343,9 @@
   .cl-card ul{margin:6px 0 0;padding-left:20px;font-size:13.5px;line-height:1.7;color:var(--cream);}
   .cl-card li{margin:2px 0;overflow-wrap:anywhere;}
   .linkbtn{background:none;border:none;padding:4px;color:var(--cream-dim);text-decoration:underline;font:inherit;cursor:pointer;}
+  .mg-add{display:flex;gap:8px;margin:8px 0 10px;}
+  .mg-add input{flex:1;min-width:0;font-size:14px;padding:8px 10px;}
+  .mg-add .btn{padding:6px 14px;font-size:13px;flex-shrink:0;}
   .defaults-desc{margin:0 0 8px;line-height:1.6;}
   .chip .group-count{margin-left:6px;opacity:.7;font-size:.9em;}
   .set-import-list{max-height:260px;overflow:auto;border:1px solid var(--seam);border-radius:10px;padding:4px 10px;background:var(--bg);}
@@ -761,14 +764,17 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.48.5';
+  var APP_VERSION = '1.49.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
   var APP_RELEASE_DATE = '2026-11-07';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   // 各バージョンの公開日（アプリ内の「更新履歴」画面に表示。バージョンを上げたら1行足す）
-  var RELEASE_DATES = {"1.48.5": "2026-11-07", "1.48.4": "2026-11-07", "1.48.3": "2026-11-06", "1.48.2": "2026-11-06", "1.48.1": "2026-11-06", "1.48.0": "2026-11-06", "1.47.2": "2026-11-05", "1.47.1": "2026-11-05", "1.47.0": "2026-11-04", "1.46.0": "2026-11-04", "1.45.2": "2026-11-03", "1.45.1": "2026-11-03", "1.45.0": "2026-11-01", "1.44.1": "2026-10-31", "1.44.0": "2026-10-31", "1.43.3": "2026-10-31", "1.43.2": "2026-10-31", "1.43.1": "2026-10-31", "1.43.0": "2026-10-31", "1.42.1": "2026-10-31", "1.42.0": "2026-10-30", "1.41.0": "2026-10-30", "1.40.0": "2026-10-30", "1.39.0": "2026-10-29", "1.38.2": "2026-10-29", "1.38.1": "2026-10-29", "1.38.0": "2026-10-29", "1.37.1": "2026-10-29", "1.37.0": "2026-10-29", "1.36.2": "2026-10-29", "1.36.1": "2026-10-29", "1.36.0": "2026-10-29", "1.35.0": "2026-10-29", "1.34.6": "2026-10-29", "1.34.5": "2026-10-29", "1.34.4": "2026-10-29", "1.34.3": "2026-10-29", "1.34.2": "2026-10-29", "1.34.1": "2026-10-29", "1.34.0": "2026-10-29", "1.33.3": "2026-10-29", "1.33.2": "2026-10-29", "1.33.1": "2026-10-29", "1.33.0": "2026-10-28", "1.32.0": "2026-10-28", "1.31.2": "2026-10-28", "1.31.1": "2026-10-28", "1.31.0": "2026-10-28", "1.30.3": "2026-10-28", "1.30.2": "2026-10-27", "1.30.1": "2026-10-27", "1.30.0": "2026-10-27", "1.29.1": "2026-10-27", "1.29.0": "2026-10-27", "1.28.0": "2026-10-27", "1.27.2": "2026-10-27", "1.27.1": "2026-10-27", "1.27.0": "2026-10-25", "1.26.2": "2026-10-25", "1.26.1": "2026-10-25", "1.26.0": "2026-10-25", "1.25.0": "2026-10-25", "1.24.0": "2026-10-23", "1.23.1": "2026-10-23", "1.23.0": "2026-10-23", "1.22.0": "2026-10-23", "1.21.0": "2026-10-23", "1.20.1": "2026-10-23", "1.20.0": "2026-10-23", "1.19.2": "2026-10-23", "1.19.1": "2026-10-23", "1.19.0": "2026-10-23", "1.18.2": "2026-10-22", "1.18.1": "2026-10-21", "1.18.0": "2026-10-20", "1.17.2": "2026-10-19", "1.17.1": "2026-10-18", "1.17.0": "2026-10-18", "1.16.0": "2026-10-18", "1.15.1": "2026-10-18", "1.15.0": "2026-10-17", "1.14.0": "2026-10-17", "1.13.1": "2026-10-17", "1.13.0": "2026-10-17", "1.12.0": "2026-10-17", "1.11.2": "2026-10-17", "1.11.1": "2026-10-17", "1.11.0": "2026-10-17", "1.10.1": "2026-10-17", "1.10.0": "2026-10-17", "1.9.2": "2026-10-17", "1.9.1": "2026-10-17", "1.9.0": "2026-10-17", "1.8.2": "2026-10-17", "1.8.1": "2026-10-17", "1.8.0": "2026-10-17", "1.7.2": "2026-10-17", "1.7.1": "2026-10-17", "1.7.0": "2026-10-17", "1.6.0": "2026-10-17", "1.5.2": "2026-10-17", "1.5.1": "2026-10-16", "1.5.0": "2026-10-16", "1.4.0": "2026-10-16", "1.3.3": "2026-10-13", "1.3.2": "2026-10-13", "1.3.1": "2026-10-13", "1.3.0": "2026-10-12", "1.2.0": "2026-10-12", "1.1.0": "2026-10-12", "1.0.0": "2026-10-07"};
+  var RELEASE_DATES = {"1.49.0": "2026-11-07", "1.48.5": "2026-11-07", "1.48.4": "2026-11-07", "1.48.3": "2026-11-06", "1.48.2": "2026-11-06", "1.48.1": "2026-11-06", "1.48.0": "2026-11-06", "1.47.2": "2026-11-05", "1.47.1": "2026-11-05", "1.47.0": "2026-11-04", "1.46.0": "2026-11-04", "1.45.2": "2026-11-03", "1.45.1": "2026-11-03", "1.45.0": "2026-11-01", "1.44.1": "2026-10-31", "1.44.0": "2026-10-31", "1.43.3": "2026-10-31", "1.43.2": "2026-10-31", "1.43.1": "2026-10-31", "1.43.0": "2026-10-31", "1.42.1": "2026-10-31", "1.42.0": "2026-10-30", "1.41.0": "2026-10-30", "1.40.0": "2026-10-30", "1.39.0": "2026-10-29", "1.38.2": "2026-10-29", "1.38.1": "2026-10-29", "1.38.0": "2026-10-29", "1.37.1": "2026-10-29", "1.37.0": "2026-10-29", "1.36.2": "2026-10-29", "1.36.1": "2026-10-29", "1.36.0": "2026-10-29", "1.35.0": "2026-10-29", "1.34.6": "2026-10-29", "1.34.5": "2026-10-29", "1.34.4": "2026-10-29", "1.34.3": "2026-10-29", "1.34.2": "2026-10-29", "1.34.1": "2026-10-29", "1.34.0": "2026-10-29", "1.33.3": "2026-10-29", "1.33.2": "2026-10-29", "1.33.1": "2026-10-29", "1.33.0": "2026-10-28", "1.32.0": "2026-10-28", "1.31.2": "2026-10-28", "1.31.1": "2026-10-28", "1.31.0": "2026-10-28", "1.30.3": "2026-10-28", "1.30.2": "2026-10-27", "1.30.1": "2026-10-27", "1.30.0": "2026-10-27", "1.29.1": "2026-10-27", "1.29.0": "2026-10-27", "1.28.0": "2026-10-27", "1.27.2": "2026-10-27", "1.27.1": "2026-10-27", "1.27.0": "2026-10-25", "1.26.2": "2026-10-25", "1.26.1": "2026-10-25", "1.26.0": "2026-10-25", "1.25.0": "2026-10-25", "1.24.0": "2026-10-23", "1.23.1": "2026-10-23", "1.23.0": "2026-10-23", "1.22.0": "2026-10-23", "1.21.0": "2026-10-23", "1.20.1": "2026-10-23", "1.20.0": "2026-10-23", "1.19.2": "2026-10-23", "1.19.1": "2026-10-23", "1.19.0": "2026-10-23", "1.18.2": "2026-10-22", "1.18.1": "2026-10-21", "1.18.0": "2026-10-20", "1.17.2": "2026-10-19", "1.17.1": "2026-10-18", "1.17.0": "2026-10-18", "1.16.0": "2026-10-18", "1.15.1": "2026-10-18", "1.15.0": "2026-10-17", "1.14.0": "2026-10-17", "1.13.1": "2026-10-17", "1.13.0": "2026-10-17", "1.12.0": "2026-10-17", "1.11.2": "2026-10-17", "1.11.1": "2026-10-17", "1.11.0": "2026-10-17", "1.10.1": "2026-10-17", "1.10.0": "2026-10-17", "1.9.2": "2026-10-17", "1.9.1": "2026-10-17", "1.9.0": "2026-10-17", "1.8.2": "2026-10-17", "1.8.1": "2026-10-17", "1.8.0": "2026-10-17", "1.7.2": "2026-10-17", "1.7.1": "2026-10-17", "1.7.0": "2026-10-17", "1.6.0": "2026-10-17", "1.5.2": "2026-10-17", "1.5.1": "2026-10-16", "1.5.0": "2026-10-16", "1.4.0": "2026-10-16", "1.3.3": "2026-10-13", "1.3.2": "2026-10-13", "1.3.1": "2026-10-13", "1.3.0": "2026-10-12", "1.2.0": "2026-10-12", "1.1.0": "2026-10-12", "1.0.0": "2026-10-07"};
   var RELEASE_NOTES = {
+    '1.49.0': [
+      '持ち物マスタで、パートごとに持ち物を登録できるようにしました。自分で追加したパートも、持ち物がまだ無くても見出しが出るので、そこから登録できます'
+    ],
     '1.48.5': [
       '設定画面のいちばん下の「更新履歴」リンクを外しました（「アプリの更新」の「更新履歴を見る」から見られます）'
     ],
@@ -4034,10 +4040,13 @@
     html += '<div class="panel">';
     html += '<div class="panel-label">持ち物マスタ</div>';
     html += '<p class="hint">ここでの変更はマスターデータです。次回以降、新しいスタジオ/イベント/レコーディングを登録した時の初期値になります（既存のイベントには影響しません）。イベントごとの名前変更は、各イベントの鉛筆アイコン（持ち物を編集）から行えます。</p>';
-    if(masterItems().length===0){
-      html += '<div class="empty">持ち物が登録されていません</div>';
-    } else {
+    {
+      // 持ち物がまだ無いパート（自分で追加したパートなど）も見出しを出して、ここから登録できるようにする
       var mgs = groupItemsByRole(masterItems());
+      var mgLabels = mgs.map(function(g){ return g.label; });
+      state.roles.forEach(function(r, ri){ if(mgLabels.indexOf(r)===-1) mgs.push({label:r, items:[], rank:ri}); });
+      if(mgLabels.indexOf('共通')===-1) mgs.push({label:'共通', items:[], rank:99999});
+      mgs.sort(function(a,b){ return a.rank-b.rank; });
       html += '<div class="master-search'+(view.masterQuery?' has-q':'')+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>';
       html += '<input type="search" id="master-search" value="'+esc(view.masterQuery||'')+'" placeholder="持ち物名・パート・用途で検索" maxlength="30" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="持ち物マスタを検索"><button type="button" class="ms-clear" id="master-search-clear" aria-label="入力を消す" title="入力を消す"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button></div>';
       html += '<p class="hint master-hit" id="master-hit" style="display:none;"></p>';
@@ -4063,6 +4072,9 @@
         html += '</div>';
         html += '</div></div>';
       });
+      if(!g.items.length) html += '<p class="hint mg-empty" style="margin:6px 2px;">まだ持ち物がありません。下から登録できます。</p>';
+      // このパートの持ち物をここで登録（用途はスタジオ・イベント・レコーディングすべて、持込で登録。あとから切り替え可）
+      html += '<div class="mg-add"><input type="text" maxlength="'+LIMIT.name+'" data-mg-add-input="'+esc(g.label)+'" placeholder="'+(g.label==='共通' ? '全パート共通の持ち物を追加' : esc(g.label)+'の持ち物を追加')+'" enterkeyhint="done"><button class="btn" data-mg-add="'+esc(g.label)+'">追加</button></div>';
       html += '</div></div>';
       });
       html += '</div>';
@@ -5383,6 +5395,33 @@
       masterSearch.addEventListener('keydown', function(e){ if(e.key==='Enter') masterSearch.blur(); if(e.key==='Escape'){ masterSearch.value=''; msApply(); } });
       applyMasterFilter();
     }
+    // 持ち物マスタのパートごとの「追加」
+    var mgAdd = function(label){
+      var inp = document.querySelector('[data-mg-add-input="'+(window.CSS && CSS.escape ? CSS.escape(label) : label)+'"]');
+      if(!inp) return;
+      var name = cleanText(inp.value, LIMIT.name).trim();
+      if(!name){ inp.focus(); return; }
+      if(state.items.length >= LIMIT.items){ limitReached('items'); return; }
+      var isCommon = (label==='共通' && state.roles.indexOf('共通')===-1);
+      var dup = masterItems().filter(function(it){ return it.name===name && (isCommon ? !(it.roles||[]).length : (it.roles||[]).indexOf(label)!==-1); })[0];
+      if(dup){ showToast('「'+name+'」はもう登録されています'); return; }
+      var ni = {id:uid(), name:name, scope:['studio','live','recording'], roles: isCommon ? [] : [label], bring:true};
+      state.items.push(ni);
+      if(isCommon){
+        MODES.forEach(function(mode){ listForMode(mode).forEach(function(e){ e.itemIds.push(ni.id); }); });
+      }
+      view.openGroups[label] = true;
+      view.mgFocus = label;
+      saveState();
+      render();
+      showToast('「'+name+'」を'+(isCommon ? '共通' : '「'+label+'」')+'に登録しました');
+    };
+    document.querySelectorAll('[data-mg-add]').forEach(function(b){ b.onclick = function(){ mgAdd(b.dataset.mgAdd); }; });
+    document.querySelectorAll('[data-mg-add-input]').forEach(function(inp){
+      inp.addEventListener('keydown', function(e){ if(e.key==='Enter' && !e.isComposing){ e.preventDefault(); mgAdd(inp.dataset.mgAddInput); } });
+      if(view.mgFocus===inp.dataset.mgAddInput){ view.mgFocus = null; try{ inp.focus({preventScroll:true}); }catch(e){} }
+    });
+
     var addRoleBtn = document.getElementById('add-role-btn');
     if(addRoleBtn){
       addRoleBtn.onclick = function(){
@@ -5390,9 +5429,12 @@
         var name = nameEl.value.trim().slice(0, LIMIT.role);
         if(!name){ nameEl.focus(); return; }
         if(state.roles.indexOf(name)===-1 && state.roles.length >= LIMIT.roles){ limitReached('roles'); return; }
-        if(state.roles.indexOf(name)===-1) state.roles.push(name);
+        var isNewRole = state.roles.indexOf(name)===-1;
+        if(isNewRole) state.roles.push(name);
+        view.openGroups[name] = true;
         saveState();
         render();
+        if(isNewRole) showToast('「'+name+'」を追加しました。持ち物マスタの「'+name+'」から持ち物を登録できます');
       };
     }
 
