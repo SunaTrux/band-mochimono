@@ -376,7 +376,14 @@
   .qr-svg{width:168px;height:168px;flex-shrink:0;border-radius:8px;border:1px solid var(--seam);background:#fff;}
   .qr-text{flex:1;min-width:0;}
   .qr-url{font-size:12px;color:var(--cream-dim);overflow-wrap:anywhere;margin:6px 0 0;}
-  .qr-tm{font-size:10.5px;color:var(--cream-dim);margin:10px 0 0;}
+  #phone-card-host{position:fixed;left:16px;bottom:16px;z-index:30;}
+  .phone-card{width:188px;background:var(--panel);border:1px solid var(--amber);border-radius:14px;padding:10px 12px 12px;box-shadow:0 8px 24px rgba(0,0,0,.22);text-align:center;}
+  .phone-card-head{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:13.5px;color:var(--cream);margin-bottom:8px;}
+  .phone-card-close{width:30px;height:30px;border:none;background:none;color:var(--cream-dim);font-size:20px;cursor:pointer;margin:-6px -6px -6px 0;}
+  .phone-card .qr-svg{width:140px;height:140px;}
+  .phone-card p{font-size:11.5px;line-height:1.55;color:var(--cream-dim);margin:8px 0 0;text-align:left;}
+  .friend-code{display:flex;gap:12px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px dashed var(--seam);}
+  .friend-code .qr-svg{width:96px;height:96px;}
   .update-close{position:absolute;top:6px;right:6px;width:32px;height:32px;border:none;background:none;color:var(--cream-dim);font-size:20px;cursor:pointer;}
   .panel.reg-panel{padding-top:8px;}
   .reg-title{font-size:15px;font-weight:700;color:var(--cream);letter-spacing:.02em;}
@@ -753,6 +760,7 @@
 
 <div id="top-notice"></div>
 <div id="install-host"></div>
+<div id="phone-card-host"></div>
 <div class="header">
   <h1><svg class="title-ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(9 12 12.5)"><path d="M12 5.4C13.2 2.6 16 1.6 19 1.8" style="stroke:var(--cream-dim)" stroke-width="1.3"/><path d="M5.6 7.2L8.4 4H15.6L18.4 7.2V20.4a1.2 1.2 0 0 1-1.2 1.2H6.8a1.2 1.2 0 0 1-1.2-1.2Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="6.6" r="1.1" fill="currentColor"/><rect x="8" y="9.6" width="3.8" height="3.8" rx=".9" style="fill:var(--amber)"/><path d="M8.9 11.5l.9.9 1.3-1.5" style="stroke:var(--bg)" stroke-width="1.1"/><path d="M13.6 11.5H16" style="stroke:var(--amber)" stroke-width="2"/><rect x="8.3" y="15.3" width="3.2" height="3.2" rx=".8" stroke="currentColor" stroke-width="1.3"/><path d="M13.6 16.9H15.6" stroke="currentColor" stroke-width="2"/></g></svg>プレイヤーズ持ち物リスト</h1>
   <p>パートや予定に合わせて持ち物チェック</p>
@@ -772,14 +780,18 @@
 (function(){
   var STORAGE_KEY = 'gp-list-v1';
   var THEME_KEY = 'gp-theme-v1';
-  var APP_VERSION = '1.52.1';
+  var APP_VERSION = '1.53.0';
   var FEEDBACK_URL = 'https://tally.so/r/9qL0A4';
   var FEEDBACK_APP_NAME = 'プレイヤーズ持ち物リスト';  // フォームの「どのアプリか」を自動で選ぶ（?app=）  // ご意見・不具合報告フォーム（Tally。プレイヤーズセットリストと共通で、フォーム内でアプリを選んでもらう）        // セマンティックバージョン（メジャー.マイナー.パッチ）。更新のたびに上げる
-  var APP_RELEASE_DATE = '2026-11-08';
+  var APP_RELEASE_DATE = '2026-11-13';
   // アップデート時に一度だけ出すお知らせ。版を上げるたびに必ず1行以上追加する（書き忘れても「細かな修正」と表示）
   // 各バージョンの公開日（アプリ内の「更新履歴」画面に表示。バージョンを上げたら1行足す）
-  var RELEASE_DATES = {"1.52.1": "2026-11-08", "1.52.0": "2026-11-08", "1.51.2": "2026-11-08", "1.51.1": "2026-11-07", "1.51.0": "2026-11-07", "1.50.2": "2026-11-07", "1.50.1": "2026-11-07", "1.50.0": "2026-11-07", "1.49.2": "2026-11-07", "1.49.1": "2026-11-07", "1.49.0": "2026-11-07", "1.48.5": "2026-11-07", "1.48.4": "2026-11-07", "1.48.3": "2026-11-06", "1.48.2": "2026-11-06", "1.48.1": "2026-11-06", "1.48.0": "2026-11-06", "1.47.2": "2026-11-05", "1.47.1": "2026-11-05", "1.47.0": "2026-11-04", "1.46.0": "2026-11-04", "1.45.2": "2026-11-03", "1.45.1": "2026-11-03", "1.45.0": "2026-11-01", "1.44.1": "2026-10-31", "1.44.0": "2026-10-31", "1.43.3": "2026-10-31", "1.43.2": "2026-10-31", "1.43.1": "2026-10-31", "1.43.0": "2026-10-31", "1.42.1": "2026-10-31", "1.42.0": "2026-10-30", "1.41.0": "2026-10-30", "1.40.0": "2026-10-30", "1.39.0": "2026-10-29", "1.38.2": "2026-10-29", "1.38.1": "2026-10-29", "1.38.0": "2026-10-29", "1.37.1": "2026-10-29", "1.37.0": "2026-10-29", "1.36.2": "2026-10-29", "1.36.1": "2026-10-29", "1.36.0": "2026-10-29", "1.35.0": "2026-10-29", "1.34.6": "2026-10-29", "1.34.5": "2026-10-29", "1.34.4": "2026-10-29", "1.34.3": "2026-10-29", "1.34.2": "2026-10-29", "1.34.1": "2026-10-29", "1.34.0": "2026-10-29", "1.33.3": "2026-10-29", "1.33.2": "2026-10-29", "1.33.1": "2026-10-29", "1.33.0": "2026-10-28", "1.32.0": "2026-10-28", "1.31.2": "2026-10-28", "1.31.1": "2026-10-28", "1.31.0": "2026-10-28", "1.30.3": "2026-10-28", "1.30.2": "2026-10-27", "1.30.1": "2026-10-27", "1.30.0": "2026-10-27", "1.29.1": "2026-10-27", "1.29.0": "2026-10-27", "1.28.0": "2026-10-27", "1.27.2": "2026-10-27", "1.27.1": "2026-10-27", "1.27.0": "2026-10-25", "1.26.2": "2026-10-25", "1.26.1": "2026-10-25", "1.26.0": "2026-10-25", "1.25.0": "2026-10-25", "1.24.0": "2026-10-23", "1.23.1": "2026-10-23", "1.23.0": "2026-10-23", "1.22.0": "2026-10-23", "1.21.0": "2026-10-23", "1.20.1": "2026-10-23", "1.20.0": "2026-10-23", "1.19.2": "2026-10-23", "1.19.1": "2026-10-23", "1.19.0": "2026-10-23", "1.18.2": "2026-10-22", "1.18.1": "2026-10-21", "1.18.0": "2026-10-20", "1.17.2": "2026-10-19", "1.17.1": "2026-10-18", "1.17.0": "2026-10-18", "1.16.0": "2026-10-18", "1.15.1": "2026-10-18", "1.15.0": "2026-10-17", "1.14.0": "2026-10-17", "1.13.1": "2026-10-17", "1.13.0": "2026-10-17", "1.12.0": "2026-10-17", "1.11.2": "2026-10-17", "1.11.1": "2026-10-17", "1.11.0": "2026-10-17", "1.10.1": "2026-10-17", "1.10.0": "2026-10-17", "1.9.2": "2026-10-17", "1.9.1": "2026-10-17", "1.9.0": "2026-10-17", "1.8.2": "2026-10-17", "1.8.1": "2026-10-17", "1.8.0": "2026-10-17", "1.7.2": "2026-10-17", "1.7.1": "2026-10-17", "1.7.0": "2026-10-17", "1.6.0": "2026-10-17", "1.5.2": "2026-10-17", "1.5.1": "2026-10-16", "1.5.0": "2026-10-16", "1.4.0": "2026-10-16", "1.3.3": "2026-10-13", "1.3.2": "2026-10-13", "1.3.1": "2026-10-13", "1.3.0": "2026-10-12", "1.2.0": "2026-10-12", "1.1.0": "2026-10-12", "1.0.0": "2026-10-07"};
+  var RELEASE_DATES = {"1.53.0": "2026-11-13", "1.52.1": "2026-11-08", "1.52.0": "2026-11-08", "1.51.2": "2026-11-08", "1.51.1": "2026-11-07", "1.51.0": "2026-11-07", "1.50.2": "2026-11-07", "1.50.1": "2026-11-07", "1.50.0": "2026-11-07", "1.49.2": "2026-11-07", "1.49.1": "2026-11-07", "1.49.0": "2026-11-07", "1.48.5": "2026-11-07", "1.48.4": "2026-11-07", "1.48.3": "2026-11-06", "1.48.2": "2026-11-06", "1.48.1": "2026-11-06", "1.48.0": "2026-11-06", "1.47.2": "2026-11-05", "1.47.1": "2026-11-05", "1.47.0": "2026-11-04", "1.46.0": "2026-11-04", "1.45.2": "2026-11-03", "1.45.1": "2026-11-03", "1.45.0": "2026-11-01", "1.44.1": "2026-10-31", "1.44.0": "2026-10-31", "1.43.3": "2026-10-31", "1.43.2": "2026-10-31", "1.43.1": "2026-10-31", "1.43.0": "2026-10-31", "1.42.1": "2026-10-31", "1.42.0": "2026-10-30", "1.41.0": "2026-10-30", "1.40.0": "2026-10-30", "1.39.0": "2026-10-29", "1.38.2": "2026-10-29", "1.38.1": "2026-10-29", "1.38.0": "2026-10-29", "1.37.1": "2026-10-29", "1.37.0": "2026-10-29", "1.36.2": "2026-10-29", "1.36.1": "2026-10-29", "1.36.0": "2026-10-29", "1.35.0": "2026-10-29", "1.34.6": "2026-10-29", "1.34.5": "2026-10-29", "1.34.4": "2026-10-29", "1.34.3": "2026-10-29", "1.34.2": "2026-10-29", "1.34.1": "2026-10-29", "1.34.0": "2026-10-29", "1.33.3": "2026-10-29", "1.33.2": "2026-10-29", "1.33.1": "2026-10-29", "1.33.0": "2026-10-28", "1.32.0": "2026-10-28", "1.31.2": "2026-10-28", "1.31.1": "2026-10-28", "1.31.0": "2026-10-28", "1.30.3": "2026-10-28", "1.30.2": "2026-10-27", "1.30.1": "2026-10-27", "1.30.0": "2026-10-27", "1.29.1": "2026-10-27", "1.29.0": "2026-10-27", "1.28.0": "2026-10-27", "1.27.2": "2026-10-27", "1.27.1": "2026-10-27", "1.27.0": "2026-10-25", "1.26.2": "2026-10-25", "1.26.1": "2026-10-25", "1.26.0": "2026-10-25", "1.25.0": "2026-10-25", "1.24.0": "2026-10-23", "1.23.1": "2026-10-23", "1.23.0": "2026-10-23", "1.22.0": "2026-10-23", "1.21.0": "2026-10-23", "1.20.1": "2026-10-23", "1.20.0": "2026-10-23", "1.19.2": "2026-10-23", "1.19.1": "2026-10-23", "1.19.0": "2026-10-23", "1.18.2": "2026-10-22", "1.18.1": "2026-10-21", "1.18.0": "2026-10-20", "1.17.2": "2026-10-19", "1.17.1": "2026-10-18", "1.17.0": "2026-10-18", "1.16.0": "2026-10-18", "1.15.1": "2026-10-18", "1.15.0": "2026-10-17", "1.14.0": "2026-10-17", "1.13.1": "2026-10-17", "1.13.0": "2026-10-17", "1.12.0": "2026-10-17", "1.11.2": "2026-10-17", "1.11.1": "2026-10-17", "1.11.0": "2026-10-17", "1.10.1": "2026-10-17", "1.10.0": "2026-10-17", "1.9.2": "2026-10-17", "1.9.1": "2026-10-17", "1.9.0": "2026-10-17", "1.8.2": "2026-10-17", "1.8.1": "2026-10-17", "1.8.0": "2026-10-17", "1.7.2": "2026-10-17", "1.7.1": "2026-10-17", "1.7.0": "2026-10-17", "1.6.0": "2026-10-17", "1.5.2": "2026-10-17", "1.5.1": "2026-10-16", "1.5.0": "2026-10-16", "1.4.0": "2026-10-16", "1.3.3": "2026-10-13", "1.3.2": "2026-10-13", "1.3.1": "2026-10-13", "1.3.0": "2026-10-12", "1.2.0": "2026-10-12", "1.1.0": "2026-10-12", "1.0.0": "2026-10-07"};
   var RELEASE_NOTES = {
+    '1.53.0': [
+      'PCで開いたとき、画面の左下に「📱 スマホで開く」を出すようにしました。スマホのカメラで読み取ると、このアプリが開きます（×で閉じると次からは出ません。設定 →「スマホで開く」からいつでも見られます）',
+      'PCでは「このアプリを友達に勧める」にも同じ図を添えました。そばにいる友達に読み取ってもらえます'
+    ],
     '1.52.1': [
       'PCで開いたときは、設定の「ホーム画面に追加」（インストールの案内）を出さないようにしました。PCでは「スマホで開く」からスマホで開けます'
     ],
@@ -845,7 +857,7 @@
       'PCで、ボタンにマウスを乗せたときの反応と、Tabキーで移動したときの枠を表示。Escキーで開いている画面や確認を閉じられます'
     ],
     '1.46.0': [
-      'PCで開いたとき、設定の「その他」に「スマホで開く」を追加。QRコードをスマホのカメラで読み取ると、このアプリがスマホで開きます'
+      'PCで開いたとき、設定の「その他」に「スマホで開く」を追加。表示された図をスマホのカメラで読み取ると、このアプリがスマホで開きます'
     ],
     '1.45.2': [
       'ホーム画面のアプリ（iPhone）で、固定した予定のカードが画面上の時計・電池の帯に隠れていたのを直しました'
@@ -1851,9 +1863,9 @@
   // ---------- PCからスマホへ（アプリ定型12） ----------
   // 公開URLのQRコード。外部スクリプトを読み込まないよう、生成済みの図（SVG）をそのまま埋め込む（URLを変えたら作り直す）
   var APP_PUBLIC_URL = 'https://sunatrux.github.io/band-mochimono/';
-  var APP_QR_SVG = '<svg class="qr-svg" role="img" aria-label="アプリのURL（スマホで開く）" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="M4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM14 4h1v1h-1zM15 4h1v1h-1zM17 4h1v1h-1zM20 4h1v1h-1zM22 4h1v1h-1zM23 4h1v1h-1zM24 4h1v1h-1zM26 4h1v1h-1zM27 4h1v1h-1zM28 4h1v1h-1zM29 4h1v1h-1zM30 4h1v1h-1zM31 4h1v1h-1zM32 4h1v1h-1zM4 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM15 5h1v1h-1zM18 5h1v1h-1zM26 5h1v1h-1zM32 5h1v1h-1zM4 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM13 6h1v1h-1zM15 6h1v1h-1zM16 6h1v1h-1zM17 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM23 6h1v1h-1zM24 6h1v1h-1zM26 6h1v1h-1zM28 6h1v1h-1zM29 6h1v1h-1zM30 6h1v1h-1zM32 6h1v1h-1zM4 7h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM10 7h1v1h-1zM12 7h1v1h-1zM14 7h1v1h-1zM15 7h1v1h-1zM17 7h1v1h-1zM18 7h1v1h-1zM21 7h1v1h-1zM22 7h1v1h-1zM24 7h1v1h-1zM26 7h1v1h-1zM28 7h1v1h-1zM29 7h1v1h-1zM30 7h1v1h-1zM32 7h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM10 8h1v1h-1zM17 8h1v1h-1zM18 8h1v1h-1zM19 8h1v1h-1zM20 8h1v1h-1zM23 8h1v1h-1zM26 8h1v1h-1zM28 8h1v1h-1zM29 8h1v1h-1zM30 8h1v1h-1zM32 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM17 9h1v1h-1zM18 9h1v1h-1zM21 9h1v1h-1zM22 9h1v1h-1zM23 9h1v1h-1zM26 9h1v1h-1zM32 9h1v1h-1zM4 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM27 10h1v1h-1zM28 10h1v1h-1zM29 10h1v1h-1zM30 10h1v1h-1zM31 10h1v1h-1zM32 10h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM16 11h1v1h-1zM19 11h1v1h-1zM21 11h1v1h-1zM24 11h1v1h-1zM4 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM11 12h1v1h-1zM14 12h1v1h-1zM16 12h1v1h-1zM18 12h1v1h-1zM20 12h1v1h-1zM21 12h1v1h-1zM22 12h1v1h-1zM26 12h1v1h-1zM29 12h1v1h-1zM31 12h1v1h-1zM32 12h1v1h-1zM5 13h1v1h-1zM6 13h1v1h-1zM9 13h1v1h-1zM11 13h1v1h-1zM13 13h1v1h-1zM15 13h1v1h-1zM16 13h1v1h-1zM17 13h1v1h-1zM20 13h1v1h-1zM21 13h1v1h-1zM22 13h1v1h-1zM23 13h1v1h-1zM24 13h1v1h-1zM26 13h1v1h-1zM27 13h1v1h-1zM28 13h1v1h-1zM32 13h1v1h-1zM4 14h1v1h-1zM6 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM17 14h1v1h-1zM20 14h1v1h-1zM21 14h1v1h-1zM24 14h1v1h-1zM25 14h1v1h-1zM30 14h1v1h-1zM31 14h1v1h-1zM5 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM11 15h1v1h-1zM14 15h1v1h-1zM16 15h1v1h-1zM17 15h1v1h-1zM18 15h1v1h-1zM19 15h1v1h-1zM22 15h1v1h-1zM23 15h1v1h-1zM24 15h1v1h-1zM26 15h1v1h-1zM32 15h1v1h-1zM8 16h1v1h-1zM10 16h1v1h-1zM11 16h1v1h-1zM13 16h1v1h-1zM14 16h1v1h-1zM17 16h1v1h-1zM18 16h1v1h-1zM21 16h1v1h-1zM24 16h1v1h-1zM29 16h1v1h-1zM30 16h1v1h-1zM4 17h1v1h-1zM7 17h1v1h-1zM9 17h1v1h-1zM13 17h1v1h-1zM15 17h1v1h-1zM16 17h1v1h-1zM17 17h1v1h-1zM18 17h1v1h-1zM19 17h1v1h-1zM20 17h1v1h-1zM23 17h1v1h-1zM25 17h1v1h-1zM26 17h1v1h-1zM30 17h1v1h-1zM31 17h1v1h-1zM32 17h1v1h-1zM8 18h1v1h-1zM9 18h1v1h-1zM10 18h1v1h-1zM18 18h1v1h-1zM21 18h1v1h-1zM22 18h1v1h-1zM23 18h1v1h-1zM24 18h1v1h-1zM26 18h1v1h-1zM28 18h1v1h-1zM30 18h1v1h-1zM31 18h1v1h-1zM32 18h1v1h-1zM5 19h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM11 19h1v1h-1zM12 19h1v1h-1zM13 19h1v1h-1zM16 19h1v1h-1zM19 19h1v1h-1zM20 19h1v1h-1zM25 19h1v1h-1zM26 19h1v1h-1zM27 19h1v1h-1zM31 19h1v1h-1zM5 20h1v1h-1zM8 20h1v1h-1zM10 20h1v1h-1zM11 20h1v1h-1zM13 20h1v1h-1zM15 20h1v1h-1zM17 20h1v1h-1zM19 20h1v1h-1zM23 20h1v1h-1zM24 20h1v1h-1zM25 20h1v1h-1zM27 20h1v1h-1zM28 20h1v1h-1zM29 20h1v1h-1zM31 20h1v1h-1zM7 21h1v1h-1zM8 21h1v1h-1zM12 21h1v1h-1zM13 21h1v1h-1zM15 21h1v1h-1zM19 21h1v1h-1zM21 21h1v1h-1zM24 21h1v1h-1zM25 21h1v1h-1zM27 21h1v1h-1zM29 21h1v1h-1zM30 21h1v1h-1zM31 21h1v1h-1zM4 22h1v1h-1zM10 22h1v1h-1zM12 22h1v1h-1zM13 22h1v1h-1zM14 22h1v1h-1zM16 22h1v1h-1zM17 22h1v1h-1zM18 22h1v1h-1zM19 22h1v1h-1zM20 22h1v1h-1zM21 22h1v1h-1zM24 22h1v1h-1zM27 22h1v1h-1zM28 22h1v1h-1zM30 22h1v1h-1zM6 23h1v1h-1zM7 23h1v1h-1zM8 23h1v1h-1zM11 23h1v1h-1zM14 23h1v1h-1zM20 23h1v1h-1zM21 23h1v1h-1zM22 23h1v1h-1zM23 23h1v1h-1zM25 23h1v1h-1zM30 23h1v1h-1zM5 24h1v1h-1zM7 24h1v1h-1zM8 24h1v1h-1zM9 24h1v1h-1zM10 24h1v1h-1zM11 24h1v1h-1zM14 24h1v1h-1zM15 24h1v1h-1zM16 24h1v1h-1zM19 24h1v1h-1zM20 24h1v1h-1zM21 24h1v1h-1zM22 24h1v1h-1zM23 24h1v1h-1zM24 24h1v1h-1zM25 24h1v1h-1zM26 24h1v1h-1zM27 24h1v1h-1zM28 24h1v1h-1zM29 24h1v1h-1zM30 24h1v1h-1zM12 25h1v1h-1zM14 25h1v1h-1zM16 25h1v1h-1zM17 25h1v1h-1zM22 25h1v1h-1zM24 25h1v1h-1zM28 25h1v1h-1zM29 25h1v1h-1zM30 25h1v1h-1zM31 25h1v1h-1zM32 25h1v1h-1zM4 26h1v1h-1zM5 26h1v1h-1zM6 26h1v1h-1zM7 26h1v1h-1zM8 26h1v1h-1zM9 26h1v1h-1zM10 26h1v1h-1zM12 26h1v1h-1zM14 26h1v1h-1zM15 26h1v1h-1zM16 26h1v1h-1zM17 26h1v1h-1zM23 26h1v1h-1zM24 26h1v1h-1zM26 26h1v1h-1zM28 26h1v1h-1zM29 26h1v1h-1zM31 26h1v1h-1zM4 27h1v1h-1zM10 27h1v1h-1zM12 27h1v1h-1zM14 27h1v1h-1zM15 27h1v1h-1zM17 27h1v1h-1zM18 27h1v1h-1zM24 27h1v1h-1zM28 27h1v1h-1zM29 27h1v1h-1zM4 28h1v1h-1zM6 28h1v1h-1zM7 28h1v1h-1zM8 28h1v1h-1zM10 28h1v1h-1zM13 28h1v1h-1zM14 28h1v1h-1zM15 28h1v1h-1zM16 28h1v1h-1zM19 28h1v1h-1zM21 28h1v1h-1zM24 28h1v1h-1zM25 28h1v1h-1zM26 28h1v1h-1zM27 28h1v1h-1zM28 28h1v1h-1zM30 28h1v1h-1zM31 28h1v1h-1zM32 28h1v1h-1zM4 29h1v1h-1zM6 29h1v1h-1zM7 29h1v1h-1zM8 29h1v1h-1zM10 29h1v1h-1zM12 29h1v1h-1zM14 29h1v1h-1zM15 29h1v1h-1zM16 29h1v1h-1zM18 29h1v1h-1zM19 29h1v1h-1zM20 29h1v1h-1zM21 29h1v1h-1zM25 29h1v1h-1zM28 29h1v1h-1zM29 29h1v1h-1zM32 29h1v1h-1zM4 30h1v1h-1zM6 30h1v1h-1zM7 30h1v1h-1zM8 30h1v1h-1zM10 30h1v1h-1zM12 30h1v1h-1zM17 30h1v1h-1zM18 30h1v1h-1zM20 30h1v1h-1zM24 30h1v1h-1zM25 30h1v1h-1zM27 30h1v1h-1zM30 30h1v1h-1zM32 30h1v1h-1zM4 31h1v1h-1zM10 31h1v1h-1zM13 31h1v1h-1zM14 31h1v1h-1zM18 31h1v1h-1zM20 31h1v1h-1zM24 31h1v1h-1zM25 31h1v1h-1zM26 31h1v1h-1zM27 31h1v1h-1zM29 31h1v1h-1zM31 31h1v1h-1zM4 32h1v1h-1zM5 32h1v1h-1zM6 32h1v1h-1zM7 32h1v1h-1zM8 32h1v1h-1zM9 32h1v1h-1zM10 32h1v1h-1zM12 32h1v1h-1zM14 32h1v1h-1zM15 32h1v1h-1zM16 32h1v1h-1zM19 32h1v1h-1zM22 32h1v1h-1zM24 32h1v1h-1zM27 32h1v1h-1zM29 32h1v1h-1zM31 32h1v1h-1z" fill="#000"/></svg>';
+  var APP_QR_SVG = '<svg class="qr-svg" role="img" aria-label="このアプリのアドレス" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="M4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM7 4h1v1h-1zM8 4h1v1h-1zM9 4h1v1h-1zM10 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM14 4h1v1h-1zM15 4h1v1h-1zM17 4h1v1h-1zM20 4h1v1h-1zM22 4h1v1h-1zM23 4h1v1h-1zM24 4h1v1h-1zM26 4h1v1h-1zM27 4h1v1h-1zM28 4h1v1h-1zM29 4h1v1h-1zM30 4h1v1h-1zM31 4h1v1h-1zM32 4h1v1h-1zM4 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM15 5h1v1h-1zM18 5h1v1h-1zM26 5h1v1h-1zM32 5h1v1h-1zM4 6h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM13 6h1v1h-1zM15 6h1v1h-1zM16 6h1v1h-1zM17 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM23 6h1v1h-1zM24 6h1v1h-1zM26 6h1v1h-1zM28 6h1v1h-1zM29 6h1v1h-1zM30 6h1v1h-1zM32 6h1v1h-1zM4 7h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 7h1v1h-1zM10 7h1v1h-1zM12 7h1v1h-1zM14 7h1v1h-1zM15 7h1v1h-1zM17 7h1v1h-1zM18 7h1v1h-1zM21 7h1v1h-1zM22 7h1v1h-1zM24 7h1v1h-1zM26 7h1v1h-1zM28 7h1v1h-1zM29 7h1v1h-1zM30 7h1v1h-1zM32 7h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM10 8h1v1h-1zM17 8h1v1h-1zM18 8h1v1h-1zM19 8h1v1h-1zM20 8h1v1h-1zM23 8h1v1h-1zM26 8h1v1h-1zM28 8h1v1h-1zM29 8h1v1h-1zM30 8h1v1h-1zM32 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM17 9h1v1h-1zM18 9h1v1h-1zM21 9h1v1h-1zM22 9h1v1h-1zM23 9h1v1h-1zM26 9h1v1h-1zM32 9h1v1h-1zM4 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM8 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM27 10h1v1h-1zM28 10h1v1h-1zM29 10h1v1h-1zM30 10h1v1h-1zM31 10h1v1h-1zM32 10h1v1h-1zM12 11h1v1h-1zM13 11h1v1h-1zM16 11h1v1h-1zM19 11h1v1h-1zM21 11h1v1h-1zM24 11h1v1h-1zM4 12h1v1h-1zM6 12h1v1h-1zM7 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM11 12h1v1h-1zM14 12h1v1h-1zM16 12h1v1h-1zM18 12h1v1h-1zM20 12h1v1h-1zM21 12h1v1h-1zM22 12h1v1h-1zM26 12h1v1h-1zM29 12h1v1h-1zM31 12h1v1h-1zM32 12h1v1h-1zM5 13h1v1h-1zM6 13h1v1h-1zM9 13h1v1h-1zM11 13h1v1h-1zM13 13h1v1h-1zM15 13h1v1h-1zM16 13h1v1h-1zM17 13h1v1h-1zM20 13h1v1h-1zM21 13h1v1h-1zM22 13h1v1h-1zM23 13h1v1h-1zM24 13h1v1h-1zM26 13h1v1h-1zM27 13h1v1h-1zM28 13h1v1h-1zM32 13h1v1h-1zM4 14h1v1h-1zM6 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM10 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM17 14h1v1h-1zM20 14h1v1h-1zM21 14h1v1h-1zM24 14h1v1h-1zM25 14h1v1h-1zM30 14h1v1h-1zM31 14h1v1h-1zM5 15h1v1h-1zM7 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM11 15h1v1h-1zM14 15h1v1h-1zM16 15h1v1h-1zM17 15h1v1h-1zM18 15h1v1h-1zM19 15h1v1h-1zM22 15h1v1h-1zM23 15h1v1h-1zM24 15h1v1h-1zM26 15h1v1h-1zM32 15h1v1h-1zM8 16h1v1h-1zM10 16h1v1h-1zM11 16h1v1h-1zM13 16h1v1h-1zM14 16h1v1h-1zM17 16h1v1h-1zM18 16h1v1h-1zM21 16h1v1h-1zM24 16h1v1h-1zM29 16h1v1h-1zM30 16h1v1h-1zM4 17h1v1h-1zM7 17h1v1h-1zM9 17h1v1h-1zM13 17h1v1h-1zM15 17h1v1h-1zM16 17h1v1h-1zM17 17h1v1h-1zM18 17h1v1h-1zM19 17h1v1h-1zM20 17h1v1h-1zM23 17h1v1h-1zM25 17h1v1h-1zM26 17h1v1h-1zM30 17h1v1h-1zM31 17h1v1h-1zM32 17h1v1h-1zM8 18h1v1h-1zM9 18h1v1h-1zM10 18h1v1h-1zM18 18h1v1h-1zM21 18h1v1h-1zM22 18h1v1h-1zM23 18h1v1h-1zM24 18h1v1h-1zM26 18h1v1h-1zM28 18h1v1h-1zM30 18h1v1h-1zM31 18h1v1h-1zM32 18h1v1h-1zM5 19h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM11 19h1v1h-1zM12 19h1v1h-1zM13 19h1v1h-1zM16 19h1v1h-1zM19 19h1v1h-1zM20 19h1v1h-1zM25 19h1v1h-1zM26 19h1v1h-1zM27 19h1v1h-1zM31 19h1v1h-1zM5 20h1v1h-1zM8 20h1v1h-1zM10 20h1v1h-1zM11 20h1v1h-1zM13 20h1v1h-1zM15 20h1v1h-1zM17 20h1v1h-1zM19 20h1v1h-1zM23 20h1v1h-1zM24 20h1v1h-1zM25 20h1v1h-1zM27 20h1v1h-1zM28 20h1v1h-1zM29 20h1v1h-1zM31 20h1v1h-1zM7 21h1v1h-1zM8 21h1v1h-1zM12 21h1v1h-1zM13 21h1v1h-1zM15 21h1v1h-1zM19 21h1v1h-1zM21 21h1v1h-1zM24 21h1v1h-1zM25 21h1v1h-1zM27 21h1v1h-1zM29 21h1v1h-1zM30 21h1v1h-1zM31 21h1v1h-1zM4 22h1v1h-1zM10 22h1v1h-1zM12 22h1v1h-1zM13 22h1v1h-1zM14 22h1v1h-1zM16 22h1v1h-1zM17 22h1v1h-1zM18 22h1v1h-1zM19 22h1v1h-1zM20 22h1v1h-1zM21 22h1v1h-1zM24 22h1v1h-1zM27 22h1v1h-1zM28 22h1v1h-1zM30 22h1v1h-1zM6 23h1v1h-1zM7 23h1v1h-1zM8 23h1v1h-1zM11 23h1v1h-1zM14 23h1v1h-1zM20 23h1v1h-1zM21 23h1v1h-1zM22 23h1v1h-1zM23 23h1v1h-1zM25 23h1v1h-1zM30 23h1v1h-1zM5 24h1v1h-1zM7 24h1v1h-1zM8 24h1v1h-1zM9 24h1v1h-1zM10 24h1v1h-1zM11 24h1v1h-1zM14 24h1v1h-1zM15 24h1v1h-1zM16 24h1v1h-1zM19 24h1v1h-1zM20 24h1v1h-1zM21 24h1v1h-1zM22 24h1v1h-1zM23 24h1v1h-1zM24 24h1v1h-1zM25 24h1v1h-1zM26 24h1v1h-1zM27 24h1v1h-1zM28 24h1v1h-1zM29 24h1v1h-1zM30 24h1v1h-1zM12 25h1v1h-1zM14 25h1v1h-1zM16 25h1v1h-1zM17 25h1v1h-1zM22 25h1v1h-1zM24 25h1v1h-1zM28 25h1v1h-1zM29 25h1v1h-1zM30 25h1v1h-1zM31 25h1v1h-1zM32 25h1v1h-1zM4 26h1v1h-1zM5 26h1v1h-1zM6 26h1v1h-1zM7 26h1v1h-1zM8 26h1v1h-1zM9 26h1v1h-1zM10 26h1v1h-1zM12 26h1v1h-1zM14 26h1v1h-1zM15 26h1v1h-1zM16 26h1v1h-1zM17 26h1v1h-1zM23 26h1v1h-1zM24 26h1v1h-1zM26 26h1v1h-1zM28 26h1v1h-1zM29 26h1v1h-1zM31 26h1v1h-1zM4 27h1v1h-1zM10 27h1v1h-1zM12 27h1v1h-1zM14 27h1v1h-1zM15 27h1v1h-1zM17 27h1v1h-1zM18 27h1v1h-1zM24 27h1v1h-1zM28 27h1v1h-1zM29 27h1v1h-1zM4 28h1v1h-1zM6 28h1v1h-1zM7 28h1v1h-1zM8 28h1v1h-1zM10 28h1v1h-1zM13 28h1v1h-1zM14 28h1v1h-1zM15 28h1v1h-1zM16 28h1v1h-1zM19 28h1v1h-1zM21 28h1v1h-1zM24 28h1v1h-1zM25 28h1v1h-1zM26 28h1v1h-1zM27 28h1v1h-1zM28 28h1v1h-1zM30 28h1v1h-1zM31 28h1v1h-1zM32 28h1v1h-1zM4 29h1v1h-1zM6 29h1v1h-1zM7 29h1v1h-1zM8 29h1v1h-1zM10 29h1v1h-1zM12 29h1v1h-1zM14 29h1v1h-1zM15 29h1v1h-1zM16 29h1v1h-1zM18 29h1v1h-1zM19 29h1v1h-1zM20 29h1v1h-1zM21 29h1v1h-1zM25 29h1v1h-1zM28 29h1v1h-1zM29 29h1v1h-1zM32 29h1v1h-1zM4 30h1v1h-1zM6 30h1v1h-1zM7 30h1v1h-1zM8 30h1v1h-1zM10 30h1v1h-1zM12 30h1v1h-1zM17 30h1v1h-1zM18 30h1v1h-1zM20 30h1v1h-1zM24 30h1v1h-1zM25 30h1v1h-1zM27 30h1v1h-1zM30 30h1v1h-1zM32 30h1v1h-1zM4 31h1v1h-1zM10 31h1v1h-1zM13 31h1v1h-1zM14 31h1v1h-1zM18 31h1v1h-1zM20 31h1v1h-1zM24 31h1v1h-1zM25 31h1v1h-1zM26 31h1v1h-1zM27 31h1v1h-1zM29 31h1v1h-1zM31 31h1v1h-1zM4 32h1v1h-1zM5 32h1v1h-1zM6 32h1v1h-1zM7 32h1v1h-1zM8 32h1v1h-1zM9 32h1v1h-1zM10 32h1v1h-1zM12 32h1v1h-1zM14 32h1v1h-1zM15 32h1v1h-1zM16 32h1v1h-1zM19 32h1v1h-1zM22 32h1v1h-1zM24 32h1v1h-1zM27 32h1v1h-1zM29 32h1v1h-1zM31 32h1v1h-1z" fill="#000"/></svg>';
   function isPCScreen(){
-    try{ return window.matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine)').matches; }catch(e){ return false; }
+    try{ return window.matchMedia('(min-width: 760px) and (hover: hover) and (pointer: fine)').matches; }catch(e){ return false; }
   }
   function renderPhoneQrPanel(){
     var h = '<div class="panel">';
@@ -1863,10 +1875,35 @@
     h += '<p class="hint" style="line-height:1.7;">データは移りません（データはこのブラウザの中だけに保存）。今のデータも使いたいときは、ここで「バックアップ・復元」のバックアップを保存して、スマホで復元してください。</p>';
     h += '<p class="qr-url">'+esc(APP_PUBLIC_URL)+'</p>';
     h += '</div></div>';
-    h += '<p class="qr-tm">QRコードは株式会社デンソーウェーブの登録商標です。</p>';
     h += '</div>';
     return h;
   }
+  // PCで開いたとき、画面の左下に出す「📱 スマホで開く」カード（中身と重ならない広い画面のときだけ。×で閉じたら次回から出さない）
+  var PHONE_CARD_KEY = 'gp-phone-card-closed-v1';
+  function phoneCardVisible(){
+    try{ if(localStorage.getItem(PHONE_CARD_KEY)==='1') return false; }catch(e){}
+    try{ if(window.top!==window.self) return false; }catch(e){ return false; }
+    try{ if(!window.matchMedia('(min-width: 1100px) and (hover: hover) and (pointer: fine)').matches) return false; }catch(e){ return false; }
+    // 中身（設定の左メニューなど）と重ならないよう、左の余白にカードが収まるときだけ
+    var app = document.getElementById('app');
+    var left = app ? app.getBoundingClientRect().left : 0;
+    return left >= 188 + 16 + 16;
+  }
+  function renderPhoneCard(){
+    var host = document.getElementById('phone-card-host');
+    if(!host) return;
+    if(!phoneCardVisible()){ host.innerHTML = ''; return; }
+    if(host.firstChild) return;   // すでに表示中なら作り直さない
+    host.innerHTML = '<div class="phone-card"><div class="phone-card-head"><span>📱 スマホで開く</span><button class="phone-card-close" id="phone-card-close" aria-label="閉じる">×</button></div>'
+      + APP_QR_SVG + '<p>スマホのカメラで読み取ると、このアプリが開きます。</p></div>';
+    var cl = document.getElementById('phone-card-close');
+    if(cl) cl.onclick = function(){
+      try{ localStorage.setItem(PHONE_CARD_KEY, '1'); }catch(e){}
+      host.innerHTML = '';
+      showToast('設定 →「スマホで開く」からいつでも見られます');
+    };
+  }
+  window.addEventListener('resize', function(){ renderPhoneCard(); });
 
   function renderInstallBar(){
     if(view.installGuide==='bar') return '<div class="install-bar-wrap">'+renderInstallGuide()+'</div>';
@@ -3051,7 +3088,7 @@
       'パートを管理': n(state.roles)+'件・いつものパート・非表示',
       'バックアップ・復元': '全データを1つのファイルに保存・復元',
       'データ初期化': (loadBeforeReset('reset') ? '全データを削除・初期化前に戻す' : '全データを削除'),
-      'スマホで開く': 'QRコードを読み取ってスマホで開く',
+      'スマホで開く': 'スマホのカメラで読み取って開く',
       'ホーム画面に追加': isStandalone() ? '追加済み' : 'アプリのように使う',
       '使い方・ヘルプ': '特徴・使い方・便利な機能・ヘルプ',
       'このアプリを友達に勧める': 'URLと説明を送る',
@@ -3252,6 +3289,7 @@
       }
     }
     // バージョンのお知らせは画面の一番上（ヘッダーより上）に出す
+    renderPhoneCard();
     var notice = renderNewVersionBar() + renderSetImportNotice() + renderUpdateNotice() + renderDefaultsNotice();
     // ホーム画面に追加の案内は、画面の下に固定で出す
     var instHost = document.getElementById('install-host');
@@ -4296,6 +4334,9 @@
     html += '<button class="btn ghost" id="share-copy-btn" style="flex:1;">文章をコピー</button>';
     html += '</div>';
     if(view.shareText!==null && view.shareText!==defaultShareText()){ html += '<button class="btn ghost block" id="share-reset-btn" style="margin-top:8px;font-size:12px;">最初の文章に戻す</button>'; }
+    if(isPCScreen()){
+      html += '<div class="friend-code">'+APP_QR_SVG+'<p class="hint" style="margin:0;line-height:1.6;">そばにいる友達には、これをスマホのカメラで読み取ってもらうと、このアプリが開きます。</p></div>';
+    }
     html += '</div>';
 
     html += '<div class="panel">';
